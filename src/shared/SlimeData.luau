@@ -1,6 +1,7 @@
 --!strict
 -- SlimeData.luau
--- Master data definitions for the 5 Levels and all 35 hidden Squishy Eggs & hatched Slimes.
+-- Master data definitions for the 5 Massive Levels (240 studs wide x 260 studs long each),
+-- 10 Million-Speed Animal & Brainrot Chaser Guardians, and all 35 hidden Squishy Eggs & Slimes.
 
 local SlimeData = {}
 
@@ -42,11 +43,11 @@ SlimeData.Levels = {
 		Level = 1,
 		Name = "Meadow Gardens",
 		Subtitle = "Find & Plant all 5 Meadow Eggs to unlock Candy Kingdom!",
-		ZStart = -40,
-		ZEnd = -220,
-		GateZ = -220,
+		ZStart = -60,
+		ZEnd = -320,
+		GateZ = -320,
 		ThemeColor = Color3.fromRGB(95, 215, 110),
-		FloorColor = Color3.fromRGB(82, 175, 92),
+		FloorColor = Color3.fromRGB(78, 168, 88),
 		RequiredPlantedCount = 0,
 		EggCount = 5,
 	},
@@ -54,11 +55,11 @@ SlimeData.Levels = {
 		Level = 2,
 		Name = "Candy Kingdom",
 		Subtitle = "Find & Plant all 6 Candy Eggs to unlock Toybox Bedroom!",
-		ZStart = -220,
-		ZEnd = -400,
-		GateZ = -400,
+		ZStart = -320,
+		ZEnd = -580,
+		GateZ = -580,
 		ThemeColor = Color3.fromRGB(255, 125, 195),
-		FloorColor = Color3.fromRGB(250, 185, 220),
+		FloorColor = Color3.fromRGB(248, 182, 218),
 		RequiredPlantedCount = 5,
 		EggCount = 6,
 	},
@@ -66,11 +67,11 @@ SlimeData.Levels = {
 		Level = 3,
 		Name = "Toybox Bedroom",
 		Subtitle = "Find & Plant all 7 Toybox Eggs to unlock Neon Cyber Lab!",
-		ZStart = -400,
-		ZEnd = -580,
-		GateZ = -580,
+		ZStart = -580,
+		ZEnd = -840,
+		GateZ = -840,
 		ThemeColor = Color3.fromRGB(255, 190, 65),
-		FloorColor = Color3.fromRGB(215, 165, 115),
+		FloorColor = Color3.fromRGB(212, 162, 112),
 		RequiredPlantedCount = 11,
 		EggCount = 7,
 	},
@@ -78,11 +79,11 @@ SlimeData.Levels = {
 		Level = 4,
 		Name = "Neon Cyber Lab",
 		Subtitle = "Find & Plant all 8 Cyber Eggs to unlock Magma Caverns!",
-		ZStart = -580,
-		ZEnd = -760,
-		GateZ = -760,
+		ZStart = -840,
+		ZEnd = -1100,
+		GateZ = -1100,
 		ThemeColor = Color3.fromRGB(55, 235, 255),
-		FloorColor = Color3.fromRGB(35, 42, 68),
+		FloorColor = Color3.fromRGB(32, 38, 62),
 		RequiredPlantedCount = 18,
 		EggCount = 8,
 	},
@@ -90,11 +91,11 @@ SlimeData.Levels = {
 		Level = 5,
 		Name = "Magma & Crystal Caverns",
 		Subtitle = "Find & Plant all 9 Cavern Eggs to become the Squishy Sovereign!",
-		ZStart = -760,
-		ZEnd = -960,
+		ZStart = -1100,
+		ZEnd = -1380,
 		GateZ = nil,
 		ThemeColor = Color3.fromRGB(255, 95, 45),
-		FloorColor = Color3.fromRGB(58, 36, 42),
+		FloorColor = Color3.fromRGB(52, 32, 38),
 		RequiredPlantedCount = 26,
 		EggCount = 9,
 	},
@@ -109,8 +110,8 @@ export type GuardianDef = {
 	PrimaryColor: Color3,
 	AccentColor: Color3,
 	PatrolSpeed: number,
-	ChaseSpeed: number, -- Physical movement speed in studs/sec
-	RequiredSpeedPower: number, -- Million-scale Speed Power stat shown to players!
+	ChaseSpeed: number,
+	RequiredSpeedPower: number,
 	HomePosition: Vector3,
 	PatrolRadius: number,
 }
@@ -118,7 +119,7 @@ export type GuardianDef = {
 -- Animals & Brainrot Chasers that hunt down players whenever they pick up an Egg!
 -- Chase speeds scale from 800 Speed Power in Level 1 up to 15,000,000 (15M) Speed Power in Level 5!
 SlimeData.Guardians = {
-	-- Level 1 Chasers (800 - 1,800 Speed Power)
+	-- Level 1 Chasers (Z: -60 to -320)
 	{
 		Id = "L1_Bear",
 		Name = "Grizzly Papa Bear",
@@ -127,11 +128,11 @@ SlimeData.Guardians = {
 		Style = "Bear",
 		PrimaryColor = Color3.fromRGB(125, 78, 45),
 		AccentColor = Color3.fromRGB(215, 165, 115),
-		PatrolSpeed = 11,
+		PatrolSpeed = 12,
 		ChaseSpeed = 19,
 		RequiredSpeedPower = 800,
-		HomePosition = Vector3.new(-15, 5, -115),
-		PatrolRadius = 42,
+		HomePosition = Vector3.new(-35, 5, -155),
+		PatrolRadius = 65,
 	},
 	{
 		Id = "L1_Brainrot",
@@ -141,14 +142,14 @@ SlimeData.Guardians = {
 		Style = "Shark",
 		PrimaryColor = Color3.fromRGB(65, 155, 245),
 		AccentColor = Color3.fromRGB(255, 255, 255),
-		PatrolSpeed = 12,
+		PatrolSpeed = 13,
 		ChaseSpeed = 21,
 		RequiredSpeedPower = 1_800,
-		HomePosition = Vector3.new(20, 5, -170),
-		PatrolRadius = 45,
+		HomePosition = Vector3.new(35, 5, -245),
+		PatrolRadius = 70,
 	},
 
-	-- Level 2 Chasers (12,000 - 28,000 Speed Power)
+	-- Level 2 Chasers (Z: -320 to -580)
 	{
 		Id = "L2_Shark",
 		Name = "Sour Gummy Jaws",
@@ -157,11 +158,11 @@ SlimeData.Guardians = {
 		Style = "Shark",
 		PrimaryColor = Color3.fromRGB(255, 85, 175),
 		AccentColor = Color3.fromRGB(115, 245, 255),
-		PatrolSpeed = 13,
+		PatrolSpeed = 14,
 		ChaseSpeed = 26,
 		RequiredSpeedPower = 12_000,
-		HomePosition = Vector3.new(-18, 5, -285),
-		PatrolRadius = 45,
+		HomePosition = Vector3.new(-35, 5, -415),
+		PatrolRadius = 70,
 	},
 	{
 		Id = "L2_Brainrot",
@@ -171,14 +172,14 @@ SlimeData.Guardians = {
 		Style = "BrainrotBat",
 		PrimaryColor = Color3.fromRGB(165, 115, 75),
 		AccentColor = Color3.fromRGB(255, 245, 230),
-		PatrolSpeed = 14,
+		PatrolSpeed = 15,
 		ChaseSpeed = 29,
 		RequiredSpeedPower = 28_000,
-		HomePosition = Vector3.new(22, 5, -345),
-		PatrolRadius = 45,
+		HomePosition = Vector3.new(38, 5, -505),
+		PatrolRadius = 70,
 	},
 
-	-- Level 3 Chasers (150,000 - 350,000 Speed Power)
+	-- Level 3 Chasers (Z: -580 to -840)
 	{
 		Id = "L3_Dino",
 		Name = "Stompy Toy T-Rex",
@@ -187,11 +188,11 @@ SlimeData.Guardians = {
 		Style = "Dino",
 		PrimaryColor = Color3.fromRGB(95, 215, 85),
 		AccentColor = Color3.fromRGB(255, 195, 55),
-		PatrolSpeed = 15,
+		PatrolSpeed = 16,
 		ChaseSpeed = 35,
 		RequiredSpeedPower = 150_000,
-		HomePosition = Vector3.new(-20, 5, -465),
-		PatrolRadius = 50,
+		HomePosition = Vector3.new(-38, 5, -675),
+		PatrolRadius = 75,
 	},
 	{
 		Id = "L3_Brainrot",
@@ -201,14 +202,14 @@ SlimeData.Guardians = {
 		Style = "BrainrotBat",
 		PrimaryColor = Color3.fromRGB(195, 130, 68),
 		AccentColor = Color3.fromRGB(255, 85, 65),
-		PatrolSpeed = 16,
+		PatrolSpeed = 17,
 		ChaseSpeed = 39,
 		RequiredSpeedPower = 350_000,
-		HomePosition = Vector3.new(20, 5, -530),
-		PatrolRadius = 50,
+		HomePosition = Vector3.new(38, 5, -765),
+		PatrolRadius = 75,
 	},
 
-	-- Level 4 Chasers (1,500,000 - 3,800,000 Speed Power)
+	-- Level 4 Chasers (Z: -840 to -1100)
 	{
 		Id = "L4_Croc",
 		Name = "Bombardiro Cyber-Croc",
@@ -217,11 +218,11 @@ SlimeData.Guardians = {
 		Style = "Croc",
 		PrimaryColor = Color3.fromRGB(0, 225, 195),
 		AccentColor = Color3.fromRGB(255, 65, 185),
-		PatrolSpeed = 17,
+		PatrolSpeed = 18,
 		ChaseSpeed = 46,
 		RequiredSpeedPower = 1_500_000,
-		HomePosition = Vector3.new(-18, 5, -645),
-		PatrolRadius = 50,
+		HomePosition = Vector3.new(-38, 5, -935),
+		PatrolRadius = 75,
 	},
 	{
 		Id = "L4_Hound",
@@ -231,14 +232,14 @@ SlimeData.Guardians = {
 		Style = "Bear",
 		PrimaryColor = Color3.fromRGB(45, 55, 85),
 		AccentColor = Color3.fromRGB(0, 245, 255),
-		PatrolSpeed = 18,
+		PatrolSpeed = 19,
 		ChaseSpeed = 51,
 		RequiredSpeedPower = 3_800_000,
-		HomePosition = Vector3.new(22, 5, -715),
-		PatrolRadius = 50,
+		HomePosition = Vector3.new(38, 5, -1030),
+		PatrolRadius = 75,
 	},
 
-	-- Level 5 Chasers (8,500,000 - 15,000,000 Speed Power!)
+	-- Level 5 Chasers (Z: -1100 to -1380)
 	{
 		Id = "L5_Dragon",
 		Name = "Inferno Magma Dragon",
@@ -247,11 +248,11 @@ SlimeData.Guardians = {
 		Style = "Dragon",
 		PrimaryColor = Color3.fromRGB(235, 55, 35),
 		AccentColor = Color3.fromRGB(255, 215, 55),
-		PatrolSpeed = 19,
+		PatrolSpeed = 20,
 		ChaseSpeed = 58,
 		RequiredSpeedPower = 8_500_000,
-		HomePosition = Vector3.new(-20, 5, -830),
-		PatrolRadius = 55,
+		HomePosition = Vector3.new(-40, 5, -1200),
+		PatrolRadius = 80,
 	},
 	{
 		Id = "L5_Titan",
@@ -261,11 +262,11 @@ SlimeData.Guardians = {
 		Style = "Dino",
 		PrimaryColor = Color3.fromRGB(165, 45, 225),
 		AccentColor = Color3.fromRGB(255, 125, 35),
-		PatrolSpeed = 20,
+		PatrolSpeed = 21,
 		ChaseSpeed = 65,
 		RequiredSpeedPower = 15_000_000,
-		HomePosition = Vector3.new(20, 5, -910),
-		PatrolRadius = 55,
+		HomePosition = Vector3.new(40, 5, -1300),
+		PatrolRadius = 80,
 	},
 }
 
@@ -280,7 +281,7 @@ SlimeData.RarityColors = {
 SlimeData.Slimes = {
 	-- ==========================================
 	-- LEVEL 1: MEADOW GARDENS (Eggs #1 - #5)
-	-- Z: -40 to -220
+	-- Z: -60 to -320 (Width: -120 to +120)
 	-- ==========================================
 	{
 		Id = 1,
@@ -292,8 +293,8 @@ SlimeData.Slimes = {
 		HatType = "Sprout",
 		Behavior = "Static",
 		CoinsPerSec = 5,
-		Hint = "Check right beside the big oak tree near the Meadow entrance!",
-		Position = Vector3.new(-32, 4, -75),
+		Hint = "Hidden inside the Red Meadow Barn on the left side!",
+		Position = Vector3.new(-68, 5, -115),
 	},
 	{
 		Id = 2,
@@ -306,8 +307,8 @@ SlimeData.Slimes = {
 		Behavior = "Disguised",
 		DisguiseProp = "Bush",
 		CoinsPerSec = 8,
-		Hint = "One of the bushes on the right side of the Meadow is giggling...",
-		Position = Vector3.new(38, 4, -105),
+		Hint = "Deep inside the Green Hedge Maze on the right side!",
+		Position = Vector3.new(72, 5, -145),
 	},
 	{
 		Id = 3,
@@ -319,8 +320,8 @@ SlimeData.Slimes = {
 		HatType = "Halo",
 		Behavior = "BounceWake",
 		CoinsPerSec = 14,
-		Hint = "Snoozing on the wooden creek bridge! Jump on its head 3 times to wake it!",
-		Position = Vector3.new(0, 6.5, -135),
+		Hint = "Snoozing high on the River Suspension Bridge Obby! Jump on its head 3x!",
+		Position = Vector3.new(0, 14, -195),
 	},
 	{
 		Id = 4,
@@ -333,8 +334,8 @@ SlimeData.Slimes = {
 		Behavior = "Static",
 		IsCoopVault = true,
 		CoinsPerSec = 22,
-		Hint = "Locked in the Meadow Co-op Vault! Step on both Buddy Plates (or drop a Decoy Weight)!",
-		Position = Vector3.new(-48, 4, -168),
+		Hint = "Locked in the Meadow Co-op Vault on the left! Step on both Buddy Plates!",
+		Position = Vector3.new(-88, 5, -245),
 	},
 	{
 		Id = 5,
@@ -347,13 +348,13 @@ SlimeData.Slimes = {
 		Behavior = "Runaway",
 		IsBoss = true,
 		CoinsPerSec = 38,
-		Hint = "Shy Boss Egg near the back hilltop! Train on your Treadmill to catch it!",
-		Position = Vector3.new(28, 8, -195),
+		Hint = "Atop the Giant Treehouse Obby on the back right hill!",
+		Position = Vector3.new(64, 22, -285),
 	},
 
 	-- ==========================================
 	-- LEVEL 2: CANDY KINGDOM (Eggs #6 - #11)
-	-- Z: -220 to -400
+	-- Z: -320 to -580
 	-- ==========================================
 	{
 		Id = 6,
@@ -365,8 +366,8 @@ SlimeData.Slimes = {
 		HatType = "Flower",
 		Behavior = "Static",
 		CoinsPerSec = 45,
-		Hint = "Tucked behind the giant pink lollipop on the left path!",
-		Position = Vector3.new(-36, 4, -255),
+		Hint = "Hidden behind the Giant Frosting Waterfall Cave on the left!",
+		Position = Vector3.new(-72, 6, -375),
 	},
 	{
 		Id = 7,
@@ -379,8 +380,8 @@ SlimeData.Slimes = {
 		Behavior = "Disguised",
 		DisguiseProp = "Marshmallow",
 		CoinsPerSec = 65,
-		Hint = "Hiding among the giant white marshmallows on the right!",
-		Position = Vector3.new(40, 4, -280),
+		Hint = "Disguised inside the Giant Hot Cocoa Cup Obby on the right!",
+		Position = Vector3.new(74, 14, -405),
 	},
 	{
 		Id = 8,
@@ -392,8 +393,8 @@ SlimeData.Slimes = {
 		HatType = "Propeller",
 		Behavior = "Runaway",
 		CoinsPerSec = 85,
-		Hint = "Bouncing around the middle candy plaza—use your Treadmill speed to tag it!",
-		Position = Vector3.new(0, 4, -310),
+		Hint = "Hopping across the Chocolate Castle Courtyard in the center!",
+		Position = Vector3.new(0, 6, -445),
 	},
 	{
 		Id = 9,
@@ -406,8 +407,8 @@ SlimeData.Slimes = {
 		Behavior = "Static",
 		IsMicroVent = true,
 		CoinsPerSec = 115,
-		Hint = "Inside the Tiny Candy Vent! Morph into a Squishy and toggle Tiny Size to squeeze in!",
-		Position = Vector3.new(48, 4, -345),
+		Hint = "Inside the Tiny Gingerbread House Vent on the right wall (Toggle Tiny Size)!",
+		Position = Vector3.new(88, 5, -485),
 	},
 	{
 		Id = 10,
@@ -420,8 +421,8 @@ SlimeData.Slimes = {
 		Behavior = "Static",
 		IsCoopVault = true,
 		CoinsPerSec = 150,
-		Hint = "Inside the Candy Co-op Vault on the left! Use a partner or your Decoy Weight!",
-		Position = Vector3.new(-48, 4, -355),
+		Hint = "Locked inside the Candy Co-op Vault on the left!",
+		Position = Vector3.new(-88, 5, -505),
 	},
 	{
 		Id = 11,
@@ -434,13 +435,13 @@ SlimeData.Slimes = {
 		Behavior = "BounceWake",
 		IsBoss = true,
 		CoinsPerSec = 210,
-		Hint = "Atop the Gumball Obby Steps! Climb up and bounce 3 times on her shell!",
-		Position = Vector3.new(0, 16, -382),
+		Hint = "High atop the 3-Story Gumball Machine Tower Obby! Climb up and bounce 3x!",
+		Position = Vector3.new(0, 28, -548),
 	},
 
 	-- ==========================================
 	-- LEVEL 3: TOYBOX BEDROOM (Eggs #12 - #18)
-	-- Z: -400 to -580
+	-- Z: -580 to -840
 	-- ==========================================
 	{
 		Id = 12,
@@ -453,8 +454,8 @@ SlimeData.Slimes = {
 		Behavior = "Disguised",
 		DisguiseProp = "ToyBlock",
 		CoinsPerSec = 260,
-		Hint = "Disguised as one of the colorful ABC Toy Blocks on the left!",
-		Position = Vector3.new(-35, 4, -435),
+		Hint = "Hidden inside the Giant ABC Block Castle on the left!",
+		Position = Vector3.new(-68, 12, -635),
 	},
 	{
 		Id = 13,
@@ -466,8 +467,8 @@ SlimeData.Slimes = {
 		HatType = "Halo",
 		Behavior = "BounceWake",
 		CoinsPerSec = 320,
-		Hint = "Napping right on the Giant Bouncy Bed Mattress on the right!",
-		Position = Vector3.new(36, 9, -465),
+		Hint = "Sleeping on the Giant 4-Poster Bouncy Bed on the right!",
+		Position = Vector3.new(68, 16, -665),
 	},
 	{
 		Id = 14,
@@ -479,8 +480,8 @@ SlimeData.Slimes = {
 		HatType = "Propeller",
 		Behavior = "Runaway",
 		CoinsPerSec = 390,
-		Hint = "Zooming across the Toybox rug! You'll need solid Treadmill speed!",
-		Position = Vector3.new(0, 4, -485),
+		Hint = "Zooming around the Giant Train Track in the center of the bedroom!",
+		Position = Vector3.new(0, 5, -705),
 	},
 	{
 		Id = 15,
@@ -493,8 +494,8 @@ SlimeData.Slimes = {
 		Behavior = "Static",
 		IsMicroVent = true,
 		CoinsPerSec = 470,
-		Hint = "Hidden inside the Baseboard Mousehole Vent on the right wall (Tiny Morph required)!",
-		Position = Vector3.new(48, 4, -518),
+		Hint = "Inside the Baseboard Mousehole Vent on the right wall (Tiny Size required)!",
+		Position = Vector3.new(88, 5, -745),
 	},
 	{
 		Id = 16,
@@ -506,8 +507,8 @@ SlimeData.Slimes = {
 		HatType = "WizardHat",
 		Behavior = "Static",
 		CoinsPerSec = 560,
-		Hint = "Perched high up on the Toy Bookshelf steps on the left!",
-		Position = Vector3.new(-32, 15, -505),
+		Hint = "At the very top of the 4-Tier Giant Bookshelf Obby on the left!",
+		Position = Vector3.new(-65, 28, -735),
 	},
 	{
 		Id = 17,
@@ -520,8 +521,8 @@ SlimeData.Slimes = {
 		Behavior = "Static",
 		IsCoopVault = true,
 		CoinsPerSec = 680,
-		Hint = "Locked inside the Toybox Co-op Vault! Activate both Buddy Plates!",
-		Position = Vector3.new(-48, 4, -545),
+		Hint = "Locked inside the Toybox Co-op Vault on the left!",
+		Position = Vector3.new(-88, 5, -785),
 	},
 	{
 		Id = 18,
@@ -534,13 +535,13 @@ SlimeData.Slimes = {
 		Behavior = "Runaway",
 		IsBoss = true,
 		CoinsPerSec = 850,
-		Hint = "The Boss Toy at the back of the bedroom! Fast & feisty!",
-		Position = Vector3.new(18, 6, -562),
+		Hint = "Atop the Giant Study Desk & Ruler Ramp Obby at the back of the bedroom!",
+		Position = Vector3.new(45, 24, -808),
 	},
 
 	-- ==========================================
 	-- LEVEL 4: NEON CYBER LAB (Eggs #19 - #26)
-	-- Z: -580 to -760
+	-- Z: -840 to -1100
 	-- ==========================================
 	{
 		Id = 19,
@@ -552,8 +553,8 @@ SlimeData.Slimes = {
 		HatType = "Halo",
 		Behavior = "Static",
 		CoinsPerSec = 1000,
-		Hint = "Glowing behind the first Cyber Server Rack on the left!",
-		Position = Vector3.new(-36, 4, -610),
+		Hint = "Hidden inside the Cyber Server Maze on the left!",
+		Position = Vector3.new(-68, 6, -890),
 	},
 	{
 		Id = 20,
@@ -566,8 +567,8 @@ SlimeData.Slimes = {
 		Behavior = "Disguised",
 		DisguiseProp = "CyberCrate",
 		CoinsPerSec = 1200,
-		Hint = "Disguised as a glowing Neon Data Crate on the right side!",
-		Position = Vector3.new(38, 4, -632),
+		Hint = "Disguised atop the Neon Containment Silo on the right!",
+		Position = Vector3.new(68, 16, -920),
 	},
 	{
 		Id = 21,
@@ -579,8 +580,8 @@ SlimeData.Slimes = {
 		HatType = "Horns",
 		Behavior = "Runaway",
 		CoinsPerSec = 1450,
-		Hint = "Dashing across the central laser grid floor!",
-		Position = Vector3.new(0, 4, -655),
+		Hint = "Sprinting around the Central Quantum Core Reactor!",
+		Position = Vector3.new(0, 6, -955),
 	},
 	{
 		Id = 22,
@@ -592,8 +593,8 @@ SlimeData.Slimes = {
 		HatType = "Halo",
 		Behavior = "BounceWake",
 		CoinsPerSec = 1750,
-		Hint = "Sleeping on the Cryo Platform on the left—bounce 3 times to wake it!",
-		Position = Vector3.new(-30, 8, -675),
+		Hint = "Sleeping on the Elevated Cryo-Bridge on the left—bounce 3x to wake it!",
+		Position = Vector3.new(-62, 18, -985),
 	},
 	{
 		Id = 23,
@@ -606,8 +607,8 @@ SlimeData.Slimes = {
 		Behavior = "Static",
 		IsMicroVent = true,
 		CoinsPerSec = 2100,
-		Hint = "Inside the Cyber Cooling Vent on the right wall (Tiny Morph required)!",
-		Position = Vector3.new(48, 4, -695),
+		Hint = "Inside the Cyber Cooling Duct Vent on the right wall (Tiny Size required)!",
+		Position = Vector3.new(88, 5, -1010),
 	},
 	{
 		Id = 24,
@@ -619,8 +620,8 @@ SlimeData.Slimes = {
 		HatType = "WizardHat",
 		Behavior = "Static",
 		CoinsPerSec = 2500,
-		Hint = "High atop the floating Neon Hover Pads in the center!",
-		Position = Vector3.new(0, 17, -712),
+		Hint = "High atop the Floating Anti-Gravity Laser Obby in the center!",
+		Position = Vector3.new(0, 30, -1035),
 	},
 	{
 		Id = 25,
@@ -633,8 +634,8 @@ SlimeData.Slimes = {
 		Behavior = "Static",
 		IsCoopVault = true,
 		CoinsPerSec = 3000,
-		Hint = "Secured inside the Cyber Co-op Mainframe Vault on the left!",
-		Position = Vector3.new(-48, 4, -730),
+		Hint = "Inside the Cyber Co-op Mainframe Vault on the left!",
+		Position = Vector3.new(-88, 5, -1055),
 	},
 	{
 		Id = 26,
@@ -647,13 +648,13 @@ SlimeData.Slimes = {
 		Behavior = "Runaway",
 		IsBoss = true,
 		CoinsPerSec = 3800,
-		Hint = "The Cyber Boss guarding the Magma Gate! Super fast!",
-		Position = Vector3.new(22, 6, -745),
+		Hint = "Atop the Cyber Command Citadel on the back right!",
+		Position = Vector3.new(58, 22, -1075),
 	},
 
 	-- ==========================================
 	-- LEVEL 5: MAGMA & CRYSTAL CAVERNS (Eggs #27 - #35)
-	-- Z: -760 to -960
+	-- Z: -1100 to -1380
 	-- ==========================================
 	{
 		Id = 27,
@@ -666,8 +667,8 @@ SlimeData.Slimes = {
 		Behavior = "Disguised",
 		DisguiseProp = "LavaRock",
 		CoinsPerSec = 4500,
-		Hint = "Disguised as a dark basalt lava boulder near the cavern entrance!",
-		Position = Vector3.new(-34, 4, -790),
+		Hint = "Disguised among the Obsidian Basalt Pillars on the left!",
+		Position = Vector3.new(-68, 10, -1145),
 	},
 	{
 		Id = 28,
@@ -679,8 +680,8 @@ SlimeData.Slimes = {
 		HatType = "Halo",
 		Behavior = "Static",
 		CoinsPerSec = 5400,
-		Hint = "Nestled inside the glowing purple crystal cluster on the right!",
-		Position = Vector3.new(38, 5, -812),
+		Hint = "High inside the Giant Amethyst Crystal Cathedral on the right!",
+		Position = Vector3.new(72, 18, -1175),
 	},
 	{
 		Id = 29,
@@ -692,8 +693,8 @@ SlimeData.Slimes = {
 		HatType = "Horns",
 		Behavior = "Runaway",
 		CoinsPerSec = 6500,
-		Hint = "Sprinting around the obsidian island in the center!",
-		Position = Vector3.new(0, 4, -835),
+		Hint = "Darting across the Center Magma Island!",
+		Position = Vector3.new(0, 6, -1210),
 	},
 	{
 		Id = 30,
@@ -705,8 +706,8 @@ SlimeData.Slimes = {
 		HatType = "Crown",
 		Behavior = "BounceWake",
 		CoinsPerSec = 7800,
-		Hint = "Sleeping on the Magma Bridge—bounce 3 times on its head!",
-		Position = Vector3.new(-28, 8, -860),
+		Hint = "Sleeping on the Lava Fortress Bridge on the left—bounce 3x!",
+		Position = Vector3.new(-62, 20, -1245),
 	},
 	{
 		Id = 31,
@@ -719,8 +720,8 @@ SlimeData.Slimes = {
 		Behavior = "Static",
 		IsMicroVent = true,
 		CoinsPerSec = 9200,
-		Hint = "Inside the tiny Crystal Fissure Vent on the right cavern wall!",
-		Position = Vector3.new(48, 4, -882),
+		Hint = "Inside the Crystal Fissure Micro-Vent on the right wall (Tiny Size required)!",
+		Position = Vector3.new(88, 5, -1275),
 	},
 	{
 		Id = 32,
@@ -732,8 +733,8 @@ SlimeData.Slimes = {
 		HatType = "Horns",
 		Behavior = "Static",
 		CoinsPerSec = 11000,
-		Hint = "High atop the Volcanic Crystal Spire! Upgrade your Jump Springs to reach!",
-		Position = Vector3.new(0, 19, -902),
+		Hint = "Perched atop the 34-Stud Crystal Spire Obby in the center!",
+		Position = Vector3.new(0, 34, -1295),
 	},
 	{
 		Id = 33,
@@ -746,8 +747,8 @@ SlimeData.Slimes = {
 		Behavior = "Static",
 		IsCoopVault = true,
 		CoinsPerSec = 13500,
-		Hint = "Inside the final Co-op Obsidian Vault on the left!",
-		Position = Vector3.new(-48, 4, -920),
+		Hint = "Inside the Final Obsidian Co-op Vault on the left!",
+		Position = Vector3.new(-88, 5, -1325),
 	},
 	{
 		Id = 34,
@@ -759,8 +760,8 @@ SlimeData.Slimes = {
 		HatType = "WizardHat",
 		Behavior = "Runaway",
 		CoinsPerSec = 17500,
-		Hint = "Darting around the volcano rim near the back!",
-		Position = Vector3.new(32, 8, -935),
+		Hint = "Guarding the Volcano Rim Walkway on the back right!",
+		Position = Vector3.new(65, 24, -1340),
 	},
 	{
 		Id = 35,
@@ -773,8 +774,8 @@ SlimeData.Slimes = {
 		Behavior = "BounceWake",
 		IsBoss = true,
 		CoinsPerSec = 25000,
-		Hint = "The Ultimate Sovereign at the Volcano Summit Altar (-948 Z)! Bounce 3x to claim!",
-		Position = Vector3.new(0, 14, -948),
+		Hint = "At the peak of the Golden Volcano Temple Altar (Y=42, Z=-1358)! Climb the Volcano Obby & Bounce 3x!",
+		Position = Vector3.new(0, 42, -1358),
 	},
 }
 

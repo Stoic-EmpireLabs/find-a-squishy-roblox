@@ -247,12 +247,30 @@ local function refreshPlotVisuals(plotIndex: number, player: Player?, session: P
 		return
 	end
 
+	local function setSignText(titleStr: string, subStr: string)
+		plot.SignLabel.Text = titleStr
+		plot.SubSignLabel.Text = subStr
+		local board = plot.Folder:FindFirstChild("OwnerSignBoard")
+		if board then
+			for _, desc in ipairs(board:GetDescendants()) do
+				if desc:IsA("TextLabel") then
+					if desc.Name == "Title" then
+						desc.Text = titleStr
+					elseif desc.Name == "Sub" then
+						desc.Text = subStr
+					end
+				end
+			end
+		end
+	end
+
 	if not player or not session then
 		plot.OwnerUserId = nil
-		plot.SignLabel.Text = string.format("🏡 PEN #%d (TOUCH TO CLAIM)", plotIndex)
-		plot.SubSignLabel.Text = "Unclaimed Sanctuary Pen"
+		setSignText(string.format("🏡 PEN #%d (TOUCH TO CLAIM)", plotIndex), "Unclaimed Sanctuary Pen")
 		plot.CashLabel.Text = "$0 Ready"
 		plot.ShieldDome.Transparency = 1
+		plot.ShieldDome.Size = Vector3.new(0.1, 0.1, 0.1)
+		plot.ShieldDome.Position = plot.Origin + Vector3.new(0, -50, 0)
 		for slotIdx = 1, 35 do
 			local nest = plot.Nests[slotIdx]
 			if nest.HatchedModel then
@@ -271,13 +289,15 @@ local function refreshPlotVisuals(plotIndex: number, player: Player?, session: P
 	local plantedTotal = getPlantedCount(session)
 	local incomeRate = getTotalIncomePerSec(session)
 
-	plot.SignLabel.Text = string.format("🏡 %s's SQUISHY PEN", string.upper(player.DisplayName))
-	plot.SubSignLabel.Text = string.format(
-		"%s | %d / %d Eggs Planted ($%s/s)",
-		penDef.Name,
-		plantedTotal,
-		penDef.MaxNests,
-		UpgradeData.FormatNumber(incomeRate)
+	setSignText(
+		string.format("🏡 %s's SQUISHY PEN", string.upper(player.DisplayName)),
+		string.format(
+			"%s | %d / %d Eggs Planted ($%s/s)",
+			penDef.Name,
+			plantedTotal,
+			penDef.MaxNests,
+			UpgradeData.FormatNumber(incomeRate)
+		)
 	)
 	plot.CashLabel.Text = string.format("$%s Ready to Collect!", UpgradeData.FormatNumber(session.StoredPenCoins))
 
@@ -311,10 +331,14 @@ local function refreshPlotVisuals(plotIndex: number, player: Player?, session: P
 
 	local shieldRemaining = math.max(0, math.ceil(session.ShieldExpiresAt - os.clock()))
 	if shieldRemaining > 0 then
+		plot.ShieldDome.Size = Vector3.new(78, 34, 60)
+		plot.ShieldDome.Position = plot.Origin + Vector3.new(0, 10, 0)
 		plot.ShieldDome.Transparency = 0.65
 		plot.ShieldLabel.Text = string.format("🛡️ SHIELD ACTIVE (%ds)", shieldRemaining)
 	else
 		plot.ShieldDome.Transparency = 1.0
+		plot.ShieldDome.Size = Vector3.new(0.1, 0.1, 0.1)
+		plot.ShieldDome.Position = plot.Origin + Vector3.new(0, -50, 0)
 		plot.ShieldLabel.Text = "Step to Activate Laser Shield (60s)"
 	end
 
@@ -1049,7 +1073,7 @@ actionRemote.OnServerEvent:Connect(function(player: Player, payload: any)
 		if target == "BasePen" and session.PlotIndex then
 			local plot = world.Plots[session.PlotIndex]
 			-- If carrying an Egg outside the Safe Zone, require running to the Level Gate first!
-			if session.CarryingEggId and hrp.Position.Z < -45 then
+			if session.CarryingEggId and hrp.Position.Z < -65 then
 				notifyPlayer(player, "🏃 You're carrying an Egg! Outrun the Chasers to the Green Safe Line first!", "Warning")
 				return
 			end
@@ -1058,7 +1082,7 @@ actionRemote.OnServerEvent:Connect(function(player: Player, payload: any)
 				plantCarriedEggInPen(player)
 			end
 		elseif target == "Treadmill" and session.PlotIndex then
-			if session.CarryingEggId and hrp.Position.Z < -45 then
+			if session.CarryingEggId and hrp.Position.Z < -65 then
 				notifyPlayer(player, "🏃 Outrun the Chasers to the Safe Zone before teleporting!", "Warning")
 				return
 			end
@@ -1220,7 +1244,7 @@ task.spawn(function()
 						local gatePart = world.LevelGates[gateLvl]
 						if gatePart and maxUnlocked <= gateLvl and pos.Z < (gatePart.Position.Z - 1.0) then
 							-- Bounce player gently back in front of the locked gate
-							hrp.CFrame = CFrame.new(math.clamp(pos.X, -35, 35), 5, gatePart.Position.Z + 6)
+							hrp.CFrame = CFrame.new(math.clamp(pos.X, -65, 65), 5, gatePart.Position.Z + 8)
 							if not isOnCooldown("GateWarn_" .. player.UserId, 2.0) then
 								local plantedInLvl = getPlantedCount(session, gateLvl)
 								local totalInLvl = #(SlimeData.ByLevel[gateLvl] or {})
@@ -1266,7 +1290,7 @@ task.spawn(function()
 				-- Check if ANY player in this Level is currently carrying an Egg!
 				local targetPlayer: Player? = nil
 				local targetHrp: BasePart? = nil
-				local bestDist = 140
+				local bestDist = 260
 
 				for _, plr in ipairs(Players:GetPlayers()) do
 					local session = sessions[plr]
@@ -1318,7 +1342,7 @@ task.spawn(function()
 					end
 
 					-- Did the Guardian catch the Egg Carrier?
-					if dist <= 5.2 and session then
+					if dist <= 6.2 and session then
 						local droppedId = session.CarryingEggId
 						local droppedDef = if droppedId then SlimeData.ById[droppedId] else nil
 						clearCarriedEgg(targetPlayer)
@@ -1346,13 +1370,13 @@ task.spawn(function()
 					end
 
 					local wp = guardianWaypoints[gId]
-					if not wp or (wp - gBody.Position).Magnitude < 4 then
+					if not wp or (wp - gBody.Position).Magnitude < 5 then
 						local angle = math.random() * math.pi * 2
-						local r = math.random(12, gDef.PatrolRadius)
+						local r = math.random(18, gDef.PatrolRadius)
 						wp = Vector3.new(
-							math.clamp(gDef.HomePosition.X + math.cos(angle) * r, -42, 42),
+							math.clamp(gDef.HomePosition.X + math.cos(angle) * r, -95, 95),
 							gDef.HomePosition.Y,
-							math.clamp(gDef.HomePosition.Z + math.sin(angle) * (r * 0.6), lvlDef.ZEnd + 14, lvlDef.ZStart - 12)
+							math.clamp(gDef.HomePosition.Z + math.sin(angle) * (r * 0.65), lvlDef.ZEnd + 18, lvlDef.ZStart - 16)
 						)
 						guardianWaypoints[gId] = wp
 					end

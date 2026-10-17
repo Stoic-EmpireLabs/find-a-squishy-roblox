@@ -552,7 +552,99 @@ local tmUpgLbl, tmUpgBtn = makeUpgradeRow("🏃 Upgrade Speed Treadmill", "Gain 
 local gelUpgLbl, gelUpgBtn = makeUpgradeRow("🌈 Upgrade Pen Gel Coating", "Multiply all Squishy Coins/sec up to 12x!", Color3.fromRGB(255, 115, 235), "UpgradeGel")
 local jumpUpgLbl, jumpUpgBtn = makeUpgradeRow("🦘 Upgrade Obby Jump Springs", "Jump higher over Obby Lasers & Spires!", Color3.fromRGB(125, 245, 135), "UpgradeJump")
 
+-- MODAL 4: VIP GAMEPASSES & MONETIZATION SHOP
+local vipModal, vipScroll = createBaseModal("💎 VIP PASSES, SPEED BUNDLES & EGG RADAR SHOP", Color3.fromRGB(255, 215, 55))
+
+local function makeVipShopCard(titleText: string, descText: string, priceText: string, badgeColor: Color3, onActivate: () -> ())
+	local card = Instance.new("Frame")
+	card.Size = UDim2.new(1, -10, 0, 72)
+	card.BackgroundColor3 = Color3.fromRGB(32, 36, 58)
+	card.Parent = vipScroll
+	addCorner(card, 12)
+	addStroke(card, badgeColor, 2)
+
+	local title = Instance.new("TextLabel")
+	title.Size = UDim2.new(0, 415, 0, 28)
+	title.Position = UDim2.new(0, 14, 0, 8)
+	title.BackgroundTransparency = 1
+	title.Font = Enum.Font.FredokaOne
+	title.TextSize = 18
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.TextColor3 = badgeColor
+	title.Text = titleText
+	title.Parent = card
+
+	local desc = Instance.new("TextLabel")
+	desc.Size = UDim2.new(0, 415, 0, 26)
+	desc.Position = UDim2.new(0, 14, 0, 36)
+	desc.BackgroundTransparency = 1
+	desc.Font = Enum.Font.GothamBold
+	desc.TextSize = 13
+	desc.TextXAlignment = Enum.TextXAlignment.Left
+	desc.TextColor3 = Color3.fromRGB(220, 230, 250)
+	desc.Text = descText
+	desc.Parent = card
+
+	local buyBtn = Instance.new("TextButton")
+	buyBtn.Size = UDim2.new(0, 185, 0, 46)
+	buyBtn.Position = UDim2.new(1, -198, 0, 13)
+	buyBtn.BackgroundColor3 = badgeColor
+	buyBtn.Font = Enum.Font.FredokaOne
+	buyBtn.TextSize = 15
+	buyBtn.TextColor3 = Color3.fromRGB(20, 22, 30)
+	buyBtn.Text = priceText
+	buyBtn.Parent = card
+	addCorner(buyBtn, 10)
+	buyBtn.MouseButton1Click:Connect(function()
+		playUiSound("rbxassetid://12221967", 1.3, 0.5)
+		onActivate()
+	end)
+end
+
+makeVipShopCard(
+	"🧭 VIP Unlimited 3D Egg Guide Radar",
+	"Unlimited Golden Guide Beams to every hidden Egg across all 5 Biomes!",
+	"Unlock ($5,000 / VIP)",
+	Color3.fromRGB(255, 215, 55),
+	function()
+		actionRemote:FireServer({ Action = "BuyUpgrade", Category = "UnlockVIPGuide" })
+	end
+)
+
+makeVipShopCard(
+	"⚡ Hyper-Speed Treadmill Overdrive (3X Speed)",
+	"Triple your current Speed Power immediately to outrun Brainrot Chasers!",
+	"Activate 3X Speed",
+	Color3.fromRGB(85, 235, 255),
+	function()
+		actionRemote:FireServer({ Action = "FamilyBoost", BoostType = "Speed" })
+	end
+)
+
+makeVipShopCard(
+	"💰 Sovereign Treasure Chest (+$25,000 Coins)",
+	"Instant +$25,000 Coins for Pen Expansions, Treadmills & Coloring Trails!",
+	"Claim +$25,000",
+	Color3.fromRGB(110, 250, 135),
+	function()
+		actionRemote:FireServer({ Action = "FamilyBoost", BoostType = "Coins" })
+	end
+)
+
+makeVipShopCard(
+	"🔓 Instant Biome Level Completer",
+	"Auto-Plants all Eggs in your current Biome & unlocks the next Level Gate!",
+	"Unlock Current Level",
+	Color3.fromRGB(255, 115, 225),
+	function()
+		actionRemote:FireServer({ Action = "FamilyBoost", BoostType = "PlantCurrentLevel" })
+	end
+)
+
 -- Populate Left Dock Buttons
+leftDock.Size = UDim2.new(0, 200, 0, 380)
+leftDock.Position = UDim2.new(0, 14, 0.5, -190)
+
 makeDockButton("🧭 Guide Next Egg", Color3.fromRGB(245, 185, 40), function()
 	actionRemote:FireServer({ Action = "BuyUpgrade", Category = "GuideToEgg", Arg = nil })
 end)
@@ -564,6 +656,9 @@ makeDockButton("🎨 Coloring Trails", Color3.fromRGB(235, 95, 195), function()
 end)
 makeDockButton("⚡ Grow Pen & Speed", Color3.fromRGB(55, 175, 245), function()
 	toggleModal(upgModal)
+end)
+makeDockButton("💎 VIP & Boost Shop", Color3.fromRGB(245, 145, 35), function()
+	toggleModal(vipModal)
 end)
 makeDockButton("🪨 Co-op Buddy Weight", Color3.fromRGB(165, 110, 245), function()
 	actionRemote:FireServer({ Action = "DropDecoyWeight" })
@@ -605,6 +700,28 @@ makeBoostBtn("🔓 Plant Level", 0.66, "PlantCurrentLevel")
 -- ============================================================================
 -- 5. STATE SYNC & LOCAL WORLD VISUALS (Gates, Ghost Planted Eggs, 3D Guide Beam)
 -- ============================================================================
+local function spawnSpeedPopup(gainAmount: number)
+	local pop = Instance.new("TextLabel")
+	pop.Size = UDim2.new(0, 220, 0, 32)
+	pop.Position = UDim2.new(0.5, math.random(-140, 60), 0, 74)
+	pop.BackgroundTransparency = 1
+	pop.Font = Enum.Font.FredokaOne
+	pop.TextSize = 22
+	pop.TextColor3 = Color3.fromRGB(95, 250, 255)
+	pop.TextStrokeTransparency = 0.15
+	pop.Text = string.format("⚡ +%s SPEED POWER!", UpgradeData.FormatNumber(gainAmount))
+	pop.Parent = screenGui
+	task.spawn(function()
+		for i = 1, 18 do
+			task.wait(0.03)
+			pop.Position = pop.Position - UDim2.new(0, 0, 0, 2)
+			pop.TextTransparency = i / 18
+			pop.TextStrokeTransparency = 0.15 + (i / 18)
+		end
+		pop:Destroy()
+	end)
+end
+
 local function refreshLocalWorldAndModals()
 	-- Top Bar
 	coinsBadge.Text = string.format("💰 $%s (+%s/s)", UpgradeData.FormatNumber(clientState.Coins), UpgradeData.FormatNumber(clientState.IncomePerSec))
@@ -735,14 +852,18 @@ stateSyncRemote.OnClientEvent:Connect(function(newState: any)
 	if type(newState) ~= "table" then
 		return
 	end
+	local prevSpeed = clientState.SpeedPower
 	for k, v in pairs(newState) do
 		(clientState :: any)[k] = v
+	end
+	if type(newState.SpeedPower) == "number" and newState.SpeedPower > prevSpeed then
+		spawnSpeedPopup(newState.SpeedPower - prevSpeed)
 	end
 	refreshLocalWorldAndModals()
 end)
 
 -- ============================================================================
--- 6. 3D PAID EGG GUIDE BEAM & SQUISHY BREATHING ANIMATION LOOP
+-- 6. 3D PAID EGG GUIDE BEAM & WORLD FOUNTAIN / EGG ANIMATION LOOP
 -- ============================================================================
 local guideBeamPart = Instance.new("Part")
 guideBeamPart.Name = "ClientGuideOrb"
@@ -760,14 +881,26 @@ orbAtt.Parent = guideBeamPart
 
 local guideBeam = Instance.new("Beam")
 guideBeam.Color = ColorSequence.new(Color3.fromRGB(255, 230, 65), Color3.fromRGB(95, 255, 165))
-guideBeam.Width0 = 1.2
-guideBeam.Width1 = 1.6
+guideBeam.Width0 = 1.4
+guideBeam.Width1 = 1.8
 guideBeam.FaceCamera = true
 guideBeam.LightEmission = 1
 guideBeam.Enabled = false
 guideBeam.Parent = guideBeamPart
 
 RunService.RenderStepped:Connect(function()
+	local now = os.clock()
+
+	-- Gently rotate the Golden Squishy Fountain Statue in the Hub Plaza
+	local squishyWorld = Workspace:FindFirstChild("SquishyWorld")
+	if squishyWorld then
+		local statue = squishyWorld:FindFirstChild("GoldenFountainStatue")
+		if statue and statue:IsA("Model") and statue.PrimaryPart then
+			local bob = math.sin(now * 2.2) * 0.45
+			statue:PivotTo(CFrame.new(0, 7.6 + bob, 95) * CFrame.Angles(0, now * 0.85, 0))
+		end
+	end
+
 	local guideId = clientState.ActiveGuideEggId
 	local char = localPlayer.Character
 	local hrp = if char then char:FindFirstChild("HumanoidRootPart") :: BasePart? else nil
@@ -779,7 +912,7 @@ RunService.RenderStepped:Connect(function()
 		if targetEggModel and targetEggModel.PrimaryPart and sDef then
 			local pAtt = hrp:FindFirstChild("TrailAtt0") :: Attachment?
 			if pAtt then
-				local targetPos = targetEggModel.PrimaryPart.Position + Vector3.new(0, 2.5 + math.sin(os.clock() * 5) * 0.8, 0)
+				local targetPos = targetEggModel.PrimaryPart.Position + Vector3.new(0, 2.5 + math.sin(now * 5) * 0.8, 0)
 				guideBeamPart.Position = targetPos
 				guideBeamPart.Transparency = 0.1
 				guideBeam.Attachment0 = pAtt
