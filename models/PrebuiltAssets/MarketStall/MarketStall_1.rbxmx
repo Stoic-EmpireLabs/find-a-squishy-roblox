@@ -1,0 +1,165 @@
+﻿<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
+  <Meta name="ExplicitAutoJoints">true</Meta>
+  <Item class="Model" referent="RBX_MODEL">
+    <Properties>
+      <string name="Name">MarketStall_1</string>
+      <Ref name="PrimaryPart">RBX_ROOT</Ref>
+    </Properties>
+    <Item class="Part" referent="RBX_PART_1">
+      <Properties>
+        <string name="Name">Union</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">256</token>
+        <Color3 name="Color3"><R>0.3216</R><G>0.4863</G><B>0.6824</B></Color3>
+        <Vector3 name="size"><X>11.142</X><Y>10.742</Y><Z>5.796</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>2.9417</X><Y>7.45</Y><Z>0.0302</Z><R00>0</R00><R01>0</R01><R02>-1</R02><R10>-0.5</R10><R11>0.866</R11><R12>0</R12><R20>0.866</R20><R21>0.5</R21><R22>0</R22></CoordinateFrame>
+      </Properties>
+    </Item>
+    <Item class="Part" referent="RBX_PART_2">
+      <Properties>
+        <string name="Name">Union</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">256</token>
+        <Color3 name="Color3"><R>0.3216</R><G>0.4863</G><B>0.6824</B></Color3>
+        <Vector3 name="size"><X>11.142</X><Y>10.742</Y><Z>5.796</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>-2.9416</X><Y>7.45</Y><Z>-0.1839</Z><R00>0</R00><R01>0</R01><R02>1</R02><R10>-0.5</R10><R11>0.866</R11><R12>0</R12><R20>-0.866</R20><R21>-0.5</R21><R22>0</R22></CoordinateFrame>
+      </Properties>
+    </Item>
+    <Item class="Part" referent="RBX_PART_3">
+      <Properties>
+        <string name="Name">Union</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">256</token>
+        <Color3 name="Color3"><R>0.6667</R><G>0.3333</G><B>0</B></Color3>
+        <Vector3 name="size"><X>11.142</X><Y>10.742</Y><Z>5.796</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>2.9417</X><Y>7.45</Y><Z>12.8748</Z><R00>0</R00><R01>0</R01><R02>-1</R02><R10>-0.5</R10><R11>0.866</R11><R12>0</R12><R20>0.866</R20><R21>0.5</R21><R22>0</R22></CoordinateFrame>
+      </Properties>
+    </Item>
+    <Item class="Part" referent="RBX_PART_4">
+      <Properties>
+        <string name="Name">Union</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">1312</token>
+        <Color3 name="Color3"><R>0.4196</R><G>0.1961</G><B>0.4863</B></Color3>
+        <Vector3 name="size"><X>11.142</X><Y>10.742</Y><Z>5.796</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>2.9417</X><Y>7.45</Y><Z>-12.8748</Z><R00>0</R00><R01>0</R01><R02>-1</R02><R10>-0.5</R10><R11>0.866</R11><R12>0</R12><R20>0.866</R20><R21>0.5</R21><R22>0</R22></CoordinateFrame>
+      </Properties>
+    </Item>
+    <Item class="Part" referent="RBX_PART_5">
+      <Properties>
+        <string name="Name">Union</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">256</token>
+        <Color3 name="Color3"><R>0.6667</R><G>0.3333</G><B>0</B></Color3>
+        <Vector3 name="size"><X>11.142</X><Y>10.742</Y><Z>5.796</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>-2.9416</X><Y>7.4499</Y><Z>12.6608</Z><R00>0</R00><R01>0</R01><R02>1</R02><R10>-0.5</R10><R11>0.866</R11><R12>0</R12><R20>-0.866</R20><R21>-0.5</R21><R22>0</R22></CoordinateFrame>
+      </Properties>
+    </Item>
+    <Item class="Part" referent="RBX_PART_6">
+      <Properties>
+        <string name="Name">Union</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">256</token>
+        <Color3 name="Color3"><R>0.3216</R><G>0.4863</G><B>0.6824</B></Color3>
+        <Vector3 name="size"><X>9.096</X><Y>10.783</Y><Z>5.706</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>-1.0759</X><Y>6.9434</Y><Z>2.8837</Z><R00>-0.866</R00><R01>-0.5</R01><R02>0</R02><R10>-0.5</R10><R11>0.866</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>-1</R22></CoordinateFrame>
+      </Properties>
+    </Item>
+    <Item class="Part" referent="RBX_PART_7">
+      <Properties>
+        <string name="Name">Union</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">256</token>
+        <Color3 name="Color3"><R>0.6667</R><G>0.3333</G><B>0</B></Color3>
+        <Vector3 name="size"><X>9.096</X><Y>10.783</Y><Z>5.706</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>1.0759</X><Y>6.9434</Y><Z>9.8072</Z><R00>0.866</R00><R01>0.5</R01><R02>0</R02><R10>-0.5</R10><R11>0.866</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>1</R22></CoordinateFrame>
+      </Properties>
+    </Item>
+    <Item class="Part" referent="RBX_PART_8">
+      <Properties>
+        <string name="Name">Union</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">1312</token>
+        <Color3 name="Color3"><R>0.4196</R><G>0.1961</G><B>0.4863</B></Color3>
+        <Vector3 name="size"><X>9.096</X><Y>10.783</Y><Z>5.706</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>-1.0759</X><Y>6.9434</Y><Z>-10.0212</Z><R00>-0.866</R00><R01>-0.5</R01><R02>0</R02><R10>-0.5</R10><R11>0.866</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>-1</R22></CoordinateFrame>
+      </Properties>
+    </Item>
+    <Item class="Part" referent="RBX_PART_9">
+      <Properties>
+        <string name="Name">Union</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">1312</token>
+        <Color3 name="Color3"><R>0.4196</R><G>0.1961</G><B>0.4863</B></Color3>
+        <Vector3 name="size"><X>9.096</X><Y>10.783</Y><Z>5.706</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>1.0759</X><Y>6.9434</Y><Z>-15.9423</Z><R00>0.866</R00><R01>0.5</R01><R02>0</R02><R10>-0.5</R10><R11>0.866</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>1</R22></CoordinateFrame>
+      </Properties>
+    </Item>
+    <Item class="Part" referent="RBX_PART_10">
+      <Properties>
+        <string name="Name">Union</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">256</token>
+        <Color3 name="Color3"><R>0.6667</R><G>0.3333</G><B>0</B></Color3>
+        <Vector3 name="size"><X>9.096</X><Y>10.783</Y><Z>5.706</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>-1.0759</X><Y>6.9434</Y><Z>15.7283</Z><R00>-0.866</R00><R01>-0.5</R01><R02>0</R02><R10>-0.5</R10><R11>0.866</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>-1</R22></CoordinateFrame>
+      </Properties>
+    </Item>
+    <Item class="Part" referent="RBX_PART_11">
+      <Properties>
+        <string name="Name">Union</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">256</token>
+        <Color3 name="Color3"><R>0.8863</R><G>0.8627</G><B>0.7373</B></Color3>
+        <Vector3 name="size"><X>11.639</X><Y>1.05</Y><Z>11.617</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>-0.011</X><Y>3.4469</Y><Z>12.7836</Z><R00>-1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>-1</R22></CoordinateFrame>
+      </Properties>
+    </Item>
+    <Item class="Part" referent="RBX_PART_12">
+      <Properties>
+        <string name="Name">Union</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">1312</token>
+        <Color3 name="Color3"><R>0.8863</R><G>0.8627</G><B>0.7373</B></Color3>
+        <Vector3 name="size"><X>11.639</X><Y>1.05</Y><Z>11.617</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>-0.011</X><Y>3.4469</Y><Z>-12.966</Z><R00>1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>1</R22></CoordinateFrame>
+      </Properties>
+    </Item>
+  </Item>
+</roblox>

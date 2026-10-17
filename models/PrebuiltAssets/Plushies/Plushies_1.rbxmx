@@ -1,0 +1,177 @@
+﻿<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
+  <Meta name="ExplicitAutoJoints">true</Meta>
+  <Item class="Model" referent="RBX_MODEL">
+    <Properties>
+      <string name="Name">Plushies_1</string>
+      <Ref name="PrimaryPart">RBX_ROOT</Ref>
+    </Properties>
+    <Item class="MeshPart" referent="RBX_PART_1">
+      <Properties>
+        <string name="Name">egg</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">256</token>
+        <Color3 name="Color3"><R>1</R><G>0.7882</G><B>0.7882</B></Color3>
+        <Vector3 name="size"><X>1.82</X><Y>2.524</Y><Z>2.844</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>-0.0167</X><Y>1.296</Y><Z>-0.1124</Z><R00>0.9848</R00><R01>0.1677</R01><R02>-0.0449</R02><R10>-0.171</R10><R11>0.8919</R11><R12>-0.4187</R12><R20>-0.0302</R20><R21>0.4201</R21><R22>0.907</R22></CoordinateFrame>
+        <Content name="MeshId"><url>rbxassetid://5437951759</url></Content>
+      </Properties>
+    </Item>
+    <Item class="MeshPart" referent="RBX_PART_2">
+      <Properties>
+        <string name="Name">egg</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">256</token>
+        <Color3 name="Color3"><R>0.9725</R><G>0.9725</G><B>0.9725</B></Color3>
+        <Vector3 name="size"><X>1.014</X><Y>1.59</Y><Z>1.79</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>-0.4814</X><Y>1.1292</Y><Z>-0.1918</Z><R00>0.9848</R00><R01>0.1677</R01><R02>-0.0449</R02><R10>-0.171</R10><R11>0.8919</R11><R12>-0.4187</R12><R20>-0.0302</R20><R21>0.4201</R21><R22>0.907</R22></CoordinateFrame>
+        <Content name="MeshId"><url>rbxassetid://5437951759</url></Content>
+      </Properties>
+    </Item>
+    <Item class="MeshPart" referent="RBX_PART_3">
+      <Properties>
+        <string name="Name">egg</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">256</token>
+        <Color3 name="Color3"><R>1</R><G>0.7882</G><B>0.7882</B></Color3>
+        <Vector3 name="size"><X>0.538</X><Y>0.28</Y><Z>0.755</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>-0.4419</X><Y>0.7658</Y><Z>1.0123</Z><R00>0.9848</R00><R01>0.1422</R01><R02>-0.0996</R02><R10>-0.171</R10><R11>0.6949</R11><R12>-0.6985</R12><R20>-0.0302</R20><R21>0.7049</R21><R22>0.7086</R22></CoordinateFrame>
+        <Content name="MeshId"><url>rbxassetid://5437951759</url></Content>
+      </Properties>
+    </Item>
+    <Item class="MeshPart" referent="RBX_PART_4">
+      <Properties>
+        <string name="Name">egg</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">256</token>
+        <Color3 name="Color3"><R>1</R><G>0.7882</G><B>0.7882</B></Color3>
+        <Vector3 name="size"><X>0.538</X><Y>0.28</Y><Z>0.755</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>-0.3326</X><Y>1.7837</Y><Z>-1.1914</Z><R00>-0.9848</R00><R01>-0.1736</R01><R02>0</R02><R10>0.171</R10><R11>-0.9698</R11><R12>-0.1736</R12><R20>0.0302</R20><R21>-0.171</R21><R22>0.9848</R22></CoordinateFrame>
+        <Content name="MeshId"><url>rbxassetid://5437951759</url></Content>
+      </Properties>
+    </Item>
+    <Item class="MeshPart" referent="RBX_PART_5">
+      <Properties>
+        <string name="Name">egg</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">256</token>
+        <Color3 name="Color3"><R>1</R><G>0.8353</G><B>0.9882</B></Color3>
+        <Vector3 name="size"><X>0.272</X><Y>0.434</Y><Z>0.88</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>0.1428</X><Y>1.6281</Y><Z>1.5341</Z><R00>0.9848</R00><R01>-0.1422</R01><R02>-0.0996</R02><R10>-0.171</R10><R11>-0.8941</R11><R12>-0.414</R12><R20>-0.0302</R20><R21>0.4248</R21><R22>-0.9048</R22></CoordinateFrame>
+        <Content name="MeshId"><url>rbxassetid://5437951759</url></Content>
+      </Properties>
+    </Item>
+    <Item class="MeshPart" referent="RBX_PART_6">
+      <Properties>
+        <string name="Name">egg</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">256</token>
+        <Color3 name="Color3"><R>1</R><G>0.8353</G><B>0.9882</B></Color3>
+        <Vector3 name="size"><X>0.272</X><Y>0.434</Y><Z>0.88</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>0.2202</X><Y>2.5342</Y><Z>-1.078</Z><R00>0.9848</R00><R01>0.1422</R01><R02>-0.0996</R02><R10>-0.171</R10><R11>0.6949</R11><R12>-0.6985</R12><R20>-0.0302</R20><R21>0.7049</R21><R22>0.7086</R22></CoordinateFrame>
+        <Content name="MeshId"><url>rbxassetid://5437951759</url></Content>
+      </Properties>
+    </Item>
+    <Item class="MeshPart" referent="RBX_PART_7">
+      <Properties>
+        <string name="Name">egg</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">256</token>
+        <Color3 name="Color3"><R>1</R><G>0.8353</G><B>0.9882</B></Color3>
+        <Vector3 name="size"><X>0.272</X><Y>0.434</Y><Z>0.88</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>0.2716</X><Y>2.7465</Y><Z>-0.6032</Z><R00>0.9848</R00><R01>0.0151</R01><R02>-0.173</R02><R10>-0.171</R10><R11>-0.0885</R11><R12>-0.9813</R12><R20>-0.0302</R20><R21>0.996</R21><R22>-0.0845</R22></CoordinateFrame>
+        <Content name="MeshId"><url>rbxassetid://5437951759</url></Content>
+      </Properties>
+    </Item>
+    <Item class="MeshPart" referent="RBX_PART_8">
+      <Properties>
+        <string name="Name">egg</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">256</token>
+        <Color3 name="Color3"><R>1</R><G>0.8353</G><B>0.9882</B></Color3>
+        <Vector3 name="size"><X>0.272</X><Y>0.434</Y><Z>0.88</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>0.2657</X><Y>2.7563</Y><Z>-0.8526</Z><R00>0.9848</R00><R01>0.0734</R01><R02>-0.1574</R02><R10>-0.171</R10><R11>0.2525</R11><R12>-0.9524</R12><R20>-0.0302</R20><R21>0.9648</R21><R22>0.2612</R22></CoordinateFrame>
+        <Content name="MeshId"><url>rbxassetid://5437951759</url></Content>
+      </Properties>
+    </Item>
+    <Item class="MeshPart" referent="RBX_PART_9">
+      <Properties>
+        <string name="Name">egg</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">256</token>
+        <Color3 name="Color3"><R>1</R><G>0.8353</G><B>0.9882</B></Color3>
+        <Vector3 name="size"><X>0.272</X><Y>0.434</Y><Z>0.88</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>0.1663</X><Y>1.8094</Y><Z>1.2718</Z><R00>0.9848</R00><R01>-0.0734</R01><R02>-0.1574</R02><R10>-0.171</R10><R11>-0.5673</R11><R12>-0.8056</R12><R20>-0.0302</R20><R21>0.8203</R21><R22>-0.5712</R22></CoordinateFrame>
+        <Content name="MeshId"><url>rbxassetid://5437951759</url></Content>
+      </Properties>
+    </Item>
+    <Item class="MeshPart" referent="RBX_PART_10">
+      <Properties>
+        <string name="Name">egg</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">256</token>
+        <Color3 name="Color3"><R>1</R><G>0.8353</G><B>0.9882</B></Color3>
+        <Vector3 name="size"><X>0.272</X><Y>0.434</Y><Z>0.88</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>0.1016</X><Y>1.3843</Y><Z>1.5688</Z><R00>0.9848</R00><R01>-0.1677</R01><R02>-0.0449</R02><R10>-0.171</R10><R11>-0.9817</R11><R12>-0.0833</R12><R20>-0.0302</R20><R21>0.0897</R21><R22>-0.9955</R22></CoordinateFrame>
+        <Content name="MeshId"><url>rbxassetid://5437951759</url></Content>
+      </Properties>
+    </Item>
+    <Item class="MeshPart" referent="RBX_PART_11">
+      <Properties>
+        <string name="Name">egg</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">256</token>
+        <Color3 name="Color3"><R>1</R><G>1</G><B>1</B></Color3>
+        <Vector3 name="size"><X>0.292</X><Y>0.334</Y><Z>0.755</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>0.0328</X><Y>1.3841</Y><Z>1.5092</Z><R00>0.9848</R00><R01>-0.1677</R01><R02>-0.0449</R02><R10>-0.171</R10><R11>-0.9817</R11><R12>-0.0833</R12><R20>-0.0302</R20><R21>0.0897</R21><R22>-0.9955</R22></CoordinateFrame>
+        <Content name="MeshId"><url>rbxassetid://5437951759</url></Content>
+      </Properties>
+    </Item>
+    <Item class="MeshPart" referent="RBX_PART_12">
+      <Properties>
+        <string name="Name">egg</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">256</token>
+        <Color3 name="Color3"><R>1</R><G>1</G><B>1</B></Color3>
+        <Vector3 name="size"><X>0.292</X><Y>0.334</Y><Z>0.755</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>0.0708</X><Y>1.6078</Y><Z>1.4822</Z><R00>0.9848</R00><R01>-0.1422</R01><R02>-0.0996</R02><R10>-0.171</R10><R11>-0.8941</R11><R12>-0.414</R12><R20>-0.0302</R20><R21>0.4248</R21><R22>-0.9048</R22></CoordinateFrame>
+        <Content name="MeshId"><url>rbxassetid://5437951759</url></Content>
+      </Properties>
+    </Item>
+  </Item>
+</roblox>

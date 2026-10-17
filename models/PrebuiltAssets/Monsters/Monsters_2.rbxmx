@@ -1,0 +1,177 @@
+﻿<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
+  <Meta name="ExplicitAutoJoints">true</Meta>
+  <Item class="Model" referent="RBX_MODEL">
+    <Properties>
+      <string name="Name">Monsters_2</string>
+      <Ref name="PrimaryPart">RBX_ROOT</Ref>
+    </Properties>
+    <Item class="MeshPart" referent="RBX_PART_1">
+      <Properties>
+        <string name="Name">UpperTorso</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">256</token>
+        <Color3 name="Color3"><R>0.1059</R><G>0.1647</G><B>0.2078</B></Color3>
+        <Vector3 name="size"><X>1.815</X><Y>1.773</Y><Z>1.11</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>0.0755</X><Y>3.3975</Y><Z>-0.0368</Z><R00>0</R00><R01>0</R01><R02>1</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>-1</R20><R21>0</R21><R22>0</R22></CoordinateFrame>
+        <Content name="MeshId"><url>http://www.roblox.com/asset/?id=2506527924</url></Content>
+      </Properties>
+    </Item>
+    <Item class="MeshPart" referent="RBX_PART_2">
+      <Properties>
+        <string name="Name">HairLLUpper</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">272</token>
+        <Color3 name="Color3"><R>0.0667</R><G>0.0667</G><B>0.0667</B></Color3>
+        <Vector3 name="size"><X>1.201</X><Y>0.791</Y><Z>1.197</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>0.1166</X><Y>1.8029</Y><Z>0.4539</Z><R00>1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>0</R11><R12>1</R12><R20>0</R20><R21>-1</R21><R22>0</R22></CoordinateFrame>
+        <Content name="MeshId"><url>http://www.roblox.com/asset/?id=1080954</url></Content>
+      </Properties>
+    </Item>
+    <Item class="MeshPart" referent="RBX_PART_3">
+      <Properties>
+        <string name="Name">HairRLUpper</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">272</token>
+        <Color3 name="Color3"><R>0.0667</R><G>0.0667</G><B>0.0667</B></Color3>
+        <Vector3 name="size"><X>1.201</X><Y>0.791</Y><Z>1.197</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>0.1166</X><Y>1.7931</Y><Z>-0.5226</Z><R00>1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>0</R11><R12>1</R12><R20>0</R20><R21>-1</R21><R22>0</R22></CoordinateFrame>
+        <Content name="MeshId"><url>http://www.roblox.com/asset/?id=1080954</url></Content>
+      </Properties>
+    </Item>
+    <Item class="MeshPart" referent="RBX_PART_4">
+      <Properties>
+        <string name="Name">HairRLLower</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">272</token>
+        <Color3 name="Color3"><R>0.0667</R><G>0.0667</G><B>0.0667</B></Color3>
+        <Vector3 name="size"><X>1.201</X><Y>0.79</Y><Z>1.197</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>0.1217</X><Y>0.5985</Y><Z>-0.5426</Z><R00>-1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>0</R11><R12>-1</R12><R20>0</R20><R21>-1</R21><R22>0</R22></CoordinateFrame>
+        <Content name="MeshId"><url>http://www.roblox.com/asset/?id=1080954</url></Content>
+      </Properties>
+    </Item>
+    <Item class="MeshPart" referent="RBX_PART_5">
+      <Properties>
+        <string name="Name">HairLLLower</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">272</token>
+        <Color3 name="Color3"><R>0.0667</R><G>0.0667</G><B>0.0667</B></Color3>
+        <Vector3 name="size"><X>1.201</X><Y>0.79</Y><Z>1.197</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>0.1217</X><Y>0.6083</Y><Z>0.4338</Z><R00>-1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>0</R11><R12>-1</R12><R20>0</R20><R21>-1</R21><R22>0</R22></CoordinateFrame>
+        <Content name="MeshId"><url>http://www.roblox.com/asset/?id=1080954</url></Content>
+      </Properties>
+    </Item>
+    <Item class="MeshPart" referent="RBX_PART_6">
+      <Properties>
+        <string name="Name">HairTorsoRight</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">272</token>
+        <Color3 name="Color3"><R>0.0667</R><G>0.0667</G><B>0.0667</B></Color3>
+        <Vector3 name="size"><X>1.435</X><Y>0.756</Y><Z>0.944</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>-0.0051</X><Y>2.8905</Y><Z>-0.4924</Z><R00>-1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>-1</R22></CoordinateFrame>
+        <Content name="MeshId"><url>http://www.roblox.com/asset/?id=1080954</url></Content>
+      </Properties>
+    </Item>
+    <Item class="MeshPart" referent="RBX_PART_7">
+      <Properties>
+        <string name="Name">HairTorsoLeft</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">272</token>
+        <Color3 name="Color3"><R>0.0667</R><G>0.0667</G><B>0.0667</B></Color3>
+        <Vector3 name="size"><X>1.435</X><Y>0.756</Y><Z>0.944</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>-0.0051</X><Y>2.8905</Y><Z>0.4497</Z><R00>1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>1</R22></CoordinateFrame>
+        <Content name="MeshId"><url>http://www.roblox.com/asset/?id=1080954</url></Content>
+      </Properties>
+    </Item>
+    <Item class="MeshPart" referent="RBX_PART_8">
+      <Properties>
+        <string name="Name">LowerTorso</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">256</token>
+        <Color3 name="Color3"><R>0.5804</R><G>0.7451</G><B>0.5059</B></Color3>
+        <Vector3 name="size"><X>1.696</X><Y>0.566</Y><Z>0.952</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>0.0198</X><Y>2.5683</Y><Z>-0.0368</Z><R00>0</R00><R01>0</R01><R02>1</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>-1</R20><R21>0</R21><R22>0</R22></CoordinateFrame>
+        <Content name="MeshId"><url>http://www.roblox.com/asset/?id=2506527973</url></Content>
+      </Properties>
+    </Item>
+    <Item class="MeshPart" referent="RBX_PART_9">
+      <Properties>
+        <string name="Name">RightUpperLeg</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">1312</token>
+        <Color3 name="Color3"><R>0.0627</R><G>0.1647</G><B>0.8627</B></Color3>
+        <Vector3 name="size"><X>0.76</X><Y>1.379</Y><Z>0.769</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>0.062</X><Y>1.8639</Y><Z>-0.4612</Z><R00>0</R00><R01>0</R01><R02>1</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>-1</R20><R21>0</R21><R22>0</R22></CoordinateFrame>
+        <Content name="MeshId"><url>http://www.roblox.com/asset/?id=2496177347</url></Content>
+      </Properties>
+    </Item>
+    <Item class="MeshPart" referent="RBX_PART_10">
+      <Properties>
+        <string name="Name">LeftUpperLeg</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">1312</token>
+        <Color3 name="Color3"><R>0.0627</R><G>0.1647</G><B>0.8627</B></Color3>
+        <Vector3 name="size"><X>0.76</X><Y>1.379</Y><Z>0.769</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>0.062</X><Y>1.8639</Y><Z>0.3877</Z><R00>0</R00><R01>0</R01><R02>1</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>-1</R20><R21>0</R21><R22>0</R22></CoordinateFrame>
+        <Content name="MeshId"><url>http://www.roblox.com/asset/?id=2496177334</url></Content>
+      </Properties>
+    </Item>
+    <Item class="MeshPart" referent="RBX_PART_11">
+      <Properties>
+        <string name="Name">HairLAUpper</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">272</token>
+        <Color3 name="Color3"><R>0.5804</R><G>0.7451</G><B>0.5059</B></Color3>
+        <Vector3 name="size"><X>1.058</X><Y>0.697</Y><Z>1.055</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>0.1709</X><Y>3.5332</Y><Z>1.2276</Z><R00>1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>-0.1564</R11><R12>0.9877</R12><R20>0</R20><R21>-0.9877</R21><R22>-0.1564</R22></CoordinateFrame>
+        <Content name="MeshId"><url>http://www.roblox.com/asset/?id=1080954</url></Content>
+      </Properties>
+    </Item>
+    <Item class="MeshPart" referent="RBX_PART_12">
+      <Properties>
+        <string name="Name">HairRAUpper</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">272</token>
+        <Color3 name="Color3"><R>0.5804</R><G>0.7451</G><B>0.5059</B></Color3>
+        <Vector3 name="size"><X>1.058</X><Y>0.697</Y><Z>1.055</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>0.1709</X><Y>3.5213</Y><Z>-1.2276</Z><R00>1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>0.1564</R11><R12>0.9877</R12><R20>0</R20><R21>-0.9877</R21><R22>0.1564</R22></CoordinateFrame>
+        <Content name="MeshId"><url>http://www.roblox.com/asset/?id=1080954</url></Content>
+      </Properties>
+    </Item>
+  </Item>
+</roblox>

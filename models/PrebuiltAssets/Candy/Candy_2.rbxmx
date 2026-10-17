@@ -1,0 +1,121 @@
+﻿<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
+  <Meta name="ExplicitAutoJoints">true</Meta>
+  <Item class="Model" referent="RBX_MODEL">
+    <Properties>
+      <string name="Name">Candy_2</string>
+      <Ref name="PrimaryPart">RBX_ROOT</Ref>
+    </Properties>
+    <Item class="Part" referent="RBX_PART_1">
+      <Properties>
+        <string name="Name">Part</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">272</token>
+        <Color3 name="Color3"><R>0.502</R><G>0.7333</G><B>0.8588</B></Color3>
+        <Vector3 name="size"><X>0.89</X><Y>0.89</Y><Z>0.89</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>0.255</X><Y>1.77</Y><Z>-0.15</Z><R00>1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>1</R22></CoordinateFrame>
+        <token name="shape">0</token>
+      </Properties>
+    </Item>
+    <Item class="Part" referent="RBX_PART_2">
+      <Properties>
+        <string name="Name">Part</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">272</token>
+        <Color3 name="Color3"><R>0.502</R><G>0.7333</G><B>0.8588</B></Color3>
+        <Vector3 name="size"><X>1.04</X><Y>1.04</Y><Z>1.04</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>-0.045</X><Y>1.85</Y><Z>-0.195</Z><R00>1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>1</R22></CoordinateFrame>
+        <token name="shape">0</token>
+      </Properties>
+    </Item>
+    <Item class="Part" referent="RBX_PART_3">
+      <Properties>
+        <string name="Name">Part</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">272</token>
+        <Color3 name="Color3"><R>0.502</R><G>0.7333</G><B>0.8588</B></Color3>
+        <Vector3 name="size"><X>0.89</X><Y>0.89</Y><Z>0.89</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>-0.255</X><Y>2.32</Y><Z>-0.15</Z><R00>1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>1</R22></CoordinateFrame>
+        <token name="shape">0</token>
+      </Properties>
+    </Item>
+    <Item class="Part" referent="RBX_PART_4">
+      <Properties>
+        <string name="Name">Part</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">272</token>
+        <Color3 name="Color3"><R>0.502</R><G>0.7333</G><B>0.8588</B></Color3>
+        <Vector3 name="size"><X>0.89</X><Y>0.89</Y><Z>0.89</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>0.255</X><Y>1.63</Y><Z>0.25</Z><R00>1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>1</R22></CoordinateFrame>
+        <token name="shape">0</token>
+      </Properties>
+    </Item>
+    <Item class="Part" referent="RBX_PART_5">
+      <Properties>
+        <string name="Name">Part</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">1088</token>
+        <Color3 name="Color3"><R>0.9725</R><G>0.9725</G><B>0.9725</B></Color3>
+        <Vector3 name="size"><X>1.7</X><Y>0.2</Y><Z>1</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>0.055</X><Y>0.85</Y><Z>-0.075</Z><R00>0</R00><R01>1</R01><R02>0</R02><R10>-1</R10><R11>0</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>1</R22></CoordinateFrame>
+        <token name="shape">2</token>
+      </Properties>
+    </Item>
+    <Item class="Part" referent="RBX_PART_6">
+      <Properties>
+        <string name="Name">Part</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">272</token>
+        <Color3 name="Color3"><R>0.502</R><G>0.7333</G><B>0.8588</B></Color3>
+        <Vector3 name="size"><X>1.04</X><Y>1.04</Y><Z>1.04</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>-0.165</X><Y>2.2</Y><Z>0.055</Z><R00>1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>1</R22></CoordinateFrame>
+        <token name="shape">0</token>
+      </Properties>
+    </Item>
+    <Item class="Part" referent="RBX_PART_7">
+      <Properties>
+        <string name="Name">Part</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">272</token>
+        <Color3 name="Color3"><R>0.502</R><G>0.7333</G><B>0.8588</B></Color3>
+        <Vector3 name="size"><X>0.89</X><Y>0.89</Y><Z>0.89</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>0.255</X><Y>2</Y><Z>0.27</Z><R00>1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>1</R22></CoordinateFrame>
+        <token name="shape">0</token>
+      </Properties>
+    </Item>
+    <Item class="Part" referent="RBX_PART_8">
+      <Properties>
+        <string name="Name">Part</string>
+        <bool name="Anchored">true</bool>
+        <bool name="CanCollide">false</bool>
+        <bool name="CastShadow">false</bool>
+        <float name="Transparency">0</float>
+        <token name="Material">272</token>
+        <Color3 name="Color3"><R>0.502</R><G>0.7333</G><B>0.8588</B></Color3>
+        <Vector3 name="size"><X>0.89</X><Y>0.89</Y><Z>0.89</Z></Vector3>
+        <CoordinateFrame name="CFrame"><X>0.255</X><Y>2.2</Y><Z>0.03</Z><R00>1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>1</R22></CoordinateFrame>
+        <token name="shape">0</token>
+      </Properties>
+    </Item>
+  </Item>
+</roblox>

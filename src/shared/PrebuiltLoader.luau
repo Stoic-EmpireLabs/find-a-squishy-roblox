@@ -16,12 +16,18 @@ export type AssetSpec = {
 }
 
 PrebuiltLoader.CATALOG = {
+	Houses = {
+		{ id = 4981073436, mode = "single" }, -- Low Poly House 1 (81 votes)
+		{ id = 643101967, mode = "single" }, -- Cartoon House (47 votes)
+		{ id = 14849205011, mode = "single" }, -- Low Poly House
+		{ id = 12468173054, mode = "single" }, -- Cartoon House 2
+	},
 	Eggs = {
 		{ id = 127464047535341, mode = "single" }, -- Dragon Egg
 		{ id = 5168800671, mode = "single" }, -- Sculpted Egg Mesh
 		{ id = 4873048229, mode = "single" }, -- Egg Mesh 2
 		{ id = 14931559976, mode = "single" }, -- Blue Egg Mesh
-		{ id = 15850322685, mode = "pack", maxItems = 26 }, -- Egg Pets KIT (26 Eggs & Pets)
+		{ id = 15850322685, mode = "pack", maxItems = 14 }, -- Egg Pets KIT
 	},
 	Plushies = {
 		{ id = 8539945428, mode = "single" }, -- Axolotl Squishmallow
@@ -33,7 +39,7 @@ PrebuiltLoader.CATALOG = {
 		{ id = 15995361431, mode = "single" }, -- Fluffy Bear Plushie
 		{ id = 14934035048, mode = "single" }, -- Plushie Mesh
 		{ id = 516657473, mode = "single" }, -- Classic Plushie Mesh
-		{ id = 15850322685, mode = "pack", maxItems = 26 }, -- Egg Pets KIT (26 Pets/Eggs)
+		{ id = 15850322685, mode = "pack", maxItems = 14 }, -- Egg Pets KIT
 	},
 	Monsters = {
 		{ id = 16506307978, mode = "single" }, -- Cute Monster
@@ -45,7 +51,7 @@ PrebuiltLoader.CATALOG = {
 	Dinosaurs = {
 		{ id = 5495888435, mode = "single" }, -- Dino Squishmallow
 		{ id = 3104618524, mode = "pack", maxItems = 7 }, -- Custom Dinosaur Mesh Pack
-		{ id = 8289268262, mode = "pack", maxItems = 16 }, -- Dinosaur Meshes Pack
+		{ id = 8289268262, mode = "pack", maxItems = 10 }, -- Dinosaur Meshes Pack
 	},
 	Aquatic = {
 		{ id = 8539945428, mode = "single" }, -- Axolotl Squishmallow
@@ -58,8 +64,10 @@ PrebuiltLoader.CATALOG = {
 		{ id = 3104618524, mode = "pack", maxItems = 4 }, -- Winged/Dino Pack
 	},
 	Obstacles = {
-		{ id = 7486694215, mode = "pack", maxItems = 35 }, -- The Obby Kit
+		{ id = 7486694215, mode = "pack", maxItems = 16 }, -- The Obby Kit
 		{ id = 2255919152, mode = "single" }, -- Obby Obstacle
+		{ id = 5665068710, mode = "pack", maxItems = 6 }, -- Cotton Candy Pads Obby Stage
+		{ id = 14667164618, mode = "pack", maxItems = 6 }, -- Donut Obby Stage
 	},
 	Bridges = {
 		{ id = 18262413487, mode = "single" }, -- Low Poly Bridge
@@ -82,8 +90,10 @@ PrebuiltLoader.CATALOG = {
 		{ id = 7191673673, mode = "single" }, -- Low Poly Bush
 	},
 	Candy = {
-		{ id = 13851469145, mode = "pack", maxItems = 24 }, -- Candy Asset Pack
-		{ id = 10149073107, mode = "pack", maxItems = 16 }, -- Small Candy Pack (Decorations)
+		{ id = 14457134514, mode = "single" }, -- Lollipop Mesh
+		{ id = 850857215, mode = "single" }, -- Cotton Candy Mesh
+		{ id = 13851469145, mode = "pack", maxItems = 12 }, -- Candy Asset Pack
+		{ id = 10149073107, mode = "pack", maxItems = 10 }, -- Small Candy Pack
 	},
 	Crystals = {
 		{ id = 157006174, mode = "single" }, -- Crystal Cluster Mesh
@@ -91,10 +101,10 @@ PrebuiltLoader.CATALOG = {
 		{ id = 13046396807, mode = "single" }, -- Crystal Cylinder Mesh
 	},
 	Coral = {
-		{ id = 14816833452, mode = "pack", maxItems = 18 }, -- Coral Pack
+		{ id = 14816833452, mode = "pack", maxItems = 10 }, -- Coral Pack
 	},
 	PalmTrees = {
-		{ id = 10562894034, mode = "single" }, -- Palm Tree (Realistic)
+		{ id = 10562894034, mode = "single" }, -- Palm Tree
 	},
 	VolcanoRocks = {
 		{ id = 5425109622, mode = "single" }, -- Volcano Rock
@@ -124,6 +134,8 @@ PrebuiltLoader.CATALOG = {
 	},
 }
 
+local MAX_PARTS_PER_MODEL = 12
+
 local function sanitizePart(part: BasePart)
 	part.Anchored = true
 	part.CanCollide = false
@@ -147,6 +159,12 @@ local function sanitizePart(part: BasePart)
 			or child:IsA("Smoke")
 			or child:IsA("Sparkles")
 			or child:IsA("SurfaceAppearance")
+			or child:IsA("Light")
+			or child:IsA("Highlight")
+			or child:IsA("Beam")
+			or child:IsA("Trail")
+			or child:IsA("BillboardGui")
+			or child:IsA("SurfaceGui")
 		then
 			child:Destroy()
 		end
@@ -166,13 +184,31 @@ local function isDisplayBaseplate(part: BasePart): boolean
 	return false
 end
 
+local function partPriorityScore(p: BasePart): number
+	local vol = p.Size.X * p.Size.Y * p.Size.Z
+	local isMesh = p:IsA("MeshPart") or (p:FindFirstChildOfClass("SpecialMesh") ~= nil)
+	return if isMesh then vol * 12 + 5 else vol
+end
+
 local function wrapPartsAsNormalizedModel(parts: { BasePart }, name: string): Model?
 	if #parts == 0 then
 		return nil
 	end
+	local selectedParts = parts
+	if #parts > MAX_PARTS_PER_MODEL then
+		local copy = table.clone(parts)
+		table.sort(copy, function(a, b)
+			return partPriorityScore(a) > partPriorityScore(b)
+		end)
+		selectedParts = {}
+		for i = 1, MAX_PARTS_PER_MODEL do
+			table.insert(selectedParts, copy[i])
+		end
+	end
+
 	local m = Instance.new("Model")
 	m.Name = name
-	for _, p in ipairs(parts) do
+	for _, p in ipairs(selectedParts) do
 		local cloned = p:Clone()
 		sanitizePart(cloned)
 		cloned.Parent = m
@@ -354,13 +390,17 @@ function PrebuiltLoader.EnsurePrebuiltAssets(customObjectFetcher: ((number) -> {
 	end
 
 	local existing = modelsFolder:FindFirstChild("PrebuiltAssets")
-	if
-		existing
-		and existing:IsA("Folder")
-		and existing:GetAttribute("LoadedCount")
-		and (existing:GetAttribute("LoadedCount") :: number) > 10
-	then
-		return existing
+	if existing and existing:IsA("Folder") then
+		local catCount = 0
+		for _, child in ipairs(existing:GetChildren()) do
+			if child:IsA("Folder") and #child:GetChildren() > 0 then
+				catCount += 1
+			end
+		end
+		if catCount >= 8 or ((existing:GetAttribute("LoadedCount") or 0) :: number) > 10 then
+			ReplicatedStorage:SetAttribute("PrebuiltAssetsReady", true)
+			return existing
+		end
 	end
 
 	local prebuiltRoot = if existing and existing:IsA("Folder") then existing else Instance.new("Folder")
@@ -384,7 +424,6 @@ function PrebuiltLoader.EnsurePrebuiltAssets(customObjectFetcher: ((number) -> {
 			return nil
 		end
 
-	-- Build flat job list across all categories and process with 4 workers so Studio AssetDelivery never throttles
 	type Job = { categoryName: string, specIdx: number, spec: AssetSpec, catFolder: Folder }
 	local jobs: { Job } = {}
 	for categoryName, specs in pairs(PrebuiltLoader.CATALOG) do
@@ -432,7 +471,7 @@ function PrebuiltLoader.EnsurePrebuiltAssets(customObjectFetcher: ((number) -> {
 							totalLoaded += 1
 						end
 					else
-						local models = extractItemsFromPack(objects, job.categoryName, job.spec.maxItems or 25)
+						local models = extractItemsFromPack(objects, job.categoryName, job.spec.maxItems or 14)
 						for _, m in ipairs(models) do
 							m.Name = string.format("%s_%d", job.categoryName, #job.catFolder:GetChildren() + 1)
 							m.Parent = job.catFolder
@@ -461,10 +500,22 @@ function PrebuiltLoader.EnsurePrebuiltAssets(customObjectFetcher: ((number) -> {
 	return prebuiltRoot
 end
 
+local CATEGORY_ALIASES: { [string]: string } = {
+	TreadmillDino = "Dinosaurs",
+	HubFountain = "Fountain",
+	MarketStalls = "MarketStall",
+	IncubatorPod = "Incubator",
+	CashChest = "Chest",
+	ObbyStages = "Obstacles",
+	MeadowTrees = "Trees",
+	CandyProps = "Candy",
+}
+
 function PrebuiltLoader.GetCategoryTemplates(categoryName: string): { Model }
+	local resolvedName = CATEGORY_ALIASES[categoryName] or categoryName
 	local modelsFolder = ReplicatedStorage:FindFirstChild("Models")
 	local prebuiltRoot = if modelsFolder then modelsFolder:FindFirstChild("PrebuiltAssets") else nil
-	local catFolder = if prebuiltRoot then prebuiltRoot:FindFirstChild(categoryName) else nil
+	local catFolder = if prebuiltRoot then (prebuiltRoot:FindFirstChild(resolvedName) or prebuiltRoot:FindFirstChild(categoryName)) else nil
 	local list: { Model } = {}
 	if catFolder then
 		for _, child in ipairs(catFolder:GetChildren()) do
@@ -540,7 +591,9 @@ function PrebuiltLoader.CloneNormalizedTemplate(
 	for _, desc in ipairs(cloned:GetDescendants()) do
 		if desc:IsA("BasePart") and desc ~= root then
 			desc.Anchored = true
-			desc.CanCollide = if canCollide ~= nil then canCollide else false
+			desc.CanCollide = false
+			desc.CanTouch = false
+			desc.CanQuery = false
 			desc.CastShadow = false
 		end
 	end

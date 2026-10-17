@@ -381,12 +381,12 @@ local function addSpeciesFeatures(
 	end
 end
 
--- Creates a World Egg using pre-built 3D Simulator Egg & Dragon Egg models from PrebuiltLoader!
+-- Creates an Oversized Ornate World Egg (6.8-8.5 studs tall) with Saturn Rings & Crowns just like the real Steal My Egg game!
 function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: boolean?): Model
 	local isAnchored = if anchored ~= nil then anchored else true
-	local scale = if slimeDef.IsBoss then 1.48 else 1.18
+	local scale = if slimeDef.IsBoss then 1.65 else 1.38
 
-	local prebuiltEgg = PrebuiltLoader.CloneNormalizedTemplate("Eggs", slimeDef.Id, 4.6 * scale, false)
+	local prebuiltEgg = PrebuiltLoader.CloneNormalizedTemplate("Eggs", slimeDef.Id, 5.4 * scale, false)
 	local model: Model
 	local shell: BasePart
 
@@ -395,29 +395,16 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 		model.Name = "Egg_" .. tostring(slimeDef.Id)
 		shell = prebuiltEgg.PrimaryPart :: BasePart
 		shell.Name = "EggShell"
-		model:PivotTo(CFrame.new(slimeDef.Position - Vector3.new(0, 1.9 * scale, 0)))
-
-		if not isAnchored then
-			for _, desc in ipairs(model:GetDescendants()) do
-				if desc:IsA("BasePart") then
-					desc.Anchored = false
-					desc.CanCollide = false
-					desc.Massless = true
-					if desc ~= shell then
-						weldTo(shell, desc)
-					end
-				end
-			end
-		end
+		model:PivotTo(CFrame.new(slimeDef.Position - Vector3.new(0, 1.8, 0)))
 	else
 		model = Instance.new("Model")
 		model.Name = "Egg_" .. tostring(slimeDef.Id)
-		local eggSize = Vector3.new(3.5 * scale, 4.5 * scale, 3.5 * scale)
+		local eggSize = Vector3.new(3.8 * scale, 5.0 * scale, 3.8 * scale)
 		shell = makePart({
 			Name = "EggShell",
 			Shape = Enum.PartType.Ball,
 			Material = Enum.Material.SmoothPlastic,
-			Reflectance = 0.18,
+			Reflectance = 0.22,
 			Color = slimeDef.Color,
 			Size = eggSize,
 			Position = slimeDef.Position,
@@ -430,7 +417,44 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 		eggMesh.Scale = Vector3.new(1.0, 1.28, 1.0)
 		eggMesh.Parent = shell
 		model.PrimaryPart = shell
-		addFaceToBody(shell, model, 1.62 * scale, 1.0 * scale, isAnchored)
+	end
+
+	-- Ornate Royal Gold Belt + Glowing Planetary Saturn Ring + Crown (signature look from real_game_annotated_2_biome_boss_eggs.png!)
+	local saturnRing = makePart({
+		Name = "SaturnRing",
+		Shape = Enum.PartType.Cylinder,
+		Material = Enum.Material.Neon,
+		Color = slimeDef.SecondaryColor,
+		Transparency = 0.15,
+		Size = Vector3.new(0.28 * scale, 6.8 * scale, 6.8 * scale),
+		CFrame = CFrame.new(shell.Position) * CFrame.Angles(math.rad(18), math.rad(slimeDef.Id * 25), math.rad(72)),
+		Anchored = isAnchored,
+		CanCollide = false,
+		Parent = model,
+	})
+	local goldCrown = makePart({
+		Name = "RoyalCrown",
+		Shape = Enum.PartType.Cylinder,
+		Material = Enum.Material.Neon,
+		Color = Color3.fromRGB(255, 215, 55),
+		Size = Vector3.new(0.95 * scale, 2.2 * scale, 2.2 * scale),
+		CFrame = CFrame.new(shell.Position + Vector3.new(0, 2.5 * scale, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+		Anchored = isAnchored,
+		CanCollide = false,
+		Parent = model,
+	})
+
+	if not isAnchored then
+		for _, desc in ipairs(model:GetDescendants()) do
+			if desc:IsA("BasePart") then
+				desc.Anchored = false
+				desc.CanCollide = false
+				desc.Massless = true
+				if desc ~= shell then
+					weldTo(shell, desc)
+				end
+			end
+		end
 	end
 
 	model:SetAttribute("SlimeId", slimeDef.Id)
@@ -439,20 +463,19 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 	model:SetAttribute("BounceCount", 0)
 
 	if isAnchored then
-		-- Spawn a pre-built 3D Bird Nest underneath the World Egg!
-		local nestModel = PrebuiltLoader.CloneNormalizedTemplate("BirdNest", slimeDef.Id, 5.2 * scale, false)
+		local nestModel = PrebuiltLoader.CloneNormalizedTemplate("BirdNest", slimeDef.Id, 5.8 * scale, false)
 		if nestModel then
 			nestModel.Name = "PrebuiltBirdNest"
-			nestModel:PivotTo(CFrame.new(slimeDef.Position - Vector3.new(0, 2.1 * scale, 0)))
+			nestModel:PivotTo(CFrame.new(slimeDef.Position - Vector3.new(0, 2.2, 0)))
 			nestModel.Parent = model
 		else
 			makePart({
 				Name = "EggPedestalRing",
 				Shape = Enum.PartType.Cylinder,
 				Material = Enum.Material.Neon,
-				Color = slimeDef.SecondaryColor,
-				Size = Vector3.new(0.45, 5.2 * scale, 5.2 * scale),
-				CFrame = CFrame.new(slimeDef.Position - Vector3.new(0, 1.9 * scale, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+				Color = Color3.fromRGB(255, 215, 65),
+				Size = Vector3.new(0.55, 5.8 * scale, 5.8 * scale),
+				CFrame = CFrame.new(slimeDef.Position - Vector3.new(0, 1.9, 0)) * CFrame.Angles(0, 0, math.rad(90)),
 				Anchored = true,
 				CanCollide = false,
 				Parent = model,
@@ -461,55 +484,22 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 
 		local prompt = Instance.new("ProximityPrompt")
 		prompt.Name = "StealPrompt"
-		prompt.ActionText = "Steal"
-		prompt.ObjectText = slimeDef.Name .. " Egg ($" .. tostring(slimeDef.CoinsPerSec) .. "/s)"
-		prompt.HoldDuration = 0.2
-		prompt.MaxActivationDistance = 14
+		prompt.ActionText = "Egg - Steal"
+		prompt.ObjectText = string.format("%s (%s • +$%s/s)", slimeDef.Name, slimeDef.Rarity, formatNumber(slimeDef.CoinsPerSec))
+		prompt.HoldDuration = 0.25
+		prompt.MaxActivationDistance = 15
 		prompt.RequiresLineOfSight = false
 		prompt.Parent = shell
 	end
 
-	addRarityParticles(shell, slimeDef.Color, slimeDef.SecondaryColor, if slimeDef.IsBoss then 20 else 10)
+	addRarityParticles(shell, slimeDef.Color, slimeDef.SecondaryColor, if slimeDef.IsBoss then 18 else 10)
 
-	if slimeDef.Behavior == "Disguised" and isAnchored then
-		local disguisePropCat = if slimeDef.DisguiseProp == "Bush"
-			then "Bushes"
-			elseif slimeDef.DisguiseProp == "LavaRock" then "VolcanoRocks"
-			else "Rocks"
-		local prebuiltDisguise = PrebuiltLoader.CloneNormalizedTemplate(disguisePropCat, slimeDef.Id, 5.6, false)
-		local disguise = makePart({
-			Name = "DisguiseShell",
-			Material = if slimeDef.DisguiseProp == "Bush"
-				then Enum.Material.Grass
-				elseif slimeDef.DisguiseProp == "LavaRock" then Enum.Material.Slate
-				else Enum.Material.SmoothPlastic,
-			Color = if slimeDef.DisguiseProp == "Bush"
-				then Color3.fromRGB(65, 165, 75)
-				elseif slimeDef.DisguiseProp == "Marshmallow" then Color3.fromRGB(250, 245, 250)
-				elseif slimeDef.DisguiseProp == "CyberCrate" then Color3.fromRGB(45, 60, 95)
-				elseif slimeDef.DisguiseProp == "LavaRock" then Color3.fromRGB(70, 50, 55)
-				else Color3.fromRGB(235, 95, 75),
-			Size = Vector3.new(5.4, 5.4, 5.4),
-			Shape = if slimeDef.DisguiseProp == "Bush" then Enum.PartType.Ball else Enum.PartType.Block,
-			CFrame = shell.CFrame,
-			Transparency = if prebuiltDisguise then 0.85 else 0.04,
-			Parent = model,
-		})
-		disguise:SetAttribute("IsDisguise", true)
-		if prebuiltDisguise then
-			prebuiltDisguise.Name = "PrebuiltDisguiseProp"
-			prebuiltDisguise:PivotTo(CFrame.new(slimeDef.Position - Vector3.new(0, 2.0, 0)))
-			prebuiltDisguise.Parent = model
-		end
-	end
-
-	-- Clean Short-Range Billboard Tag
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "EggTag"
-	bb.Size = UDim2.new(0, 195, 0, 62)
-	bb.StudsOffset = Vector3.new(0, 3.9 * scale, 0)
+	bb.Size = UDim2.new(0, 210, 0, 68)
+	bb.StudsOffset = Vector3.new(0, 3.8 * scale, 0)
 	bb.AlwaysOnTop = false
-	bb.MaxDistance = 48
+	bb.MaxDistance = 65
 	bb.Parent = shell
 
 	local title = Instance.new("TextLabel")
@@ -518,8 +508,8 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 	title.BackgroundTransparency = 1
 	title.Font = Enum.Font.FredokaOne
 	title.TextScaled = true
-	title.TextColor3 = slimeDef.Color
-	title.TextStrokeTransparency = 0.08
+	title.TextColor3 = Color3.fromRGB(255, 255, 255)
+	title.TextStrokeTransparency = 0.05
 	title.Text = "🥚 " .. slimeDef.Name
 	title.Parent = bb
 
@@ -531,14 +521,14 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 	sub.Font = Enum.Font.GothamBold
 	sub.TextScaled = true
 	sub.TextColor3 = SlimeData.RarityColors[slimeDef.Rarity] or Color3.fromRGB(255, 255, 255)
-	sub.TextStrokeTransparency = 0.12
+	sub.TextStrokeTransparency = 0.1
 	sub.Text = string.format("%s • +$%s/s", slimeDef.Rarity, formatNumber(slimeDef.CoinsPerSec))
 	sub.Parent = bb
 
 	return model
 end
 
--- Creates a Planted Egg inside a pre-built 3D Egg Incubator with a live "00:08" Countdown Timer!
+-- Creates a Planted Egg inside a pre-built 3D Egg Incubator with a live "00:05" Countdown Timer!
 function SquishyBuilder.CreatePlantedEgg(slimeDef: SlimeData.SlimeDef, position: Vector3, hatchSeconds: number): Model
 	local eggModel = SquishyBuilder.CreateWorldEgg(slimeDef, true)
 	eggModel.Name = "PlantedEgg_" .. tostring(slimeDef.Id)
@@ -555,8 +545,7 @@ function SquishyBuilder.CreatePlantedEgg(slimeDef: SlimeData.SlimeDef, position:
 		end
 	end
 
-	-- Pre-built 3D Egg Incubator at the base!
-	local prebuiltIncubator = PrebuiltLoader.CloneNormalizedTemplate("Incubator", slimeDef.Id, 5.5, false)
+	local prebuiltIncubator = PrebuiltLoader.CloneNormalizedTemplate("Incubator", slimeDef.Id, 6.2, false)
 	if prebuiltIncubator then
 		prebuiltIncubator.Name = "PrebuiltIncubator"
 		prebuiltIncubator:PivotTo(CFrame.new(position))
@@ -568,23 +557,23 @@ function SquishyBuilder.CreatePlantedEgg(slimeDef: SlimeData.SlimeDef, position:
 		Shape = Enum.PartType.Cylinder,
 		Material = Enum.Material.Neon,
 		Color = Color3.fromRGB(195, 95, 255),
-		Size = Vector3.new(0.55, 7.2, 7.2),
+		Size = Vector3.new(0.55, 7.8, 7.8),
 		CFrame = CFrame.new(position + Vector3.new(0, 0.28, 0)) * CFrame.Angles(0, 0, math.rad(90)),
 		Parent = eggModel,
 	})
 
-	-- Giant Bold White "00:08" Countdown Timer Billboard above the planted Egg!
+	-- Giant Bold White "00:05" Countdown Timer Billboard above the planted Egg (matches real_game_annotated_1_base_loop.png!)
 	local timerBB = Instance.new("BillboardGui")
 	timerBB.Name = "CountdownTag"
-	timerBB.Size = UDim2.new(0, 200, 0, 82)
-	timerBB.StudsOffset = Vector3.new(0, 5.2, 0)
+	timerBB.Size = UDim2.new(0, 220, 0, 90)
+	timerBB.StudsOffset = Vector3.new(0, 5.8, 0)
 	timerBB.AlwaysOnTop = true
-	timerBB.MaxDistance = 75
+	timerBB.MaxDistance = 85
 	timerBB.Parent = shell
 
 	local timerLabel = Instance.new("TextLabel")
 	timerLabel.Name = "TimerLabel"
-	timerLabel.Size = UDim2.new(1, 0, 0.65, 0)
+	timerLabel.Size = UDim2.new(1, 0, 0.68, 0)
 	timerLabel.BackgroundTransparency = 1
 	timerLabel.Font = Enum.Font.FredokaOne
 	timerLabel.TextScaled = true
@@ -596,8 +585,8 @@ function SquishyBuilder.CreatePlantedEgg(slimeDef: SlimeData.SlimeDef, position:
 
 	local subLabel = Instance.new("TextLabel")
 	subLabel.Name = "SubLabel"
-	subLabel.Size = UDim2.new(1, 0, 0.35, 0)
-	subLabel.Position = UDim2.new(0, 0, 0.65, 0)
+	subLabel.Size = UDim2.new(1, 0, 0.32, 0)
+	subLabel.Position = UDim2.new(0, 0, 0.68, 0)
 	subLabel.BackgroundTransparency = 1
 	subLabel.Font = Enum.Font.GothamBold
 	subLabel.TextScaled = true
@@ -624,7 +613,7 @@ function SquishyBuilder.CreateSquishyBackpackTool(slimeDef: SlimeData.SlimeDef, 
 	tool:SetAttribute("SquishyLevel", lvl)
 	tool.GripPos = Vector3.new(0, -0.4, 0.2)
 
-	local prebuiltCreature = clonePrebuiltCreature(slimeDef, 2.7, false)
+	local prebuiltCreature = clonePrebuiltCreature(slimeDef, 3.2, false)
 	if prebuiltCreature and prebuiltCreature.PrimaryPart then
 		local root = prebuiltCreature.PrimaryPart :: BasePart
 		root.Name = "Handle"
@@ -646,7 +635,7 @@ function SquishyBuilder.CreateSquishyBackpackTool(slimeDef: SlimeData.SlimeDef, 
 		return tool
 	end
 
-	local scale = 0.65
+	local scale = 0.72
 	local radius = 1.65 * scale
 	local handle = makePart({
 		Name = "Handle",
@@ -677,10 +666,10 @@ function SquishyBuilder.CreateHatchedSquishy(
 	local tier = gelTier or 1
 	local lvl = squishyLevel or 1
 	local levelScaleBoost = 1 + math.min(0.65, (lvl - 1) * 0.08)
-	local scale = (if slimeDef.IsBoss then 1.25 else 1.05) * levelScaleBoost
-	local radius = 2.15 * scale
+	local scale = (if slimeDef.IsBoss then 1.38 else 1.2) * levelScaleBoost
+	local radius = 2.25 * scale
 
-	local prebuiltModel = clonePrebuiltCreature(slimeDef, 4.6 * scale, false)
+	local prebuiltModel = clonePrebuiltCreature(slimeDef, 5.6 * scale, false)
 	local model: Model
 	local body: BasePart
 
@@ -690,14 +679,6 @@ function SquishyBuilder.CreateHatchedSquishy(
 		body = prebuiltModel.PrimaryPart :: BasePart
 		body.Name = "JellyBody"
 		model:PivotTo(CFrame.new(position - Vector3.new(0, 1.5, 0)))
-
-		-- Also place a pre-built Bird Nest under the placed Squishy!
-		local nest = PrebuiltLoader.CloneNormalizedTemplate("BirdNest", slimeDef.Id, 4.6, false)
-		if nest then
-			nest.Name = "SquishyNest"
-			nest:PivotTo(CFrame.new(position - Vector3.new(0, 1.8, 0)))
-			nest.Parent = model
-		end
 	else
 		model = Instance.new("Model")
 		model.Name = "Squishy_" .. tostring(slimeDef.Id)
@@ -733,16 +714,16 @@ function SquishyBuilder.CreateHatchedSquishy(
 	upgPrompt.ActionText = string.format("Level Up -> Lv.%d ($%s)", lvl + 1, formatNumber(upgCost))
 	upgPrompt.ObjectText = string.format("%s (+$%s/s)", slimeDef.Name, formatNumber(cps))
 	upgPrompt.HoldDuration = 0
-	upgPrompt.MaxActivationDistance = 11
+	upgPrompt.MaxActivationDistance = 12
 	upgPrompt.RequiresLineOfSight = false
 	upgPrompt.KeyboardKeyCode = Enum.KeyCode.E
 	upgPrompt.Parent = body
 
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "SquishyTag"
-	bb.Size = UDim2.new(0, 175, 0, 68)
-	bb.StudsOffset = Vector3.new(0, radius + 2.4, 0)
-	bb.MaxDistance = 42
+	bb.Size = UDim2.new(0, 185, 0, 72)
+	bb.StudsOffset = Vector3.new(0, radius + 2.6, 0)
+	bb.MaxDistance = 55
 	bb.Parent = body
 
 	local nameLabel = Instance.new("TextLabel")
@@ -783,10 +764,10 @@ function SquishyBuilder.CreateHatchedSquishy(
 	return model
 end
 
--- Creates a Colossal 3D Boss Guardian using pre-built 3D Monsters, Dinosaurs, Sharks, and Dragons!
+-- Creates a Colossal 21-Stud 3D Boss Guardian using pre-built 3D Monsters, Dinosaurs, Sharks, and Dragons!
 function SquishyBuilder.CreateGuardianModel(guardianDef: SlimeData.GuardianDef): Model
 	local pos = guardianDef.HomePosition
-	local s = 1.45
+	local s = 1.75
 
 	local bossCategory = if guardianDef.Style == "Shark"
 		then "Aquatic"
@@ -794,9 +775,9 @@ function SquishyBuilder.CreateGuardianModel(guardianDef: SlimeData.GuardianDef):
 		elseif guardianDef.Level == 1 or guardianDef.Level == 3 then "Dinosaurs"
 		else "Monsters"
 
-	local prebuiltBoss = PrebuiltLoader.CloneNormalizedTemplate(bossCategory, guardianDef.Level * 3, 15.0, false)
+	local prebuiltBoss = PrebuiltLoader.CloneNormalizedTemplate(bossCategory, guardianDef.Level * 3, 21.0, false)
 	if not prebuiltBoss then
-		prebuiltBoss = PrebuiltLoader.CloneNormalizedTemplate("Monsters", guardianDef.Level, 15.0, false)
+		prebuiltBoss = PrebuiltLoader.CloneNormalizedTemplate("Monsters", guardianDef.Level, 21.0, false)
 	end
 
 	local model: Model
@@ -815,7 +796,7 @@ function SquishyBuilder.CreateGuardianModel(guardianDef: SlimeData.GuardianDef):
 			Size = Vector3.new(1, 1, 1),
 			Transparency = 1,
 			CanCollide = false,
-			Position = torso.Position + Vector3.new(0, 5.5, 0),
+			Position = torso.Position + Vector3.new(0, 8.5, 0),
 			Parent = model,
 		})
 	else
@@ -825,10 +806,10 @@ function SquishyBuilder.CreateGuardianModel(guardianDef: SlimeData.GuardianDef):
 			Name = "Body",
 			Shape = Enum.PartType.Ball,
 			Material = Enum.Material.SmoothPlastic,
-			Reflectance = 0.12,
+			Reflectance = 0.14,
 			Color = guardianDef.PrimaryColor,
-			Size = Vector3.new(7.4 * s, 6.8 * s, 8.2 * s),
-			Position = pos + Vector3.new(0, 3.2 * s, 0),
+			Size = Vector3.new(8.5 * s, 7.6 * s, 9.2 * s),
+			Position = pos + Vector3.new(0, 3.6 * s, 0),
 			Parent = model,
 		})
 		model.PrimaryPart = torso
@@ -837,8 +818,8 @@ function SquishyBuilder.CreateGuardianModel(guardianDef: SlimeData.GuardianDef):
 			Shape = Enum.PartType.Ball,
 			Material = Enum.Material.SmoothPlastic,
 			Color = guardianDef.PrimaryColor,
-			Size = Vector3.new(6.8 * s, 6.0 * s, 6.8 * s),
-			CFrame = torso.CFrame * CFrame.new(0, 3.4 * s, -2.4 * s),
+			Size = Vector3.new(7.4 * s, 6.6 * s, 7.4 * s),
+			CFrame = torso.CFrame * CFrame.new(0, 3.8 * s, -2.4 * s),
 			Parent = model,
 		})
 	end
@@ -850,10 +831,10 @@ function SquishyBuilder.CreateGuardianModel(guardianDef: SlimeData.GuardianDef):
 
 	local sleepBB = Instance.new("BillboardGui")
 	sleepBB.Name = "SleepEmoteGui"
-	sleepBB.Size = UDim2.new(0, 95, 0, 95)
-	sleepBB.StudsOffset = Vector3.new(-4.8 * s, 5.5 * s, -2.0 * s)
-	sleepBB.AlwaysOnTop = false
-	sleepBB.MaxDistance = 120
+	sleepBB.Size = UDim2.new(0, 130, 0, 130)
+	sleepBB.StudsOffset = Vector3.new(-4.8 * s, 6.2 * s, -2.0 * s)
+	sleepBB.AlwaysOnTop = true
+	sleepBB.MaxDistance = 140
 	sleepBB.Parent = head
 
 	local sleepText = Instance.new("TextLabel")

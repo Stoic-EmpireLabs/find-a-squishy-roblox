@@ -41,61 +41,61 @@ export type LevelDef = {
 SlimeData.Levels = {
 	{
 		Level = 1,
-		Name = "Meadow Gardens",
-		Subtitle = "Find & Plant all 5 Meadow Eggs to unlock Candy Kingdom!",
-		ZStart = -60,
-		ZEnd = -320,
-		GateZ = -320,
+		Name = "Squishy Meadow",
+		Subtitle = "Steal & Hatch all 5 Meadow Eggs from the Sleeping Bear!",
+		ZStart = 0,
+		ZEnd = -95,
+		GateZ = -95,
 		ThemeColor = Color3.fromRGB(95, 215, 110),
-		FloorColor = Color3.fromRGB(78, 168, 88),
+		FloorColor = Color3.fromRGB(92, 198, 78),
 		RequiredPlantedCount = 0,
 		EggCount = 5,
 	},
 	{
 		Level = 2,
-		Name = "Candy Kingdom",
-		Subtitle = "Find & Plant all 6 Candy Eggs to unlock Toybox Bedroom!",
-		ZStart = -320,
-		ZEnd = -580,
-		GateZ = -580,
+		Name = "Chocolate Candy Land",
+		Subtitle = "Steal & Hatch all 6 Candy Eggs from the Sleeping Shark!",
+		ZStart = -95,
+		ZEnd = -190,
+		GateZ = -190,
 		ThemeColor = Color3.fromRGB(255, 115, 190),
-		FloorColor = Color3.fromRGB(218, 118, 172),
+		FloorColor = Color3.fromRGB(162, 108, 96),
 		RequiredPlantedCount = 5,
 		EggCount = 6,
 	},
 	{
 		Level = 3,
-		Name = "Toybox Bedroom",
-		Subtitle = "Find & Plant all 7 Toybox Eggs to unlock Neon Cyber Lab!",
-		ZStart = -580,
-		ZEnd = -840,
-		GateZ = -840,
-		ThemeColor = Color3.fromRGB(255, 190, 65),
-		FloorColor = Color3.fromRGB(212, 162, 112),
+		Name = "Tropical Beach Lagoon",
+		Subtitle = "Steal & Hatch all 7 Beach Eggs from the Sleeping Dino!",
+		ZStart = -190,
+		ZEnd = -285,
+		GateZ = -285,
+		ThemeColor = Color3.fromRGB(255, 205, 75),
+		FloorColor = Color3.fromRGB(238, 210, 145),
 		RequiredPlantedCount = 11,
 		EggCount = 7,
 	},
 	{
 		Level = 4,
-		Name = "Neon Cyber Lab",
-		Subtitle = "Find & Plant all 8 Cyber Eggs to unlock Magma Caverns!",
-		ZStart = -840,
-		ZEnd = -1100,
-		GateZ = -1100,
-		ThemeColor = Color3.fromRGB(55, 235, 255),
-		FloorColor = Color3.fromRGB(32, 38, 62),
+		Name = "Crystal Cavern",
+		Subtitle = "Steal & Hatch all 8 Crystal Eggs from the Sleeping Cyber-Croc!",
+		ZStart = -285,
+		ZEnd = -380,
+		GateZ = -380,
+		ThemeColor = Color3.fromRGB(65, 225, 255),
+		FloorColor = Color3.fromRGB(72, 65, 118),
 		RequiredPlantedCount = 18,
 		EggCount = 8,
 	},
 	{
 		Level = 5,
-		Name = "Magma & Crystal Caverns",
-		Subtitle = "Find & Plant all 9 Cavern Eggs to become the Squishy Sovereign!",
-		ZStart = -1100,
-		ZEnd = -1380,
+		Name = "Volcano Doom",
+		Subtitle = "Steal & Hatch all 9 Mythic Eggs from the Sleeping Magma Dragon!",
+		ZStart = -380,
+		ZEnd = -475,
 		GateZ = nil,
 		ThemeColor = Color3.fromRGB(255, 95, 45),
-		FloorColor = Color3.fromRGB(52, 32, 38),
+		FloorColor = Color3.fromRGB(78, 42, 42),
 		RequiredPlantedCount = 26,
 		EggCount = 9,
 	},
@@ -116,157 +116,156 @@ export type GuardianDef = {
 	PatrolRadius: number,
 }
 
--- Animals & Brainrot Chasers that hunt down players whenever they pick up an Egg!
--- Chase speeds scale from 800 Speed Power in Level 1 up to 15,000,000 (15M) Speed Power in Level 5!
+-- Giant Sleeping Bosses guarding each Biome's Egg Cluster ("Zzz" -> "!!" when you steal an Egg!)
 SlimeData.Guardians = {
-	-- Level 1 Chasers (Z: -60 to -320)
+	-- Level 1 Bosses (Z: 0 to -95)
 	{
 		Id = "L1_Bear",
 		Name = "Grizzly Papa Bear",
-		Title = "🐻 MEADOW GUARDIAN",
+		Title = "🐻 MEADOW BOSS",
 		Level = 1,
 		Style = "Bear",
 		PrimaryColor = Color3.fromRGB(125, 78, 45),
 		AccentColor = Color3.fromRGB(215, 165, 115),
-		PatrolSpeed = 12,
+		PatrolSpeed = 8,
 		ChaseSpeed = 19,
 		RequiredSpeedPower = 800,
-		HomePosition = Vector3.new(-35, 5, -155),
-		PatrolRadius = 65,
+		HomePosition = Vector3.new(-16, 5, -56),
+		PatrolRadius = 22,
 	},
 	{
 		Id = "L1_Brainrot",
 		Name = "Tralalero Sneaker Shark",
-		Title = "🦈 BRAINROT CHASER",
+		Title = "🦈 SHARK BOSS",
 		Level = 1,
 		Style = "Shark",
 		PrimaryColor = Color3.fromRGB(65, 155, 245),
 		AccentColor = Color3.fromRGB(255, 255, 255),
-		PatrolSpeed = 13,
+		PatrolSpeed = 8,
 		ChaseSpeed = 21,
 		RequiredSpeedPower = 1_800,
-		HomePosition = Vector3.new(35, 5, -245),
-		PatrolRadius = 70,
+		HomePosition = Vector3.new(18, 5, -62),
+		PatrolRadius = 22,
 	},
 
-	-- Level 2 Chasers (Z: -320 to -580)
+	-- Level 2 Bosses (Z: -95 to -190)
 	{
 		Id = "L2_Shark",
 		Name = "Sour Gummy Jaws",
-		Title = "🦈 CANDY CHASER",
+		Title = "🍬 CANDY BOSS",
 		Level = 2,
 		Style = "Shark",
 		PrimaryColor = Color3.fromRGB(255, 85, 175),
 		AccentColor = Color3.fromRGB(115, 245, 255),
-		PatrolSpeed = 14,
+		PatrolSpeed = 9,
 		ChaseSpeed = 26,
 		RequiredSpeedPower = 12_000,
-		HomePosition = Vector3.new(-35, 5, -415),
-		PatrolRadius = 70,
+		HomePosition = Vector3.new(-18, 5, -150),
+		PatrolRadius = 24,
 	},
 	{
 		Id = "L2_Brainrot",
 		Name = "Cappuccino Assassino",
-		Title = "☕ BRAINROT GUARDIAN",
+		Title = "☕ CHOCO BOSS",
 		Level = 2,
 		Style = "BrainrotBat",
 		PrimaryColor = Color3.fromRGB(165, 115, 75),
 		AccentColor = Color3.fromRGB(255, 245, 230),
-		PatrolSpeed = 15,
+		PatrolSpeed = 9,
 		ChaseSpeed = 29,
 		RequiredSpeedPower = 28_000,
-		HomePosition = Vector3.new(38, 5, -505),
-		PatrolRadius = 70,
+		HomePosition = Vector3.new(18, 5, -156),
+		PatrolRadius = 24,
 	},
 
-	-- Level 3 Chasers (Z: -580 to -840)
+	-- Level 3 Bosses (Z: -190 to -285)
 	{
 		Id = "L3_Dino",
-		Name = "Stompy Toy T-Rex",
-		Title = "🦖 TOYBOX CHASER",
+		Name = "Stompy Beach T-Rex",
+		Title = "🦖 DINO BOSS",
 		Level = 3,
 		Style = "Dino",
 		PrimaryColor = Color3.fromRGB(95, 215, 85),
 		AccentColor = Color3.fromRGB(255, 195, 55),
-		PatrolSpeed = 16,
+		PatrolSpeed = 10,
 		ChaseSpeed = 35,
 		RequiredSpeedPower = 150_000,
-		HomePosition = Vector3.new(-38, 5, -675),
-		PatrolRadius = 75,
+		HomePosition = Vector3.new(-18, 5, -245),
+		PatrolRadius = 24,
 	},
 	{
 		Id = "L3_Brainrot",
 		Name = "Tung Tung Sahur",
-		Title = "🪵 BRAINROT BOSS CHASER",
+		Title = "🪵 LAGOON BOSS",
 		Level = 3,
 		Style = "BrainrotBat",
 		PrimaryColor = Color3.fromRGB(195, 130, 68),
 		AccentColor = Color3.fromRGB(255, 85, 65),
-		PatrolSpeed = 17,
+		PatrolSpeed = 10,
 		ChaseSpeed = 39,
 		RequiredSpeedPower = 350_000,
-		HomePosition = Vector3.new(38, 5, -765),
-		PatrolRadius = 75,
+		HomePosition = Vector3.new(18, 5, -252),
+		PatrolRadius = 24,
 	},
 
-	-- Level 4 Chasers (Z: -840 to -1100)
+	-- Level 4 Bosses (Z: -285 to -380)
 	{
 		Id = "L4_Croc",
-		Name = "Bombardiro Cyber-Croc",
-		Title = "🐊 CYBER BRAINROT",
+		Name = "Crystal Cyber-Croc",
+		Title = "🐊 CRYSTAL BOSS",
 		Level = 4,
 		Style = "Croc",
 		PrimaryColor = Color3.fromRGB(0, 225, 195),
 		AccentColor = Color3.fromRGB(255, 65, 185),
-		PatrolSpeed = 18,
+		PatrolSpeed = 11,
 		ChaseSpeed = 46,
 		RequiredSpeedPower = 1_500_000,
-		HomePosition = Vector3.new(-38, 5, -935),
-		PatrolRadius = 75,
+		HomePosition = Vector3.new(-18, 5, -340),
+		PatrolRadius = 25,
 	},
 	{
 		Id = "L4_Hound",
-		Name = "Laser Mecha-Wolf",
-		Title = "🐺 CYBER GUARDIAN",
+		Name = "Amethyst Mecha-Wolf",
+		Title = "🐺 CAVERN BOSS",
 		Level = 4,
 		Style = "Bear",
-		PrimaryColor = Color3.fromRGB(45, 55, 85),
+		PrimaryColor = Color3.fromRGB(135, 75, 235),
 		AccentColor = Color3.fromRGB(0, 245, 255),
-		PatrolSpeed = 19,
+		PatrolSpeed = 11,
 		ChaseSpeed = 51,
 		RequiredSpeedPower = 3_800_000,
-		HomePosition = Vector3.new(38, 5, -1030),
-		PatrolRadius = 75,
+		HomePosition = Vector3.new(18, 5, -346),
+		PatrolRadius = 25,
 	},
 
-	-- Level 5 Chasers (Z: -1100 to -1380)
+	-- Level 5 Bosses (Z: -380 to -475)
 	{
 		Id = "L5_Dragon",
 		Name = "Inferno Magma Dragon",
-		Title = "🐉 VOLCANO GUARDIAN",
+		Title = "🐉 VOLCANO BOSS",
 		Level = 5,
 		Style = "Dragon",
 		PrimaryColor = Color3.fromRGB(235, 55, 35),
 		AccentColor = Color3.fromRGB(255, 215, 55),
-		PatrolSpeed = 20,
+		PatrolSpeed = 12,
 		ChaseSpeed = 58,
 		RequiredSpeedPower = 8_500_000,
-		HomePosition = Vector3.new(-40, 5, -1200),
-		PatrolRadius = 80,
+		HomePosition = Vector3.new(-18, 5, -435),
+		PatrolRadius = 26,
 	},
 	{
 		Id = "L5_Titan",
-		Name = "Brr Brr Lava Patapim",
-		Title = "🔥 15M SPEED BRAINROT",
+		Name = "Lava Titan Rex",
+		Title = "🔥 15M SPEED BOSS",
 		Level = 5,
 		Style = "Dino",
 		PrimaryColor = Color3.fromRGB(165, 45, 225),
 		AccentColor = Color3.fromRGB(255, 125, 35),
-		PatrolSpeed = 21,
+		PatrolSpeed = 12,
 		ChaseSpeed = 65,
 		RequiredSpeedPower = 15_000_000,
-		HomePosition = Vector3.new(40, 5, -1300),
-		PatrolRadius = 80,
+		HomePosition = Vector3.new(18, 5, -442),
+		PatrolRadius = 26,
 	},
 }
 
@@ -797,6 +796,8 @@ for _, levelDef in ipairs(SlimeData.Levels) do
 	SlimeData.ByLevel[levelDef.Level] = {}
 end
 
+local levelEggIndices: { [number]: number } = { [1] = 0, [2] = 0, [3] = 0, [4] = 0, [5] = 0 }
+
 for _, slime in ipairs(SlimeData.Slimes) do
 	local sp = speciesRotation[((slime.Id - 1) % #speciesRotation) + 1]
 	local nm = string.lower(slime.Name)
@@ -816,7 +817,25 @@ for _, slime in ipairs(SlimeData.Slimes) do
 		sp = "Unicorn"
 	end
 	slime.Species = sp
-	slime.HatchTime = 4 + (slime.Level * 2) -- 6s (Lvl 1), 8s (Lvl 2), 10s (Lvl 3), 12s (Lvl 4), 14s (Lvl 5)
+	slime.HatchTime = 3 + (slime.Level * 2) -- Fast exciting hatch timers: 5s, 7s, 9s, 11s, 13s!
+
+	-- Pure "Steal My Egg" layout: all Eggs sit in rich clusters right around the Sleeping Bosses!
+	slime.Behavior = "Static"
+	slime.IsCoopVault = false
+	slime.IsMicroVent = false
+	slime.DisguiseProp = nil
+
+	local lvlNum = slime.Level
+	local lvlDef = SlimeData.Levels[lvlNum]
+	levelEggIndices[lvlNum] = (levelEggIndices[lvlNum] or 0) + 1
+	local idxInLvl = levelEggIndices[lvlNum]
+	local totalInLvl = if lvlDef then lvlDef.EggCount else 6
+	local zCenter = if lvlDef then (lvlDef.ZStart - 56) else (-56 * lvlNum)
+	local frac = if totalInLvl > 1 then (idxInLvl - 1) / (totalInLvl - 1) else 0.5
+	local xPos = -36 + frac * 72
+	local zOffset = if idxInLvl % 2 == 0 then -8 else 6
+	slime.Position = Vector3.new(xPos, 3.8, zCenter + zOffset)
+	slime.Hint = string.format("Guarded by the Sleeping Boss in %s! Hold E to Steal!", if lvlDef then lvlDef.Name else ("Zone " .. lvlNum))
 
 	SlimeData.ById[slime.Id] = slime
 	if not SlimeData.ByLevel[slime.Level] then

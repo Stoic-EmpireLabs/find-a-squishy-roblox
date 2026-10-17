@@ -3,13 +3,21 @@
   "servePort": 34872,
   "tree": {
     "$className": "DataModel",
+    "HttpService": {
+      "$className": "HttpService",
+      "$properties": {
+        "HttpEnabled": true
+      }
+    },
     "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
+      "$ignoreUnknownInstances": true,
       "Shared": {
         "$path": "src/shared"
       },
       "Models": {
-        "$path": "models"
+        "$path": "models",
+        "$ignoreUnknownInstances": true
       }
     },
     "ServerScriptService": {
@@ -29,6 +37,7 @@
     },
     "Workspace": {
       "$className": "Workspace",
+      "$ignoreUnknownInstances": true,
       "$properties": {
         "FilteringEnabled": true,
         "Gravity": 196.2
