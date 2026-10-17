@@ -1,6 +1,6 @@
 --!strict
 -- UpgradeData.luau
--- Definitions for Pen Expansions, Treadmill Tiers, Gel Multipliers, Jump Springs, Coloring Trails, and Paid Egg Guide.
+-- Definitions for Pen Expansions, Million-Scale Treadmill Tiers, Gel Multipliers, Jump Springs, Coloring Trails, and Paid Egg Guide.
 
 local UpgradeData = {}
 
@@ -15,7 +15,7 @@ export type PenTierDef = {
 export type TreadmillTierDef = {
 	Tier: number,
 	Name: string,
-	SpeedPerTick: number,
+	SpeedPerTick: number, -- Scales from +150 up to +500,000 Speed Power per stride!
 	Cost: number,
 	Color: Color3,
 	Description: string,
@@ -42,15 +42,38 @@ export type TrailDef = {
 	Id: string,
 	Name: string,
 	Cost: number,
-	RobuxPassId: number, -- Set > 0 on create.roblox.com to prompt Robux Gamepass
+	RobuxPassId: number,
 	Color1: Color3,
 	Color2: Color3,
 	PaintFloor: boolean,
 	Rainbow: boolean,
-	SpeedBonus: number,
+	SpeedMultiplier: number,
 	CoinMultiplier: number,
 	Description: string,
 }
+
+-- Helper to format huge numbers cleanly (e.g. 1,500,000 -> "1.50M", 25,000 -> "25.0K")
+function UpgradeData.FormatNumber(n: number): string
+	if n >= 1_000_000_000 then
+		return string.format("%.2fB", n / 1_000_000_000)
+	elseif n >= 1_000_000 then
+		return string.format("%.2fM", n / 1_000_000)
+	elseif n >= 10_000 then
+		return string.format("%.1fK", n / 1_000)
+	elseif n >= 1_000 then
+		return string.format("%.2fK", n / 1_000)
+	else
+		return tostring(math.floor(n))
+	end
+end
+
+-- Converts a player's Million-Scale SpeedPower into a controllable Roblox WalkSpeed (18..82)
+-- so players feel super fast without clipping off Obby platforms!
+function UpgradeData.SpeedPowerToWalkSpeed(speedPower: number): number
+	local logVal = math.log10(math.max(100, speedPower)) -- 2.0 (at 100) to 7.3 (at 20,000,000)
+	local normalized = math.clamp((logVal - 2.0) / 5.3, 0, 1)
+	return math.floor(18 + normalized * 58)
+end
 
 -- Pen Expansion Tiers: Players MUST grow their Pen to hold Eggs from higher levels!
 UpgradeData.PenTiers = {
@@ -65,65 +88,81 @@ UpgradeData.PenTiers = {
 		Tier = 2,
 		Name = "Candy Sanctuary Pen",
 		MaxNests = 11,
-		Cost = 150,
+		Cost = 250,
 		Description = "Expands Pen to 11 Nests (Required for Level 2 Candy Eggs!)",
 	},
 	{
 		Tier = 3,
 		Name = "Toybox Mega Pen",
 		MaxNests = 18,
-		Cost = 1200,
+		Cost = 3500,
 		Description = "Expands Pen to 18 Nests (Required for Level 3 Toybox Eggs!)",
 	},
 	{
 		Tier = 4,
 		Name = "Cyber Holo-Dome Pen",
 		MaxNests = 26,
-		Cost = 8500,
+		Cost = 45000,
 		Description = "Expands Pen to 26 Nests (Required for Level 4 Cyber Eggs!)",
 	},
 	{
 		Tier = 5,
 		Name = "Sovereign Palace Pen",
 		MaxNests = 35,
-		Cost = 45000,
+		Cost = 500000,
 		Description = "Expands Pen to all 35 Nests (Holds every Squishy in the game!)",
 	},
 }
 
--- Treadmill Tiers: Faster speed gain when running on your Base Treadmill
+-- 6 Million-Scale Treadmill Tiers: Train from 100 Speed all the way into the Millions!
 UpgradeData.TreadmillTiers = {
 	{
 		Tier = 1,
-		Name = "Starter Jogger Belt",
-		SpeedPerTick = 0.6,
+		Name = "Starter Meadow Belt",
+		SpeedPerTick = 150,
 		Cost = 0,
 		Color = Color3.fromRGB(95, 220, 125),
-		Description = "+0.6 WalkSpeed per stride on your Treadmill",
+		Description = "+150 Speed Power per stride (Reach 1,500+ for Level 1 Chasers!)",
 	},
 	{
 		Tier = 2,
-		Name = "Turbo Neon Treadmill",
-		SpeedPerTick = 1.6,
-		Cost = 200,
-		Color = Color3.fromRGB(65, 200, 255),
-		Description = "+1.6 WalkSpeed per stride on your Treadmill",
+		Name = "Candy Turbo Treadmill",
+		SpeedPerTick = 1_500,
+		Cost = 300,
+		Color = Color3.fromRGB(255, 115, 205),
+		Description = "+1.5K Speed Power per stride (Reach 15,000+ for Level 2 Chasers!)",
 	},
 	{
 		Tier = 3,
-		Name = "Supersonic Cyber Belt",
-		SpeedPerTick = 4.0,
-		Cost = 1800,
-		Color = Color3.fromRGB(215, 85, 255),
-		Description = "+4.0 WalkSpeed per stride on your Treadmill",
+		Name = "Toybox Nitro Treadmill",
+		SpeedPerTick = 15_000,
+		Cost = 4_000,
+		Color = Color3.fromRGB(255, 195, 55),
+		Description = "+15K Speed Power per stride (Reach 150,000+ for Level 3 Chasers!)",
 	},
 	{
 		Tier = 4,
-		Name = "Magma Hyper-Drive Belt",
-		SpeedPerTick = 10.0,
-		Cost = 15000,
-		Color = Color3.fromRGB(255, 110, 45),
-		Description = "+10.0 WalkSpeed per stride on your Treadmill",
+		Name = "Cyber Warp Treadmill",
+		SpeedPerTick = 125_000,
+		Cost = 50_000,
+		Color = Color3.fromRGB(0, 235, 255),
+		Description = "+125K Speed Power per stride (Reach 1.5M+ for Level 4 Chasers!)",
+	},
+	{
+		Tier = 5,
+		Name = "Magma Millionaire Belt",
+		SpeedPerTick = 750_000,
+		Cost = 400_000,
+		Color = Color3.fromRGB(255, 95, 35),
+		Description = "+750K Speed Power per stride (Reach 10M+ for Level 5 Chasers!)",
+	},
+	{
+		Tier = 6,
+		Name = "God-Speed Infinity Belt",
+		SpeedPerTick = 3_500_000,
+		Cost = 2_500_000,
+		Color = Color3.fromRGB(215, 75, 255),
+		Description = "+3.5M Speed Power per stride (Outrun EVERY Brainrot & Boss!)",
 	},
 }
 
@@ -140,139 +179,147 @@ UpgradeData.GelTiers = {
 	{
 		Tier = 2,
 		Name = "24K Golden Gel Coat",
-		Multiplier = 2.0,
-		Cost = 800,
+		Multiplier = 2.5,
+		Cost = 1_500,
 		Color = Color3.fromRGB(255, 210, 60),
-		Description = "2.0x Coin Income + Golden Shimmer on Pen Squishies!",
+		Description = "2.5x Coin Income + Golden Shimmer on Pen Squishies!",
 	},
 	{
 		Tier = 3,
 		Name = "Rainbow Neon Gel Coat",
-		Multiplier = 3.5,
-		Cost = 9500,
+		Multiplier = 5.0,
+		Cost = 35_000,
 		Color = Color3.fromRGB(255, 95, 225),
-		Description = "3.5x Coin Income + Animated Rainbow Pen Squishies!",
+		Description = "5.0x Coin Income + Animated Rainbow Pen Squishies!",
+	},
+	{
+		Tier = 4,
+		Name = "Cosmic Galaxy Gel Coat",
+		Multiplier = 12.0,
+		Cost = 650_000,
+		Color = Color3.fromRGB(115, 85, 255),
+		Description = "12.0x Coin Income + Millionaire Pen Boost!",
 	},
 }
 
--- Jump Spring Tiers: Reach high shelves, crystal spires, and obbies
+-- Jump Spring Tiers: Reach high obby platforms, crystal spires, and secret ledges
 UpgradeData.JumpTiers = {
 	{
 		Tier = 1,
 		Name = "Standard Sneakers",
-		JumpPower = 52,
+		JumpPower = 54,
 		Cost = 0,
-		Description = "Standard Jump Height (52 Power)",
+		Description = "Standard Jump Height (54 Power)",
 	},
 	{
 		Tier = 2,
 		Name = "Slime Spring Boots",
 		JumpPower = 72,
-		Cost = 180,
-		Description = "High Jump (72 Power) - Great for Gumball & Bookshelf!",
+		Cost = 250,
+		Description = "High Jump (72 Power) - Great for Candy & Toybox Obbies!",
 	},
 	{
 		Tier = 3,
 		Name = "Rocket Jelly Thrusters",
-		JumpPower = 94,
-		Cost = 1500,
-		Description = "Super Jump (94 Power) - Reach Cyber Hover Pads easily!",
+		JumpPower = 92,
+		Cost = 3_500,
+		Description = "Super Jump (92 Power) - Clear Cyber Laser Obbies easily!",
 	},
 	{
 		Tier = 4,
 		Name = "Zero-G Sovereign Wings",
-		JumpPower = 118,
-		Cost = 12000,
-		Description = "Mega Jump (118 Power) - Leap straight up the Volcano Spire!",
+		JumpPower = 115,
+		Cost = 45_000,
+		Description = "Mega Jump (115 Power) - Conquer the Volcano Summit Obby!",
 	},
 }
 
--- Monetized & Collectible Coloring Trails
+-- Monetized & Collectible Coloring Trails (Boosts both Treadmill Speed Multiplier & Coin Multiplier!)
 UpgradeData.Trails = {
 	{
 		Id = "GreenSlime",
 		Name = "Slime Splat Trail",
-		Cost = 100,
+		Cost = 200,
 		RobuxPassId = 0,
 		Color1 = Color3.fromRGB(90, 255, 120),
 		Color2 = Color3.fromRGB(190, 255, 110),
 		PaintFloor = true,
 		Rainbow = false,
-		SpeedBonus = 2,
-		CoinMultiplier = 1.05,
-		Description = "Leaves glowing green slime splats on the ground +2 Speed!",
+		SpeedMultiplier = 1.25,
+		CoinMultiplier = 1.15,
+		Description = "Colors ground in green slime splats + 1.25x Treadmill Speed & 1.15x Coins!",
 	},
 	{
 		Id = "CyanLaser",
 		Name = "Electric Cyan Paint Trail",
-		Cost = 350,
+		Cost = 1_200,
 		RobuxPassId = 0,
 		Color1 = Color3.fromRGB(0, 240, 255),
 		Color2 = Color3.fromRGB(80, 130, 255),
 		PaintFloor = true,
 		Rainbow = false,
-		SpeedBonus = 4,
-		CoinMultiplier = 1.10,
-		Description = "Paints a neon cyan path behind you +4 Speed & +10% Coins!",
+		SpeedMultiplier = 1.50,
+		CoinMultiplier = 1.30,
+		Description = "Paints a neon cyan path behind you + 1.5x Treadmill Speed & 1.3x Coins!",
 	},
 	{
 		Id = "CottonCandy",
 		Name = "Cotton Candy Ribbon",
-		Cost = 900,
+		Cost = 6_500,
 		RobuxPassId = 0,
 		Color1 = Color3.fromRGB(255, 120, 215),
 		Color2 = Color3.fromRGB(120, 230, 255),
 		PaintFloor = true,
 		Rainbow = false,
-		SpeedBonus = 6,
-		CoinMultiplier = 1.20,
-		Description = "Pastel pink & blue floor coloring trail +6 Speed & +20% Coins!",
+		SpeedMultiplier = 2.0,
+		CoinMultiplier = 1.60,
+		Description = "Pastel pink & blue floor coloring trail + 2x Treadmill Speed & 1.6x Coins!",
 	},
 	{
 		Id = "SolarGold",
 		Name = "24K Gold VIP Trail",
-		Cost = 2500,
+		Cost = 35_000,
 		RobuxPassId = 0,
 		Color1 = Color3.fromRGB(255, 215, 55),
 		Color2 = Color3.fromRGB(255, 155, 25),
 		PaintFloor = true,
 		Rainbow = false,
-		SpeedBonus = 10,
-		CoinMultiplier = 1.35,
-		Description = "Paints golden footsteps everywhere +10 Speed & +35% Coins!",
+		SpeedMultiplier = 3.0,
+		CoinMultiplier = 2.25,
+		Description = "Paints 24K golden footsteps everywhere + 3x Treadmill Speed & 2.25x Coins!",
 	},
 	{
 		Id = "MagmaFlame",
 		Name = "Magma Blaze Trail",
-		Cost = 7500,
+		Cost = 180_000,
 		RobuxPassId = 0,
 		Color1 = Color3.fromRGB(255, 75, 30),
 		Color2 = Color3.fromRGB(255, 220, 60),
 		PaintFloor = true,
 		Rainbow = false,
-		SpeedBonus = 15,
-		CoinMultiplier = 1.50,
-		Description = "Scorching lava paint trail +15 Speed & +50% Coins!",
+		SpeedMultiplier = 5.0,
+		CoinMultiplier = 3.5,
+		Description = "Scorching lava paint trail + 5x Treadmill Speed & 3.5x Coins!",
 	},
 	{
 		Id = "RainbowMaster",
 		Name = "VIP Rainbow Painter Trail",
-		Cost = 15000,
+		Cost = 750_000,
 		RobuxPassId = 0, -- Plug in your Robux Gamepass ID here when publishing!
 		Color1 = Color3.fromRGB(255, 70, 180),
 		Color2 = Color3.fromRGB(70, 255, 240),
 		PaintFloor = true,
 		Rainbow = true,
-		SpeedBonus = 22,
-		CoinMultiplier = 2.0,
-		Description = "Colors the floor in animated Rainbow Paint +22 Speed & 2x Coins!",
+		SpeedMultiplier = 10.0,
+		CoinMultiplier = 5.0,
+		Description = "Colors the floor in animated Rainbow Paint + 10x Treadmill Speed & 5x Coins!",
 	},
 }
 
 -- Paid Egg Guide ("Direct Me to Egg") & VIP Passes
 UpgradeData.GuidePricing = {
-	SingleEggGuideCoinCost = 75, -- Cost in Coins to summon the 3D Guide Beam to a specific Egg
-	VIPUnlimitedGuideCost = 1500, -- Unlock permanent unlimited Egg Guide Director
+	SingleEggGuideCoinCost = 100, -- Cost in Coins to summon the 3D Guide Beam to a specific Egg
+	VIPUnlimitedGuideCost = 5_000, -- Unlock permanent unlimited Egg Guide Director
 	GuideDevProductId = 0, -- Optional Robux Developer Product ID for single guide
 	VIPGuidePassId = 0, -- Optional Robux Gamepass ID for Unlimited Egg Guide
 	DoubleCoinsPassId = 0, -- Optional Robux Gamepass ID for 2x Coins

@@ -109,14 +109,16 @@ export type GuardianDef = {
 	PrimaryColor: Color3,
 	AccentColor: Color3,
 	PatrolSpeed: number,
-	ChaseSpeed: number,
+	ChaseSpeed: number, -- Physical movement speed in studs/sec
+	RequiredSpeedPower: number, -- Million-scale Speed Power stat shown to players!
 	HomePosition: Vector3,
 	PatrolRadius: number,
 }
 
 -- Animals & Brainrot Chasers that hunt down players whenever they pick up an Egg!
+-- Chase speeds scale from 800 Speed Power in Level 1 up to 15,000,000 (15M) Speed Power in Level 5!
 SlimeData.Guardians = {
-	-- Level 1 Chasers (Player base speed is 16 -> just 1-2 treadmill ticks lets you outrun them!)
+	-- Level 1 Chasers (800 - 1,800 Speed Power)
 	{
 		Id = "L1_Bear",
 		Name = "Grizzly Papa Bear",
@@ -125,10 +127,11 @@ SlimeData.Guardians = {
 		Style = "Bear",
 		PrimaryColor = Color3.fromRGB(125, 78, 45),
 		AccentColor = Color3.fromRGB(215, 165, 115),
-		PatrolSpeed = 10,
-		ChaseSpeed = 16.5,
+		PatrolSpeed = 11,
+		ChaseSpeed = 19,
+		RequiredSpeedPower = 800,
 		HomePosition = Vector3.new(-15, 5, -115),
-		PatrolRadius = 40,
+		PatrolRadius = 42,
 	},
 	{
 		Id = "L1_Brainrot",
@@ -138,13 +141,14 @@ SlimeData.Guardians = {
 		Style = "Shark",
 		PrimaryColor = Color3.fromRGB(65, 155, 245),
 		AccentColor = Color3.fromRGB(255, 255, 255),
-		PatrolSpeed = 11,
-		ChaseSpeed = 17.5,
+		PatrolSpeed = 12,
+		ChaseSpeed = 21,
+		RequiredSpeedPower = 1_800,
 		HomePosition = Vector3.new(20, 5, -170),
 		PatrolRadius = 45,
 	},
 
-	-- Level 2 Chasers
+	-- Level 2 Chasers (12,000 - 28,000 Speed Power)
 	{
 		Id = "L2_Shark",
 		Name = "Sour Gummy Jaws",
@@ -153,8 +157,9 @@ SlimeData.Guardians = {
 		Style = "Shark",
 		PrimaryColor = Color3.fromRGB(255, 85, 175),
 		AccentColor = Color3.fromRGB(115, 245, 255),
-		PatrolSpeed = 12,
-		ChaseSpeed = 20.5,
+		PatrolSpeed = 13,
+		ChaseSpeed = 26,
+		RequiredSpeedPower = 12_000,
 		HomePosition = Vector3.new(-18, 5, -285),
 		PatrolRadius = 45,
 	},
@@ -166,13 +171,14 @@ SlimeData.Guardians = {
 		Style = "BrainrotBat",
 		PrimaryColor = Color3.fromRGB(165, 115, 75),
 		AccentColor = Color3.fromRGB(255, 245, 230),
-		PatrolSpeed = 13,
-		ChaseSpeed = 22.0,
+		PatrolSpeed = 14,
+		ChaseSpeed = 29,
+		RequiredSpeedPower = 28_000,
 		HomePosition = Vector3.new(22, 5, -345),
 		PatrolRadius = 45,
 	},
 
-	-- Level 3 Chasers
+	-- Level 3 Chasers (150,000 - 350,000 Speed Power)
 	{
 		Id = "L3_Dino",
 		Name = "Stompy Toy T-Rex",
@@ -181,8 +187,9 @@ SlimeData.Guardians = {
 		Style = "Dino",
 		PrimaryColor = Color3.fromRGB(95, 215, 85),
 		AccentColor = Color3.fromRGB(255, 195, 55),
-		PatrolSpeed = 14,
-		ChaseSpeed = 25.0,
+		PatrolSpeed = 15,
+		ChaseSpeed = 35,
+		RequiredSpeedPower = 150_000,
 		HomePosition = Vector3.new(-20, 5, -465),
 		PatrolRadius = 50,
 	},
@@ -194,13 +201,14 @@ SlimeData.Guardians = {
 		Style = "BrainrotBat",
 		PrimaryColor = Color3.fromRGB(195, 130, 68),
 		AccentColor = Color3.fromRGB(255, 85, 65),
-		PatrolSpeed = 15,
-		ChaseSpeed = 27.0,
+		PatrolSpeed = 16,
+		ChaseSpeed = 39,
+		RequiredSpeedPower = 350_000,
 		HomePosition = Vector3.new(20, 5, -530),
 		PatrolRadius = 50,
 	},
 
-	-- Level 4 Chasers
+	-- Level 4 Chasers (1,500,000 - 3,800,000 Speed Power)
 	{
 		Id = "L4_Croc",
 		Name = "Bombardiro Cyber-Croc",
@@ -209,8 +217,9 @@ SlimeData.Guardians = {
 		Style = "Croc",
 		PrimaryColor = Color3.fromRGB(0, 225, 195),
 		AccentColor = Color3.fromRGB(255, 65, 185),
-		PatrolSpeed = 16,
-		ChaseSpeed = 31.0,
+		PatrolSpeed = 17,
+		ChaseSpeed = 46,
+		RequiredSpeedPower = 1_500_000,
 		HomePosition = Vector3.new(-18, 5, -645),
 		PatrolRadius = 50,
 	},
@@ -222,13 +231,14 @@ SlimeData.Guardians = {
 		Style = "Bear",
 		PrimaryColor = Color3.fromRGB(45, 55, 85),
 		AccentColor = Color3.fromRGB(0, 245, 255),
-		PatrolSpeed = 17,
-		ChaseSpeed = 33.5,
+		PatrolSpeed = 18,
+		ChaseSpeed = 51,
+		RequiredSpeedPower = 3_800_000,
 		HomePosition = Vector3.new(22, 5, -715),
 		PatrolRadius = 50,
 	},
 
-	-- Level 5 Chasers
+	-- Level 5 Chasers (8,500,000 - 15,000,000 Speed Power!)
 	{
 		Id = "L5_Dragon",
 		Name = "Inferno Magma Dragon",
@@ -237,21 +247,23 @@ SlimeData.Guardians = {
 		Style = "Dragon",
 		PrimaryColor = Color3.fromRGB(235, 55, 35),
 		AccentColor = Color3.fromRGB(255, 215, 55),
-		PatrolSpeed = 18,
-		ChaseSpeed = 37.0,
+		PatrolSpeed = 19,
+		ChaseSpeed = 58,
+		RequiredSpeedPower = 8_500_000,
 		HomePosition = Vector3.new(-20, 5, -830),
 		PatrolRadius = 55,
 	},
 	{
 		Id = "L5_Titan",
 		Name = "Brr Brr Lava Patapim",
-		Title = "🔥 SUPREME BRAINROT",
+		Title = "🔥 15M SPEED BRAINROT",
 		Level = 5,
 		Style = "Dino",
 		PrimaryColor = Color3.fromRGB(165, 45, 225),
 		AccentColor = Color3.fromRGB(255, 125, 35),
-		PatrolSpeed = 19,
-		ChaseSpeed = 40.0,
+		PatrolSpeed = 20,
+		ChaseSpeed = 65,
+		RequiredSpeedPower = 15_000_000,
 		HomePosition = Vector3.new(20, 5, -910),
 		PatrolRadius = 55,
 	},
