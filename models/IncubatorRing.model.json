@@ -1,0 +1,47 @@
+{
+  "ClassName": "Model",
+  "Name": "IncubatorRingTemplate",
+  "Children": [
+    {
+      "ClassName": "Part",
+      "Name": "OuterMagicRing",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": false,
+        "CastShadow": false,
+        "Shape": "Cylinder",
+        "Material": "Neon",
+        "Color": [0.765, 0.255, 1.0],
+        "Size": [0.35, 6.8, 6.8],
+        "Transparency": 0.15
+      }
+    },
+    {
+      "ClassName": "Part",
+      "Name": "InnerMagicRing",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": false,
+        "CastShadow": false,
+        "Shape": "Cylinder",
+        "Material": "SmoothPlastic",
+        "Color": [0.157, 0.078, 0.294],
+        "Size": [0.42, 5.6, 5.6]
+      }
+    },
+    {
+      "ClassName": "Part",
+      "Name": "GoldCoreRing",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": false,
+        "CastShadow": false,
+        "Shape": "Cylinder",
+        "Material": "Neon",
+        "Color": [1.0, 0.882, 0.294],
+        "Size": [0.48, 4.2, 4.2],
+        "Transparency": 0.1
+      }
+    }
+  ]
+}

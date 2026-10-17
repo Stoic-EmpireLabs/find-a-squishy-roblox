@@ -972,13 +972,23 @@ stateSyncRemote.OnClientEvent:Connect(function(newState: any)
 		return
 	end
 	local prevSpeed = clientState.SpeedPower
+	local isLightTick = newState.LightTick == true
 	for k, v in pairs(newState) do
-		(clientState :: any)[k] = v
+		if k ~= "LightTick" then
+			(clientState :: any)[k] = v
+		end
 	end
 	if type(newState.SpeedPower) == "number" and newState.SpeedPower > prevSpeed then
 		spawnSpeedPopup(newState.SpeedPower - prevSpeed)
 	end
-	refreshLocalWorldAndModals()
+	if isLightTick then
+		coinsBadge.Text = string.format("💰 $%s (+%s/s)", UpgradeData.FormatNumber(clientState.Coins), UpgradeData.FormatNumber(clientState.IncomePerSec))
+		speedBadge.Text = string.format("⚡ %s SPEED", UpgradeData.FormatNumber(clientState.SpeedPower))
+		blSpeedLabel.Text = UpgradeData.FormatNumber(clientState.SpeedPower)
+		blCashLabel.Text = "$" .. UpgradeData.FormatNumber(clientState.Coins)
+	else
+		refreshLocalWorldAndModals()
+	end
 end)
 
 -- ============================================================================
@@ -989,6 +999,7 @@ guideBeamPart.Name = "ClientGuideOrb"
 guideBeamPart.Shape = Enum.PartType.Ball
 guideBeamPart.Anchored = true
 guideBeamPart.CanCollide = false
+guideBeamPart.CastShadow = false
 guideBeamPart.Material = Enum.Material.Neon
 guideBeamPart.Color = Color3.fromRGB(255, 225, 55)
 guideBeamPart.Size = Vector3.new(2.2, 2.2, 2.2)
@@ -1007,17 +1018,21 @@ guideBeam.LightEmission = 1
 guideBeam.Enabled = false
 guideBeam.Parent = guideBeamPart
 
+local cachedStatue: Model? = nil
+
 RunService.RenderStepped:Connect(function()
 	local now = os.clock()
 
 	-- Gently rotate the Golden Squishy Fountain Statue on top of the Hub Fountain Pillar (0, 15, 130)
-	local squishyWorld = Workspace:FindFirstChild("SquishyWorld")
-	if squishyWorld then
-		local statue = squishyWorld:FindFirstChild("GoldenFountainStatue")
-		if statue and statue:IsA("Model") and statue.PrimaryPart then
-			local bob = math.sin(now * 2.2) * 0.45
-			statue:PivotTo(CFrame.new(0, 15.0 + bob, 130) * CFrame.Angles(0, now * 0.85, 0))
+	if not cachedStatue or not cachedStatue.Parent then
+		local squishyWorld = Workspace:FindFirstChild("SquishyWorld")
+		if squishyWorld then
+			cachedStatue = squishyWorld:FindFirstChild("GoldenFountainStatue") :: Model?
 		end
+	end
+	if cachedStatue and cachedStatue.PrimaryPart then
+		local bob = math.sin(now * 2.2) * 0.45
+		cachedStatue:PivotTo(CFrame.new(0, 15.0 + bob, 130) * CFrame.Angles(0, now * 0.85, 0))
 	end
 
 	local guideId = clientState.ActiveGuideEggId

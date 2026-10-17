@@ -42,6 +42,7 @@ local function createPart(props: { [string]: any }): Part
 	local p = Instance.new("Part")
 	p.Anchored = if props.Anchored ~= nil then props.Anchored else true
 	p.CanCollide = if props.CanCollide ~= nil then props.CanCollide else true
+	p.CastShadow = if props.CastShadow ~= nil then props.CastShadow else false
 	p.TopSurface = Enum.SurfaceType.Smooth
 	p.BottomSurface = Enum.SurfaceType.Smooth
 	p.Material = props.Material or Enum.Material.SmoothPlastic
@@ -115,7 +116,7 @@ local function addPadSign(pad: BasePart, titleText: string, subText: string, tit
 	return t1, t2
 end
 
--- Creates a crisp 3D Physical Signboard with SurfaceGui on both faces (Zero floating text clutter!)
+-- Creates a crisp 3D Physical Signboard with SurfaceGui on Front & Back faces
 local function createSurfaceBanner(boardPart: BasePart, titleText: string, subText: string, accentColor: Color3): (TextLabel, TextLabel)
 	local mainTitle: TextLabel = nil :: any
 	local mainSub: TextLabel = nil :: any
@@ -124,7 +125,8 @@ local function createSurfaceBanner(boardPart: BasePart, titleText: string, subTe
 		local sg = Instance.new("SurfaceGui")
 		sg.Face = face
 		sg.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-		sg.PixelsPerStud = 35
+		sg.PixelsPerStud = 24
+		sg.MaxDistance = 160
 		sg.Parent = boardPart
 
 		local frame = Instance.new("Frame")
@@ -134,6 +136,7 @@ local function createSurfaceBanner(boardPart: BasePart, titleText: string, subTe
 		frame.Parent = sg
 
 		local t1 = Instance.new("TextLabel")
+		t1.Name = "Title"
 		t1.Size = UDim2.new(0.94, 0, 0.56, 0)
 		t1.Position = UDim2.new(0.03, 0, 0.04, 0)
 		t1.BackgroundTransparency = 1
@@ -144,6 +147,7 @@ local function createSurfaceBanner(boardPart: BasePart, titleText: string, subTe
 		t1.Parent = frame
 
 		local t2 = Instance.new("TextLabel")
+		t2.Name = "Sub"
 		t2.Size = UDim2.new(0.94, 0, 0.36, 0)
 		t2.Position = UDim2.new(0.03, 0, 0.60, 0)
 		t2.BackgroundTransparency = 1
@@ -210,9 +214,9 @@ end
 local function configureLighting()
 	Lighting.Ambient = Color3.fromRGB(125, 135, 160)
 	Lighting.OutdoorAmbient = Color3.fromRGB(145, 155, 180)
-	Lighting.Brightness = 2.6
+	Lighting.Brightness = 2.4
 	Lighting.ClockTime = 14.2
-	Lighting.GlobalShadows = true
+	Lighting.GlobalShadows = false
 
 	for _, child in ipairs(Lighting:GetChildren()) do
 		if child:IsA("PostEffect") or child:IsA("Atmosphere") or child:IsA("Sky") then

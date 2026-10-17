@@ -1746,140 +1746,173 @@ task.spawn(function()
 				end
 
 				if tickCounter % 2 == 0 then
-					syncPlayerState(player)
+					updateLeaderstats(player, session)
+					if session.PlotIndex then
+						local plot = world.Plots[session.PlotIndex]
+						if plot then
+							plot.CashLabel.Text = string.format("$%s Ready to Collect!", UpgradeData.FormatNumber(session.StoredPenCoins))
+						end
+					end
+					stateSyncRemote:FireClient(player, {
+						Coins = session.Coins,
+						StoredPenCoins = session.StoredPenCoins,
+						SpeedPower = session.SpeedPower,
+						WalkSpeed = UpgradeData.SpeedPowerToWalkSpeed(session.SpeedPower),
+						IncomePerSec = getTotalIncomePerSec(session),
+						LightTick = true,
+					})
 				end
 			end
 		end
 	end
 end)
 
--- Loop B: Colossal Boss Guardians AI ("Zzz" -> "!!") + Living Eggs + Co-op Buddy Vaults (Every 0.12s)
+-- Loop B: Colossal Boss Guardians AI ("Zzz" -> "!!") + Living Eggs + Co-op Buddy Vaults (Distance-Culled for 60 FPS!)
 task.spawn(function()
-	local dt = 0.12
+	local dt = 0.18
 	while true do
 		task.wait(dt)
 		local now = os.clock()
 
-		-- 1. Update All 10 Colossal Boss Guardians!
+		-- Gather active player positions once per tick
+		local playerPositions: { Vector3 } = {}
+		for _, plr in ipairs(Players:GetPlayers()) do
+			local hrp = if plr.Character then plr.Character:FindFirstChild("HumanoidRootPart") :: BasePart? else nil
+			if hrp then
+				table.insert(playerPositions, hrp.Position)
+			end
+		end
+
+		-- 1. Update Colossal Boss Guardians (Only when a player is within 260 studs!)
 		for gId, gEntry in pairs(world.WorldGuardians) do
 			local gDef = gEntry.Def
 			local gModel = gEntry.Model
 			local gBody = gModel.PrimaryPart
 			local lvlDef = SlimeData.Levels[gDef.Level]
 			if gBody and lvlDef then
-				local targetPlayer: Player? = nil
-				local targetHrp: BasePart? = nil
-				local bestDist = 260
-
-				for _, plr in ipairs(Players:GetPlayers()) do
-					local session = sessions[plr]
-					local char = plr.Character
-					local hrp = if char then char:FindFirstChild("HumanoidRootPart") :: BasePart? else nil
-					if session and session.CarryingEggId and hrp then
-						local pPos = hrp.Position
-						if pPos.Z <= (lvlDef.ZStart - 2) and pPos.Z >= (lvlDef.ZEnd - 5) then
-							local dist = (pPos - gBody.Position).Magnitude
-							if dist < bestDist then
-								bestDist = dist
-								targetPlayer = plr
-								targetHrp = hrp
-							end
-						end
+				local anyPlayerNear = false
+				for _, pPos in ipairs(playerPositions) do
+					if math.abs(pPos.Z - gBody.Position.Z) <= 240 then
+						anyPlayerNear = true
+						break
 					end
 				end
 
-				local tagGui = gBody:FindFirstChild("GuardianTag")
-				local statusLbl = if tagGui then tagGui:FindFirstChild("StatusLabel") :: TextLabel? else nil
-				local headPart = gModel:FindFirstChild("Head")
-				local sleepGui = if headPart then headPart:FindFirstChild("SleepEmoteGui") else nil
-				local emoteLbl = if sleepGui then sleepGui:FindFirstChild("EmoteLabel") :: TextLabel? else nil
+				if anyPlayerNear then
+					local targetPlayer: Player? = nil
+					local targetHrp: BasePart? = nil
+					local bestDist = 240
 
-				if targetPlayer and targetHrp then
-					-- WAKE UP ("!!") & CHASE THE EGG THIEF!
-					if emoteLbl then
-						emoteLbl.Text = "!!"
-						emoteLbl.TextColor3 = Color3.fromRGB(255, 55, 65)
+					for _, plr in ipairs(Players:GetPlayers()) do
+						local session = sessions[plr]
+						local char = plr.Character
+						local hrp = if char then char:FindFirstChild("HumanoidRootPart") :: BasePart? else nil
+						if session and session.CarryingEggId and hrp then
+							local pPos = hrp.Position
+							if pPos.Z <= (lvlDef.ZStart - 2) and pPos.Z >= (lvlDef.ZEnd - 5) then
+								local dist = (pPos - gBody.Position).Magnitude
+								if dist < bestDist then
+									bestDist = dist
+									targetPlayer = plr
+									targetHrp = hrp
+								end
+							end
+						end
 					end
 
-					local targetPos = Vector3.new(targetHrp.Position.X, gDef.HomePosition.Y, targetHrp.Position.Z)
-					local delta = targetPos - gBody.Position
-					local dist = delta.Magnitude
+					local tagGui = gBody:FindFirstChild("GuardianTag")
+					local statusLbl = if tagGui then tagGui:FindFirstChild("StatusLabel") :: TextLabel? else nil
+					local headPart = gModel:FindFirstChild("Head")
+					local sleepGui = if headPart then headPart:FindFirstChild("SleepEmoteGui") else nil
+					local emoteLbl = if sleepGui then sleepGui:FindFirstChild("EmoteLabel") :: TextLabel? else nil
 
-					local session = sessions[targetPlayer]
-					local playerSpdPower = if session then session.SpeedPower else 100
-					local speedRatio = math.clamp(gDef.RequiredSpeedPower / math.max(100, playerSpdPower), 0.55, 1.35)
-					local effectiveStep = gDef.ChaseSpeed * speedRatio * dt
+					if targetPlayer and targetHrp then
+						-- WAKE UP ("!!") & CHASE THE EGG THIEF!
+						if emoteLbl then
+							emoteLbl.Text = "!!"
+							emoteLbl.TextColor3 = Color3.fromRGB(255, 55, 65)
+						end
 
-					if statusLbl then
-						statusLbl.Text = string.format(
-							"🚨 AWAKE! CHASING %s! (Req: %s Spd)",
-							string.upper(targetPlayer.DisplayName),
-							UpgradeData.FormatNumber(gDef.RequiredSpeedPower)
-						)
-						statusLbl.TextColor3 = Color3.fromRGB(255, 75, 75)
-					end
+						local targetPos = Vector3.new(targetHrp.Position.X, gDef.HomePosition.Y, targetHrp.Position.Z)
+						local delta = targetPos - gBody.Position
+						local dist = delta.Magnitude
 
-					if dist > 0.5 then
-						local moveDir = delta.Unit
-						local nextPos = gBody.Position + moveDir * math.min(dist, effectiveStep)
-						local bounceY = math.abs(math.sin(now * 10)) * 1.4
-						gModel:PivotTo(CFrame.lookAt(nextPos + Vector3.new(0, bounceY, 0), targetPos + Vector3.new(0, bounceY, 0)))
-					end
+						local session = sessions[targetPlayer]
+						local playerSpdPower = if session then session.SpeedPower else 100
+						local speedRatio = math.clamp(gDef.RequiredSpeedPower / math.max(100, playerSpdPower), 0.55, 1.35)
+						local effectiveStep = gDef.ChaseSpeed * speedRatio * dt
 
-					if dist <= 6.2 and session then
-						local droppedId = session.CarryingEggId
-						local droppedDef = if droppedId then SlimeData.ById[droppedId] else nil
-						clearCarriedEgg(targetPlayer)
-						targetHrp.AssemblyLinearVelocity = Vector3.new(0, 68, 55)
-						notifyPlayer(
-							targetPlayer,
-							string.format(
-								"💥 CAUGHT BY %s! You dropped the %s Egg! Train on your Dino Treadmill to reach %s Speed Power!",
-								string.upper(gDef.Name),
-								if droppedDef then droppedDef.Name else "Squishy",
+						if statusLbl then
+							statusLbl.Text = string.format(
+								"🚨 AWAKE! CHASING %s! (Req: %s Spd)",
+								string.upper(targetPlayer.DisplayName),
 								UpgradeData.FormatNumber(gDef.RequiredSpeedPower)
-							),
-							"Error"
-						)
-						syncPlayerState(targetPlayer)
-					end
-				else
-					-- SLEEPING / GUARDING MODE ("Zzz")
-					if emoteLbl then
-						emoteLbl.Text = if math.floor(now * 2) % 2 == 0 then "Zzz" else "Z"
-						emoteLbl.TextColor3 = Color3.fromRGB(65, 225, 255)
-					end
-					if statusLbl then
-						statusLbl.Text = string.format(
-							"💤 Sleeping near Eggs (Speed: %s)",
-							UpgradeData.FormatNumber(gDef.RequiredSpeedPower)
-						)
-						statusLbl.TextColor3 = Color3.fromRGB(125, 235, 255)
-					end
+							)
+							statusLbl.TextColor3 = Color3.fromRGB(255, 75, 75)
+						end
 
-					local wp = guardianWaypoints[gId]
-					if not wp or (wp - gBody.Position).Magnitude < 5 then
-						local angle = math.random() * math.pi * 2
-						local r = math.random(18, gDef.PatrolRadius)
-						wp = Vector3.new(
-							math.clamp(gDef.HomePosition.X + math.cos(angle) * r, -95, 95),
-							gDef.HomePosition.Y,
-							math.clamp(gDef.HomePosition.Z + math.sin(angle) * (r * 0.65), lvlDef.ZEnd + 18, lvlDef.ZStart - 16)
-						)
-						guardianWaypoints[gId] = wp
-					end
+						if dist > 0.5 then
+							local moveDir = delta.Unit
+							local nextPos = gBody.Position + moveDir * math.min(dist, effectiveStep)
+							local bounceY = math.abs(math.sin(now * 10)) * 1.4
+							gModel:PivotTo(CFrame.lookAt(nextPos + Vector3.new(0, bounceY, 0), targetPos + Vector3.new(0, bounceY, 0)))
+						end
 
-					local delta = wp - gBody.Position
-					if delta.Magnitude > 0.5 then
-						local nextPos = gBody.Position + delta.Unit * math.min(delta.Magnitude, gDef.PatrolSpeed * dt)
-						local hopY = math.abs(math.sin(now * 4)) * 0.45
-						gModel:PivotTo(CFrame.lookAt(nextPos + Vector3.new(0, hopY, 0), wp + Vector3.new(0, hopY, 0)))
+						if dist <= 6.2 and session then
+							local droppedId = session.CarryingEggId
+							local droppedDef = if droppedId then SlimeData.ById[droppedId] else nil
+							clearCarriedEgg(targetPlayer)
+							targetHrp.AssemblyLinearVelocity = Vector3.new(0, 68, 55)
+							notifyPlayer(
+								targetPlayer,
+								string.format(
+									"💥 CAUGHT BY %s! You dropped the %s Egg! Train on your Dino Treadmill to reach %s Speed Power!",
+									string.upper(gDef.Name),
+									if droppedDef then droppedDef.Name else "Squishy",
+									UpgradeData.FormatNumber(gDef.RequiredSpeedPower)
+								),
+								"Error"
+							)
+							syncPlayerState(targetPlayer)
+						end
+					else
+						-- SLEEPING / GUARDING MODE ("Zzz")
+						if emoteLbl then
+							emoteLbl.Text = if math.floor(now * 2) % 2 == 0 then "Zzz" else "Z"
+							emoteLbl.TextColor3 = Color3.fromRGB(65, 225, 255)
+						end
+						if statusLbl then
+							statusLbl.Text = string.format(
+								"💤 Sleeping near Eggs (Speed: %s)",
+								UpgradeData.FormatNumber(gDef.RequiredSpeedPower)
+							)
+							statusLbl.TextColor3 = Color3.fromRGB(125, 235, 255)
+						end
+
+						local wp = guardianWaypoints[gId]
+						if not wp or (wp - gBody.Position).Magnitude < 5 then
+							local angle = math.random() * math.pi * 2
+							local r = math.random(18, gDef.PatrolRadius)
+							wp = Vector3.new(
+								math.clamp(gDef.HomePosition.X + math.cos(angle) * r, -95, 95),
+								gDef.HomePosition.Y,
+								math.clamp(gDef.HomePosition.Z + math.sin(angle) * (r * 0.65), lvlDef.ZEnd + 18, lvlDef.ZStart - 16)
+							)
+							guardianWaypoints[gId] = wp
+						end
+
+						local delta = wp - gBody.Position
+						if delta.Magnitude > 0.5 then
+							local nextPos = gBody.Position + delta.Unit * math.min(delta.Magnitude, gDef.PatrolSpeed * dt)
+							local hopY = math.abs(math.sin(now * 4)) * 0.45
+							gModel:PivotTo(CFrame.lookAt(nextPos + Vector3.new(0, hopY, 0), wp + Vector3.new(0, hopY, 0)))
+						end
 					end
 				end
 			end
 		end
 
-		-- 2. Update Living Egg Behaviors (Runaway Shy Eggs & Disguised Peekaboo Eggs)
+		-- 2. Update Living Egg Behaviors (Only when a player is nearby!)
 		for eggId, eggModel in pairs(world.WorldEggs) do
 			local sDef = SlimeData.ById[eggId]
 			local primary = eggModel.PrimaryPart
@@ -1914,10 +1947,10 @@ task.spawn(function()
 							eggLiveOffsets[eggId] = nextPos
 							eggModel:PivotTo(CFrame.new(nextPos))
 						end
-					else
-						local returnPos = curPos:Lerp(basePos, 0.08)
+					elseif (curPos - basePos).Magnitude > 0.25 then
+						local returnPos = curPos:Lerp(basePos, 0.15)
 						eggLiveOffsets[eggId] = returnPos
-						eggModel:PivotTo(CFrame.new(returnPos + Vector3.new(0, math.sin(now * 3 + eggId) * 0.35, 0)))
+						eggModel:PivotTo(CFrame.new(returnPos))
 					end
 				elseif sDef.Behavior == "Disguised" then
 					local disguisePart = eggModel:FindFirstChild("DisguiseShell") :: BasePart?

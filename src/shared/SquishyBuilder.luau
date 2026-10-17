@@ -12,6 +12,7 @@ local function makePart(props: { [string]: any }): Part
 	local part = Instance.new("Part")
 	part.Anchored = if props.Anchored ~= nil then props.Anchored else true
 	part.CanCollide = if props.CanCollide ~= nil then props.CanCollide else false
+	part.CastShadow = if props.CastShadow ~= nil then props.CastShadow else false
 	part.TopSurface = Enum.SurfaceType.Smooth
 	part.BottomSurface = Enum.SurfaceType.Smooth
 	part.Material = props.Material or Enum.Material.SmoothPlastic
@@ -70,9 +71,9 @@ local function addRarityParticles(parentPart: BasePart, color1: Color3, color2: 
 		NumberSequenceKeypoint.new(0, 0.05),
 		NumberSequenceKeypoint.new(1, 1),
 	})
-	pe.Lifetime = NumberRange.new(0.8, 1.5)
-	pe.Rate = rate
-	pe.Speed = NumberRange.new(2, 6)
+	pe.Lifetime = NumberRange.new(0.7, 1.2)
+	pe.Rate = math.min(rate, 4)
+	pe.Speed = NumberRange.new(2, 5)
 	pe.SpreadAngle = Vector2.new(180, 180)
 	pe.Parent = parentPart
 end

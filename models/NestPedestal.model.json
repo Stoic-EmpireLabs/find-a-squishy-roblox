@@ -1,0 +1,13 @@
+{
+  "ClassName": "Part",
+  "Name": "NestPedestalTemplate",
+  "Properties": {
+    "Anchored": true,
+    "CanCollide": true,
+    "CastShadow": false,
+    "Shape": "Cylinder",
+    "Material": "SmoothPlastic",
+    "Color": [0.647, 0.96, 0.431],
+    "Size": [1.3, 6.4, 6.4]
+  }
+}
