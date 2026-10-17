@@ -34,6 +34,8 @@ local clientState = {
 	GelTier = 1,
 	JumpTier = 1,
 	PlantedEggs = {} :: { [string]: boolean },
+	SquishyLevels = {} :: { [string]: number },
+	BackpackEggs = {} :: { [string]: number },
 	PlantedCount = 0,
 	MaxUnlockedLevel = 1,
 	IncomePerSec = 0,
@@ -390,58 +392,83 @@ vipGuideBtn.MouseButton1Click:Connect(function()
 	actionRemote:FireServer({ Action = "BuyUpgrade", Category = "UnlockVIPGuide" })
 end)
 
-local slimeRowCards: { [number]: { Row: Frame, StatusLbl: TextLabel, ActionBtn: TextButton } } = {}
+local slimeRowCards: { [number]: { Row: Frame, StatusLbl: TextLabel, ActionBtn: TextButton, LevelBtn: TextButton } } = {}
 for _, sDef in ipairs(SlimeData.Slimes) do
 	local row = Instance.new("Frame")
-	row.Size = UDim2.new(1, -10, 0, 62)
+	row.Size = UDim2.new(1, -10, 0, 66)
 	row.BackgroundColor3 = Color3.fromRGB(30, 36, 56)
 	row.Parent = slimeScroll
 	addCorner(row, 10)
 
 	local swatch = Instance.new("Frame")
 	swatch.Size = UDim2.new(0, 44, 0, 44)
-	swatch.Position = UDim2.new(0, 9, 0, 9)
+	swatch.Position = UDim2.new(0, 9, 0, 11)
 	swatch.BackgroundColor3 = sDef.Color
 	swatch.Parent = row
 	addCorner(swatch, 22)
 	addStroke(swatch, sDef.SecondaryColor, 2)
 
 	local nameLbl = Instance.new("TextLabel")
-	nameLbl.Size = UDim2.new(0, 370, 0, 26)
+	nameLbl.Size = UDim2.new(0, 310, 0, 26)
 	nameLbl.Position = UDim2.new(0, 62, 0, 6)
 	nameLbl.BackgroundTransparency = 1
 	nameLbl.Font = Enum.Font.FredokaOne
-	nameLbl.TextSize = 16
+	nameLbl.TextSize = 15
 	nameLbl.TextXAlignment = Enum.TextXAlignment.Left
 	nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-	nameLbl.Text = string.format("#%d [Lvl %d] %s (%s - +$%s/s)", sDef.Id, sDef.Level, sDef.Name, sDef.Rarity, UpgradeData.FormatNumber(sDef.CoinsPerSec))
+	nameLbl.Text = string.format("#%d [Zone %d] %s (%s • +$%s/s)", sDef.Id, sDef.Level, sDef.Name, sDef.Rarity, UpgradeData.FormatNumber(sDef.CoinsPerSec))
 	nameLbl.Parent = row
 
 	local hintLbl = Instance.new("TextLabel")
-	hintLbl.Size = UDim2.new(0, 390, 0, 24)
-	hintLbl.Position = UDim2.new(0, 62, 0, 32)
+	hintLbl.Size = UDim2.new(0, 310, 0, 24)
+	hintLbl.Position = UDim2.new(0, 62, 0, 34)
 	hintLbl.BackgroundTransparency = 1
 	hintLbl.Font = Enum.Font.GothamMedium
-	hintLbl.TextSize = 13
+	hintLbl.TextSize = 12
 	hintLbl.TextXAlignment = Enum.TextXAlignment.Left
 	hintLbl.TextColor3 = Color3.fromRGB(190, 210, 240)
-	hintLbl.Text = "💡 Hint: " .. sDef.Hint
+	hintLbl.Text = "💡 " .. sDef.Hint
 	hintLbl.Parent = row
 
+	-- Left button: Level Up ($/sec) or Place from Backpack
+	local lvlBtn = Instance.new("TextButton")
+	lvlBtn.Size = UDim2.new(0, 145, 0, 44)
+	lvlBtn.Position = UDim2.new(1, -295, 0, 11)
+	lvlBtn.BackgroundColor3 = Color3.fromRGB(85, 225, 130)
+	lvlBtn.Font = Enum.Font.FredokaOne
+	lvlBtn.TextSize = 13
+	lvlBtn.TextColor3 = Color3.fromRGB(20, 25, 30)
+	lvlBtn.Text = "⬆️ Level Up"
+	lvlBtn.Visible = false
+	lvlBtn.Parent = row
+	addCorner(lvlBtn, 8)
+
+	lvlBtn.MouseButton1Click:Connect(function()
+		local idStr = tostring(sDef.Id)
+		if clientState.BackpackEggs[idStr] then
+			actionRemote:FireServer({ Action = "PlaceBackpackSquishy", SlimeId = sDef.Id })
+		elseif clientState.PlantedEggs[idStr] then
+			actionRemote:FireServer({ Action = "UpgradeSquishyLevel", SlimeId = sDef.Id })
+		end
+	end)
+
+	-- Right button: Guide Me or Morph
 	local actBtn = Instance.new("TextButton")
-	actBtn.Size = UDim2.new(0, 175, 0, 42)
-	actBtn.Position = UDim2.new(1, -185, 0, 10)
+	actBtn.Size = UDim2.new(0, 135, 0, 44)
+	actBtn.Position = UDim2.new(1, -142, 0, 11)
 	actBtn.BackgroundColor3 = Color3.fromRGB(245, 185, 45)
 	actBtn.Font = Enum.Font.FredokaOne
-	actBtn.TextSize = 14
+	actBtn.TextSize = 13
 	actBtn.TextColor3 = Color3.fromRGB(20, 20, 30)
-	actBtn.Text = string.format("🧭 Guide Me ($%d)", UpgradeData.GuidePricing.SingleEggGuideCoinCost)
+	actBtn.Text = string.format("🧭 Guide ($%d)", UpgradeData.GuidePricing.SingleEggGuideCoinCost)
 	actBtn.Parent = row
 	addCorner(actBtn, 8)
 
 	actBtn.MouseButton1Click:Connect(function()
-		local isPlanted = clientState.PlantedEggs[tostring(sDef.Id)] == true
-		if isPlanted then
+		local idStr = tostring(sDef.Id)
+		if clientState.BackpackEggs[idStr] then
+			actionRemote:FireServer({ Action = "PlaceBackpackSquishy", SlimeId = sDef.Id })
+		elseif clientState.PlantedEggs[idStr] then
 			actionRemote:FireServer({ Action = "MorphSlime", SlimeId = sDef.Id })
 		else
 			actionRemote:FireServer({ Action = "BuyUpgrade", Category = "GuideToEgg", Arg = sDef.Id })
@@ -454,6 +481,7 @@ for _, sDef in ipairs(SlimeData.Slimes) do
 		Row = row,
 		StatusLbl = nameLbl,
 		ActionBtn = actBtn,
+		LevelBtn = lvlBtn,
 	}
 end
 
@@ -509,7 +537,7 @@ for _, trailDef in ipairs(UpgradeData.Trails) do
 end
 
 -- MODAL 3: PEN & TREADMILL UPGRADES SHOP
-local upgModal, upgScroll = createBaseModal("⚡ GROW PEN, MILLION-SPEED TREADMILLS & SPRINGS", Color3.fromRGB(85, 225, 255))
+local upgModal, upgScroll = createBaseModal("⚡ GROW PEN, DINO-JAW TREADMILLS & SPRINGS", Color3.fromRGB(85, 225, 255))
 
 local function makeUpgradeRow(titleStr: string, subStr: string, btnColor: Color3, category: string): (TextLabel, TextButton)
 	local card = Instance.new("Frame")
@@ -547,8 +575,8 @@ local function makeUpgradeRow(titleStr: string, subStr: string, btnColor: Color3
 	return lbl, btn
 end
 
-local penUpgLbl, penUpgBtn = makeUpgradeRow("🏡 Grow Base Pen (+Nest Slots)", "Expand your Pen to plant Eggs from higher levels!", Color3.fromRGB(255, 165, 55), "ExpandPen")
-local tmUpgLbl, tmUpgBtn = makeUpgradeRow("🏃 Upgrade Speed Treadmill", "Gain up to +3.5M Speed Power per stride!", Color3.fromRGB(85, 215, 255), "UpgradeTreadmill")
+local penUpgLbl, penUpgBtn = makeUpgradeRow("🏡 Grow Base Pen (+Slots)", "Expand your Pen to place Squishies from higher levels!", Color3.fromRGB(255, 165, 55), "ExpandPen")
+local tmUpgLbl, tmUpgBtn = makeUpgradeRow("🦖 Upgrade Dino Speed Treadmill", "Gain up to +3.5M Speed Power per stride!", Color3.fromRGB(85, 215, 255), "UpgradeTreadmill")
 local gelUpgLbl, gelUpgBtn = makeUpgradeRow("🌈 Upgrade Pen Gel Coating", "Multiply all Squishy Coins/sec up to 12x!", Color3.fromRGB(255, 115, 235), "UpgradeGel")
 local jumpUpgLbl, jumpUpgBtn = makeUpgradeRow("🦘 Upgrade Obby Jump Springs", "Jump higher over Obby Lasers & Spires!", Color3.fromRGB(125, 245, 135), "UpgradeJump")
 
@@ -613,7 +641,7 @@ makeVipShopCard(
 
 makeVipShopCard(
 	"⚡ Hyper-Speed Treadmill Overdrive (3X Speed)",
-	"Triple your current Speed Power immediately to outrun Brainrot Chasers!",
+	"Triple your current Speed Power immediately to outrun Boss Chasers!",
 	"Activate 3X Speed",
 	Color3.fromRGB(85, 235, 255),
 	function()
@@ -623,7 +651,7 @@ makeVipShopCard(
 
 makeVipShopCard(
 	"💰 Sovereign Treasure Chest (+$25,000 Coins)",
-	"Instant +$25,000 Coins for Pen Expansions, Treadmills & Coloring Trails!",
+	"Instant +$25,000 Coins for Squishy Levels, Pen Expansions & Trails!",
 	"Claim +$25,000",
 	Color3.fromRGB(110, 250, 135),
 	function()
@@ -633,7 +661,7 @@ makeVipShopCard(
 
 makeVipShopCard(
 	"🔓 Instant Biome Level Completer",
-	"Auto-Plants all Eggs in your current Biome & unlocks the next Level Gate!",
+	"Auto-Places all Squishies in your current Biome & unlocks the next Level Gate!",
 	"Unlock Current Level",
 	Color3.fromRGB(255, 115, 225),
 	function()
@@ -641,33 +669,94 @@ makeVipShopCard(
 	end
 )
 
--- Populate Left Dock Buttons
-leftDock.Size = UDim2.new(0, 200, 0, 380)
-leftDock.Position = UDim2.new(0, 14, 0.5, -190)
+-- Populate Left Dock Buttons (Chunky, Colorful Bevel Style matching real_frame_a_01.png!)
+leftDock.Size = UDim2.new(0, 195, 0, 360)
+leftDock.Position = UDim2.new(0, 14, 0.5, -195)
 
-makeDockButton("🧭 Guide Next Egg", Color3.fromRGB(245, 185, 40), function()
-	actionRemote:FireServer({ Action = "BuyUpgrade", Category = "GuideToEgg", Arg = nil })
-end)
-makeDockButton("📖 Slimeopedia & Morph", Color3.fromRGB(75, 195, 120), function()
-	toggleModal(slimeModal)
-end)
-makeDockButton("🎨 Coloring Trails", Color3.fromRGB(235, 95, 195), function()
-	toggleModal(trailsModal)
-end)
-makeDockButton("⚡ Grow Pen & Speed", Color3.fromRGB(55, 175, 245), function()
-	toggleModal(upgModal)
-end)
-makeDockButton("💎 VIP & Boost Shop", Color3.fromRGB(245, 145, 35), function()
+makeDockButton("🛒 Shop & VIP", Color3.fromRGB(245, 175, 25), function()
 	toggleModal(vipModal)
 end)
-makeDockButton("🪨 Co-op Buddy Weight", Color3.fromRGB(165, 110, 245), function()
-	actionRemote:FireServer({ Action = "DropDecoyWeight" })
+makeDockButton("📘 Index & Levels", Color3.fromRGB(45, 165, 245), function()
+	toggleModal(slimeModal)
+end)
+makeDockButton("🧭 Guide Next Egg", Color3.fromRGB(85, 215, 125), function()
+	actionRemote:FireServer({ Action = "BuyUpgrade", Category = "GuideToEgg", Arg = nil })
+end)
+makeDockButton("⚡ Dino Belt & Pen", Color3.fromRGB(165, 95, 245), function()
+	toggleModal(upgModal)
+end)
+makeDockButton("🎨 Coloring Trails", Color3.fromRGB(245, 95, 185), function()
+	toggleModal(trailsModal)
 end)
 makeDockButton("🧤 Slime Slap Glove", Color3.fromRGB(255, 125, 55), function()
 	actionRemote:FireServer({ Action = "EquipSlapTool" })
 end)
 
--- Bottom-Right Family / Creator Quick Boost Bar (So you & your kids can test Million Speed or Coins anytime!)
+-- BOTTOM-LEFT STACKED SPEED & CASH HUD + GREEN [+] BUTTONS (matching real_frame_a_01.png!)
+local bottomLeftStats = Instance.new("Frame")
+bottomLeftStats.Name = "BottomLeftStats"
+bottomLeftStats.Size = UDim2.new(0, 225, 0, 82)
+bottomLeftStats.Position = UDim2.new(0, 14, 1, -96)
+bottomLeftStats.BackgroundTransparency = 1
+bottomLeftStats.Parent = screenGui
+
+local blSpeedLabel = Instance.new("TextLabel")
+blSpeedLabel.Size = UDim2.new(0, 175, 0, 38)
+blSpeedLabel.Position = UDim2.new(0, 0, 0, 0)
+blSpeedLabel.BackgroundTransparency = 1
+blSpeedLabel.Font = Enum.Font.FredokaOne
+blSpeedLabel.TextSize = 30
+blSpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
+blSpeedLabel.TextColor3 = Color3.fromRGB(65, 215, 255)
+blSpeedLabel.TextStrokeColor3 = Color3.fromRGB(10, 15, 28)
+blSpeedLabel.TextStrokeTransparency = 0
+blSpeedLabel.Text = "100"
+blSpeedLabel.Parent = bottomLeftStats
+
+local blSpeedPlus = Instance.new("TextButton")
+blSpeedPlus.Size = UDim2.new(0, 32, 0, 32)
+blSpeedPlus.Position = UDim2.new(0, 182, 0, 3)
+blSpeedPlus.BackgroundColor3 = Color3.fromRGB(65, 215, 75)
+blSpeedPlus.Font = Enum.Font.FredokaOne
+blSpeedPlus.TextSize = 22
+blSpeedPlus.TextColor3 = Color3.fromRGB(255, 255, 255)
+blSpeedPlus.Text = "+"
+blSpeedPlus.Parent = bottomLeftStats
+addCorner(blSpeedPlus, 6)
+addStroke(blSpeedPlus, Color3.fromRGB(20, 45, 20), 2)
+blSpeedPlus.MouseButton1Click:Connect(function()
+	actionRemote:FireServer({ Action = "FamilyBoost", BoostType = "Speed" })
+end)
+
+local blCashLabel = Instance.new("TextLabel")
+blCashLabel.Size = UDim2.new(0, 175, 0, 40)
+blCashLabel.Position = UDim2.new(0, 0, 0, 40)
+blCashLabel.BackgroundTransparency = 1
+blCashLabel.Font = Enum.Font.FredokaOne
+blCashLabel.TextSize = 30
+blCashLabel.TextXAlignment = Enum.TextXAlignment.Left
+blCashLabel.TextColor3 = Color3.fromRGB(75, 245, 95)
+blCashLabel.TextStrokeColor3 = Color3.fromRGB(10, 22, 12)
+blCashLabel.TextStrokeTransparency = 0
+blCashLabel.Text = "$100"
+blCashLabel.Parent = bottomLeftStats
+
+local blCashPlus = Instance.new("TextButton")
+blCashPlus.Size = UDim2.new(0, 32, 0, 32)
+blCashPlus.Position = UDim2.new(0, 182, 0, 44)
+blCashPlus.BackgroundColor3 = Color3.fromRGB(65, 215, 75)
+blCashPlus.Font = Enum.Font.FredokaOne
+blCashPlus.TextSize = 22
+blCashPlus.TextColor3 = Color3.fromRGB(255, 255, 255)
+blCashPlus.Text = "+"
+blCashPlus.Parent = bottomLeftStats
+addCorner(blCashPlus, 6)
+addStroke(blCashPlus, Color3.fromRGB(20, 45, 20), 2)
+blCashPlus.MouseButton1Click:Connect(function()
+	actionRemote:FireServer({ Action = "FamilyBoost", BoostType = "Coins" })
+end)
+
+-- Bottom-Right Family / Creator Quick Boost Bar
 local familyBar = Instance.new("Frame")
 familyBar.Size = UDim2.new(0, 350, 0, 38)
 familyBar.Position = UDim2.new(1, -362, 1, -48)
@@ -695,7 +784,7 @@ end
 
 makeBoostBtn("🎁 +$25K Coins", 0.0, "Coins")
 makeBoostBtn("⚡ 3x Speed Boost", 0.33, "Speed")
-makeBoostBtn("🔓 Plant Level", 0.66, "PlantCurrentLevel")
+makeBoostBtn("🔓 Place Level", 0.66, "PlantCurrentLevel")
 
 -- ============================================================================
 -- 5. STATE SYNC & LOCAL WORLD VISUALS (Gates, Ghost Planted Eggs, 3D Guide Beam)
@@ -709,7 +798,7 @@ local function spawnSpeedPopup(gainAmount: number)
 	pop.TextSize = 22
 	pop.TextColor3 = Color3.fromRGB(95, 250, 255)
 	pop.TextStrokeTransparency = 0.15
-	pop.Text = string.format("⚡ +%s SPEED POWER!", UpgradeData.FormatNumber(gainAmount))
+	pop.Text = string.format("👟 +%s SPEED!", UpgradeData.FormatNumber(gainAmount))
 	pop.Parent = screenGui
 	task.spawn(function()
 		for i = 1, 18 do
@@ -723,9 +812,11 @@ local function spawnSpeedPopup(gainAmount: number)
 end
 
 local function refreshLocalWorldAndModals()
-	-- Top Bar
+	-- Top Bar & Bottom-Left Stacked Counters
 	coinsBadge.Text = string.format("💰 $%s (+%s/s)", UpgradeData.FormatNumber(clientState.Coins), UpgradeData.FormatNumber(clientState.IncomePerSec))
 	speedBadge.Text = string.format("⚡ %s SPEED", UpgradeData.FormatNumber(clientState.SpeedPower))
+	blSpeedLabel.Text = UpgradeData.FormatNumber(clientState.SpeedPower)
+	blCashLabel.Text = "$" .. UpgradeData.FormatNumber(clientState.Coins)
 
 	local curLvl = math.min(5, clientState.MaxUnlockedLevel)
 	local plantedInCur = 0
@@ -735,31 +826,59 @@ local function refreshLocalWorldAndModals()
 			plantedInCur += 1
 		end
 	end
-	progressBadge.Text = string.format("🥚 Lvl %d: %d/%d (%d/35)", curLvl, plantedInCur, totalInCur, clientState.PlantedCount)
+	progressBadge.Text = string.format("🥟 Lvl %d: %d/%d (%d/35)", curLvl, plantedInCur, totalInCur, clientState.PlantedCount)
 
 	-- Carry Banner
 	if clientState.CarryingEggId then
 		local cDef = SlimeData.ById[clientState.CarryingEggId]
 		carryBanner.Visible = true
 		carryBanner.Text = string.format(
-			"🚨 CARRYING %s EGG! RUN TO YOUR BASE PEN TO PLANT IT! 🚨",
+			"🚨 STOLE %s EGG! OUTRUN THE BOSS TO YOUR PEN TO PLANT & HATCH IT! 🚨",
 			if cDef then string.upper(cDef.Name) else "SQUISHY"
 		)
 	else
 		carryBanner.Visible = false
 	end
 
-	-- Update Slimeopedia Cards
+	-- Update Slimeopedia Cards with Per-Squishy Level & $/sec Upgrade Controls!
 	for id, cardInfo in pairs(slimeRowCards) do
-		local isPlanted = clientState.PlantedEggs[tostring(id)] == true
-		if isPlanted then
-			cardInfo.ActionBtn.BackgroundColor3 = Color3.fromRGB(85, 225, 130)
-			cardInfo.ActionBtn.Text = if clientState.CurrentMorphId == id then "✨ Morphed!" else "✨ Morph Squishy"
-		else
-			cardInfo.ActionBtn.BackgroundColor3 = Color3.fromRGB(245, 185, 45)
-			cardInfo.ActionBtn.Text = if clientState.VIPGuideUnlocked
-				then "🧭 Guide Me (VIP)"
-				else string.format("🧭 Guide Me ($%d)", UpgradeData.GuidePricing.SingleEggGuideCoinCost)
+		local idStr = tostring(id)
+		local sDef = SlimeData.ById[id]
+		local isPlanted = clientState.PlantedEggs[idStr] == true
+		local inBackpack = clientState.BackpackEggs[idStr] ~= nil
+		local sqLvl = clientState.SquishyLevels[idStr] or 1
+
+		if sDef then
+			local cps = SlimeData.GetSquishyCoinsPerSec(sDef, sqLvl)
+			local upgCost = SlimeData.GetSquishyUpgradeCost(sDef, sqLvl)
+			cardInfo.StatusLbl.Text = string.format(
+				"#%d %s [Lv.%d] (%s • +$%s/s)",
+				sDef.Id,
+				sDef.Name,
+				sqLvl,
+				sDef.Rarity,
+				UpgradeData.FormatNumber(cps)
+			)
+
+			if inBackpack then
+				cardInfo.LevelBtn.Visible = true
+				cardInfo.LevelBtn.BackgroundColor3 = Color3.fromRGB(245, 95, 195)
+				cardInfo.LevelBtn.Text = "🎒 Place in Pen!"
+				cardInfo.ActionBtn.BackgroundColor3 = Color3.fromRGB(245, 95, 195)
+				cardInfo.ActionBtn.Text = "🥟 Place Now"
+			elseif isPlanted then
+				cardInfo.LevelBtn.Visible = true
+				cardInfo.LevelBtn.BackgroundColor3 = Color3.fromRGB(85, 235, 125)
+				cardInfo.LevelBtn.Text = string.format("⬆️ Lv.%d ($%s)", sqLvl + 1, UpgradeData.FormatNumber(upgCost))
+				cardInfo.ActionBtn.BackgroundColor3 = Color3.fromRGB(85, 195, 255)
+				cardInfo.ActionBtn.Text = if clientState.CurrentMorphId == id then "✨ Morphed!" else "✨ Morph"
+			else
+				cardInfo.LevelBtn.Visible = false
+				cardInfo.ActionBtn.BackgroundColor3 = Color3.fromRGB(245, 185, 45)
+				cardInfo.ActionBtn.Text = if clientState.VIPGuideUnlocked
+					then "🧭 Guide (VIP)"
+					else string.format("🧭 Guide ($%d)", UpgradeData.GuidePricing.SingleEggGuideCoinCost)
+			end
 		end
 	end
 	if clientState.VIPGuideUnlocked then
@@ -784,19 +903,19 @@ local function refreshLocalWorldAndModals()
 	-- Update Upgrades Modal
 	if clientState.PenTier < #UpgradeData.PenTiers then
 		local nextPen = UpgradeData.GetPenTier(clientState.PenTier + 1)
-		penUpgLbl.Text = string.format("🏡 Grow Pen -> %s (%d Nests)\n%s", nextPen.Name, nextPen.MaxNests, nextPen.Description)
+		penUpgLbl.Text = string.format("🏡 Grow Pen -> %s (%d Slots)\n%s", nextPen.Name, nextPen.MaxNests, nextPen.Description)
 		penUpgBtn.Text = "$" .. UpgradeData.FormatNumber(nextPen.Cost)
 	else
-		penUpgLbl.Text = "🏡 Sovereign Palace Pen (MAX 35/35 Nests)"
+		penUpgLbl.Text = "🏡 Sovereign Palace Pen (MAX 35/35 Slots)"
 		penUpgBtn.Text = "MAXED"
 	end
 
 	if clientState.TreadmillTier < #UpgradeData.TreadmillTiers then
 		local nextTm = UpgradeData.GetTreadmillTier(clientState.TreadmillTier + 1)
-		tmUpgLbl.Text = string.format("🏃 %s\n%s", nextTm.Name, nextTm.Description)
+		tmUpgLbl.Text = string.format("🦖 %s\n%s", nextTm.Name, nextTm.Description)
 		tmUpgBtn.Text = "$" .. UpgradeData.FormatNumber(nextTm.Cost)
 	else
-		tmUpgLbl.Text = "🏃 God-Speed Infinity Treadmill (MAX)"
+		tmUpgLbl.Text = "🦖 God-Speed Infinity Dino Belt (MAX)"
 		tmUpgBtn.Text = "MAXED"
 	end
 
@@ -818,7 +937,7 @@ local function refreshLocalWorldAndModals()
 		jumpUpgBtn.Text = "MAXED"
 	end
 
-	-- Local World Egg Transparency (Ghost out Eggs this player has already planted so they know what's left!)
+	-- Local World Egg Transparency
 	local worldEggsFolder = Workspace:FindFirstChild("WorldEggs")
 	if worldEggsFolder then
 		for _, eggModel in ipairs(worldEggsFolder:GetChildren()) do
@@ -833,7 +952,7 @@ local function refreshLocalWorldAndModals()
 		end
 	end
 
-	-- Local Level Gate Unlocking (Turn unlocked gates Green & CanCollide = false for this player!)
+	-- Local Level Gate Unlocking
 	local gatesFolder = Workspace:FindFirstChild("LevelGates")
 	if gatesFolder then
 		for _, gatePart in ipairs(gatesFolder:GetChildren()) do
@@ -891,13 +1010,13 @@ guideBeam.Parent = guideBeamPart
 RunService.RenderStepped:Connect(function()
 	local now = os.clock()
 
-	-- Gently rotate the Golden Squishy Fountain Statue in the Hub Plaza
+	-- Gently rotate the Golden Squishy Fountain Statue on top of the Hub Fountain Pillar (0, 15, 130)
 	local squishyWorld = Workspace:FindFirstChild("SquishyWorld")
 	if squishyWorld then
 		local statue = squishyWorld:FindFirstChild("GoldenFountainStatue")
 		if statue and statue:IsA("Model") and statue.PrimaryPart then
 			local bob = math.sin(now * 2.2) * 0.45
-			statue:PivotTo(CFrame.new(0, 7.6 + bob, 95) * CFrame.Angles(0, now * 0.85, 0))
+			statue:PivotTo(CFrame.new(0, 15.0 + bob, 130) * CFrame.Angles(0, now * 0.85, 0))
 		end
 	end
 

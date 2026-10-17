@@ -37,7 +37,8 @@
         "Brightness": 2.5,
         "ColorShift_Top": [1.0, 0.96, 0.88],
         "GlobalShadows": true,
-        "ClockTime": 14.0
+        "ClockTime": 14.0,
+        "Technology": "ShadowMap"
       }
     },
     "SoundService": {

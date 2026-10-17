@@ -247,6 +247,136 @@ local function configureLighting()
 end
 
 -- Builds a Spacious 76x58 Fenced Tycoon Sanctuary Plot with 3D Treadmill, Entrance Arch & 35 Nests
+-- Helper to build a 3D Dino-Jaw / Monster-Head Treadmill (matching real_frame_a_01.png!)
+local function buildDinoJawHead(beltPart: BasePart, faceDir: number, scale: number, parent: Instance)
+	local dinoModel = Instance.new("Model")
+	dinoModel.Name = "DinoTreadmillHead"
+	dinoModel.Parent = parent
+
+	local center = beltPart.Position
+	local backX = center.X - faceDir * (5.2 * scale)
+	local limeGreen = Color3.fromRGB(138, 218, 32)
+	local darkLime = Color3.fromRGB(98, 175, 22)
+
+	-- Left & Right Dino Jaw Pillars
+	for side = -1, 1, 2 do
+		createPart({
+			Name = "DinoNeck_" .. side,
+			Material = Enum.Material.SmoothPlastic,
+			Color = darkLime,
+			Size = Vector3.new(3.6 * scale, 8.8 * scale, 1.8 * scale),
+			Position = Vector3.new(backX, center.Y + 4.4 * scale, center.Z + side * (3.6 * scale)),
+			Parent = dinoModel,
+		})
+		-- Pink belt side guards with little white lower teeth
+		createPart({
+			Name = "BeltSideGuard_" .. side,
+			Material = Enum.Material.SmoothPlastic,
+			Color = limeGreen,
+			Size = Vector3.new(13.5 * scale, 1.8 * scale, 1.1 * scale),
+			Position = Vector3.new(center.X, center.Y + 0.9 * scale, center.Z + side * (3.9 * scale)),
+			Parent = dinoModel,
+		})
+		for t = -2, 2 do
+			createPart({
+				Name = "LowerTooth_" .. side .. "_" .. t,
+				Material = Enum.Material.Neon,
+				Color = Color3.fromRGB(255, 255, 255),
+				Size = Vector3.new(0.65 * scale, 1.25 * scale, 0.55 * scale),
+				Position = Vector3.new(center.X + t * (2.2 * scale), center.Y + 2.1 * scale, center.Z + side * (3.8 * scale)),
+				Parent = dinoModel,
+			})
+		end
+	end
+
+	-- Overarching Green T-Rex / Monster Upper Head & Snout
+	local snout = createPart({
+		Name = "DinoUpperSnout",
+		Material = Enum.Material.SmoothPlastic,
+		Color = limeGreen,
+		Size = Vector3.new(11.5 * scale, 4.6 * scale, 9.2 * scale),
+		CFrame = CFrame.new(center.X - faceDir * (1.2 * scale), center.Y + 9.2 * scale, center.Z)
+			* CFrame.Angles(0, 0, math.rad(-faceDir * 14)),
+		Parent = dinoModel,
+	})
+	-- Nostrils
+	for side = -1, 1, 2 do
+		createPart({
+			Name = "Nostril_" .. side,
+			Material = Enum.Material.SmoothPlastic,
+			Color = Color3.fromRGB(25, 35, 18),
+			Size = Vector3.new(0.9 * scale, 0.9 * scale, 0.9 * scale),
+			CFrame = snout.CFrame * CFrame.new(faceDir * (5.4 * scale), 0.8 * scale, side * (2.2 * scale)),
+			Parent = dinoModel,
+		})
+		-- Big Cartoon White + Black Eyes on sides of Dino Head
+		createPart({
+			Name = "DinoEyeWhite_" .. side,
+			Material = Enum.Material.Neon,
+			Color = Color3.fromRGB(255, 255, 255),
+			Size = Vector3.new(2.8 * scale, 2.8 * scale, 0.6 * scale),
+			CFrame = snout.CFrame * CFrame.new(-faceDir * (1.4 * scale), 0.6 * scale, side * (4.65 * scale)),
+			Parent = dinoModel,
+		})
+		createPart({
+			Name = "DinoEyePupil_" .. side,
+			Material = Enum.Material.SmoothPlastic,
+			Color = Color3.fromRGB(15, 15, 20),
+			Size = Vector3.new(1.5 * scale, 1.8 * scale, 0.75 * scale),
+			CFrame = snout.CFrame * CFrame.new(-faceDir * (0.9 * scale), 0.5 * scale, side * (4.72 * scale)),
+			Parent = dinoModel,
+		})
+	end
+
+	-- Hanging Upper Row of Sharp White Dino Teeth
+	for t = -3, 3 do
+		createPart({
+			Name = "UpperDinoTooth_" .. t,
+			Material = Enum.Material.Neon,
+			Color = Color3.fromRGB(255, 255, 255),
+			Size = Vector3.new(0.75 * scale, 1.55 * scale, 0.75 * scale),
+			CFrame = snout.CFrame * CFrame.new(faceDir * (4.8 * scale), -2.6 * scale, t * (1.15 * scale)),
+			Parent = dinoModel,
+		})
+	end
+end
+
+-- Helper to build Warm Wooden Post-and-Rail Ranch Fencing around a Base Pen (matching real_frame_a_01.png!)
+local function buildWoodenRanchFence(startPos: Vector3, endPos: Vector3, parent: Instance)
+	local diff = endPos - startPos
+	local dist = diff.Magnitude
+	local mid = (startPos + endPos) * 0.5
+	local woodBrown = Color3.fromRGB(138, 78, 36)
+	local darkWood = Color3.fromRGB(108, 58, 24)
+
+	-- Top and Bottom Horizontal Wooden Rails
+	for _, railY in ipairs({ 1.6, 3.2 }) do
+		createPart({
+			Name = "FenceRail",
+			Material = Enum.Material.Wood,
+			Color = woodBrown,
+			Size = Vector3.new(0.55, 0.55, dist),
+			CFrame = CFrame.lookAt(mid + Vector3.new(0, railY, 0), endPos + Vector3.new(0, railY, 0)),
+			Parent = parent,
+		})
+	end
+
+	-- Vertical Wooden Fence Posts every 11 studs
+	local numPosts = math.max(2, math.floor(dist / 11) + 1)
+	for i = 0, numPosts - 1 do
+		local alpha = i / math.max(1, numPosts - 1)
+		local pPos = startPos:Lerp(endPos, alpha)
+		createPart({
+			Name = "FencePost",
+			Material = Enum.Material.Wood,
+			Color = darkWood,
+			Size = Vector3.new(1.1, 4.4, 1.1),
+			Position = pPos + Vector3.new(0, 2.2, 0),
+			Parent = parent,
+		})
+	end
+end
+
 local function buildPlot(plotIndex: number, centerPos: Vector3, isLeftSide: boolean, parentFolder: Folder): PlotRecord
 	local folder = Instance.new("Folder")
 	folder.Name = "BasePen_" .. tostring(plotIndex)
@@ -254,188 +384,163 @@ local function buildPlot(plotIndex: number, centerPos: Vector3, isLeftSide: bool
 
 	local faceDir = if isLeftSide then 1 else -1 -- Points toward the central Hub walkway
 
-	-- Main Lush Lawn Floor (76 x 58)
-	createPart({
+	-- Main Lush Lawn Floor (76 x 58) with ClickDetector so players can click with a Backpack Squishy Tool to place it!
+	local penLawn = createPart({
 		Name = "PenLawn",
-		Material = Enum.Material.Grass,
-		Color = Color3.fromRGB(78, 182, 96),
+		Material = Enum.Material.SmoothPlastic,
+		Color = Color3.fromRGB(118, 212, 58),
 		Size = Vector3.new(76, 2.4, 58),
 		Position = centerPos + Vector3.new(0, -1.2, 0),
 		Parent = folder,
 	})
+	penLawn:SetAttribute("PlotIndex", plotIndex)
+	local lawnClick = Instance.new("ClickDetector")
+	lawnClick.Name = "PlaceSquishyClick"
+	lawnClick.MaxActivationDistance = 65
+	lawnClick.Parent = penLawn
 
-	-- Stone Patio Apron at the Front Entrance of the Pen
-	createPart({
-		Name = "FrontPatio",
-		Material = Enum.Material.SmoothPlastic,
-		Color = Color3.fromRGB(225, 230, 242),
-		Size = Vector3.new(26, 2.5, 56),
-		Position = centerPos + Vector3.new(faceDir * 24, -1.2, 0),
-		Parent = folder,
-	})
+	-- Two-Tone Checkered Grass Squares on the Pen Lawn (matching real_frame_a_01.png!)
+	for gx = -3, 2 do
+		for gz = -2, 2 do
+			if (gx + gz) % 2 == 0 then
+				createPart({
+					Name = "CheckeredTile",
+					Material = Enum.Material.SmoothPlastic,
+					Color = Color3.fromRGB(134, 224, 68),
+					Size = Vector3.new(11.5, 0.12, 10.5),
+					Position = centerPos + Vector3.new(gx * 11.5 + 5, 0.04, gz * 10.5),
+					CanCollide = false,
+					Parent = folder,
+				})
+			end
+		end
+	end
 
-	-- Decorative White & Neon Perimeter Fence around the Sanctuary
-	createPart({
-		Name = "BackFence",
-		Material = Enum.Material.SmoothPlastic,
-		Color = Color3.fromRGB(245, 248, 255),
-		Size = Vector3.new(2, 4.5, 58),
-		Position = centerPos + Vector3.new(-faceDir * 37, 2.25, 0),
-		Parent = folder,
-	})
-	createPart({
-		Name = "NorthFence",
-		Material = Enum.Material.SmoothPlastic,
-		Color = Color3.fromRGB(245, 248, 255),
-		Size = Vector3.new(76, 4.5, 2),
-		Position = centerPos + Vector3.new(0, 2.25, -28),
-		Parent = folder,
-	})
-	createPart({
-		Name = "SouthFence",
-		Material = Enum.Material.SmoothPlastic,
-		Color = Color3.fromRGB(245, 248, 255),
-		Size = Vector3.new(76, 4.5, 2),
-		Position = centerPos + Vector3.new(0, 2.25, 28),
-		Parent = folder,
-	})
+	-- Warm Wooden Ranch Fences enclosing Back, North, South, and Front Corners (leaving center gate open)
+	local cNW = centerPos + Vector3.new(-faceDir * 37, 0, -28)
+	local cSW = centerPos + Vector3.new(-faceDir * 37, 0, 28)
+	local cNE = centerPos + Vector3.new(faceDir * 37, 0, -28)
+	local cSE = centerPos + Vector3.new(faceDir * 37, 0, 28)
+	local gateN = centerPos + Vector3.new(faceDir * 37, 0, -11)
+	local gateS = centerPos + Vector3.new(faceDir * 37, 0, 11)
+
+	buildWoodenRanchFence(cNW, cSW, folder)
+	buildWoodenRanchFence(cNW, cNE, folder)
+	buildWoodenRanchFence(cSW, cSE, folder)
+	buildWoodenRanchFence(cNE, gateN, folder)
+	buildWoodenRanchFence(gateS, cSE, folder)
 
 	-- Grand Entrance Archway & Overhead Scoreboard Sign
 	createPart({
 		Name = "ArchPillarL",
-		Material = Enum.Material.SmoothPlastic,
-		Color = Color3.fromRGB(45, 55, 82),
-		Size = Vector3.new(2.8, 15, 2.8),
-		Position = centerPos + Vector3.new(faceDir * 36, 7.5, -13),
+		Material = Enum.Material.Wood,
+		Color = Color3.fromRGB(115, 62, 28),
+		Size = Vector3.new(2.4, 15, 2.4),
+		Position = centerPos + Vector3.new(faceDir * 36, 7.5, -11),
 		Parent = folder,
 	})
 	createPart({
 		Name = "ArchPillarR",
-		Material = Enum.Material.SmoothPlastic,
-		Color = Color3.fromRGB(45, 55, 82),
-		Size = Vector3.new(2.8, 15, 2.8),
-		Position = centerPos + Vector3.new(faceDir * 36, 7.5, 13),
+		Material = Enum.Material.Wood,
+		Color = Color3.fromRGB(115, 62, 28),
+		Size = Vector3.new(2.4, 15, 2.4),
+		Position = centerPos + Vector3.new(faceDir * 36, 7.5, 11),
 		Parent = folder,
 	})
 	local signBoard = createPart({
 		Name = "OwnerSignBoard",
 		Material = Enum.Material.SmoothPlastic,
 		Color = Color3.fromRGB(25, 32, 52),
-		Size = Vector3.new(2.2, 6.5, 29),
-		Position = centerPos + Vector3.new(faceDir * 36, 15.5, 0),
+		Size = Vector3.new(2.2, 6.2, 25),
+		Position = centerPos + Vector3.new(faceDir * 36, 15.2, 0),
 		Parent = folder,
 	})
 	local signLabel, subSignLabel = createSurfaceBanner(
 		signBoard,
 		string.format("🏡 PEN #%d (READY)", plotIndex),
-		"Pen Tier 1: 0 / 5 Eggs Planted",
+		"Pen Tier 1: 0 / 5 Squishies Placed",
 		Color3.fromRGB(115, 255, 165)
 	)
 
-	-- 1. EGG PLANTING INCUBATOR PAD (Front-North of Patio)
+	-- 1. EGG PLANTING INCUBATOR PAD (Front-North of Pen)
 	local plantPad = createPart({
 		Name = "PlantEggPad",
 		Shape = Enum.PartType.Cylinder,
 		Material = Enum.Material.Neon,
-		Color = Color3.fromRGB(95, 255, 125),
+		Color = Color3.fromRGB(185, 95, 255),
 		Size = Vector3.new(1.2, 9.5, 9.5),
-		CFrame = CFrame.new(centerPos + Vector3.new(faceDir * 27, 0.6, -18)) * CFrame.Angles(0, 0, math.rad(90)),
+		CFrame = CFrame.new(centerPos + Vector3.new(faceDir * 26, 0.6, -18)) * CFrame.Angles(0, 0, math.rad(90)),
 		Parent = folder,
 	})
-	addPadSign(plantPad, "🥚 PLANT EGG HERE", "Bring Found Eggs Here!", Color3.fromRGB(115, 255, 135), 32)
+	addPadSign(plantPad, "🥚 PLANT & HATCH EGG", "Starts Hatch Countdown -> Backpack!", Color3.fromRGB(215, 135, 255), 34)
 
-	-- 2. CASH COLLECTOR VAULT PAD (Front-Center of Patio)
+	-- 2. CASH COLLECTOR VAULT PAD (Front-Center of Pen)
 	local cashPad = createPart({
 		Name = "CashCollectorPad",
 		Shape = Enum.PartType.Cylinder,
 		Material = Enum.Material.Neon,
-		Color = Color3.fromRGB(255, 225, 55),
+		Color = Color3.fromRGB(85, 255, 120),
 		Size = Vector3.new(1.2, 9.0, 9.0),
-		CFrame = CFrame.new(centerPos + Vector3.new(faceDir * 27, 0.6, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+		CFrame = CFrame.new(centerPos + Vector3.new(faceDir * 26, 0.6, 0)) * CFrame.Angles(0, 0, math.rad(90)),
 		Parent = folder,
 	})
-	local _, cashLabel = addPadSign(cashPad, "💰 COLLECT CASH", "$0 Ready", Color3.fromRGB(255, 235, 75), 32)
+	local _, cashLabel = addPadSign(cashPad, "💰 COLLECT CASH", "$0 Ready", Color3.fromRGB(115, 255, 140), 34)
 
-	-- 3. 3D SPEED TREADMILL GYM MACHINE (Front-South of Patio)
+	-- 3. 3D DINO-JAW SPEED TREADMILL MACHINE (Front-South of Pen, matching real_frame_a_01.png!)
 	local treadmillBelt = createPart({
 		Name = "TreadmillBelt",
 		Material = Enum.Material.Neon,
-		Color = Color3.fromRGB(65, 215, 255),
-		Size = Vector3.new(15, 1.2, 7.5),
-		Position = centerPos + Vector3.new(faceDir * 25, 0.6, 18),
+		Color = Color3.fromRGB(255, 105, 215), -- Glowing Pink/Magenta Dino Tongue Belt!
+		Size = Vector3.new(14.5, 1.2, 7.2),
+		Position = centerPos + Vector3.new(faceDir * 24, 0.6, 18),
 		Parent = folder,
 	})
 	treadmillBelt:SetAttribute("IsTreadmill", true)
 	treadmillBelt:SetAttribute("PlotIndex", plotIndex)
-	-- Side Rails & Digital Speed Console on Treadmill
-	createPart({
-		Name = "TreadmillRailN",
-		Material = Enum.Material.Metal,
-		Color = Color3.fromRGB(55, 65, 90),
-		Size = Vector3.new(14, 3.2, 0.6),
-		Position = treadmillBelt.Position + Vector3.new(0, 1.8, -3.6),
-		Parent = folder,
-	})
-	createPart({
-		Name = "TreadmillRailS",
-		Material = Enum.Material.Metal,
-		Color = Color3.fromRGB(55, 65, 90),
-		Size = Vector3.new(14, 3.2, 0.6),
-		Position = treadmillBelt.Position + Vector3.new(0, 1.8, 3.6),
-		Parent = folder,
-	})
-	local tmConsole = createPart({
-		Name = "TreadmillConsole",
-		Material = Enum.Material.SmoothPlastic,
-		Color = Color3.fromRGB(30, 38, 60),
-		Size = Vector3.new(1.6, 6.2, 7.8),
-		Position = treadmillBelt.Position + Vector3.new(faceDir * 7.2, 3.0, 0),
-		Parent = folder,
-	})
-	createSurfaceBanner(tmConsole, "🏃 SPEED TREADMILL", "Stand on Belt to Gain Speed Power!", Color3.fromRGB(85, 235, 255))
+	buildDinoJawHead(treadmillBelt, faceDir, 1.0, folder)
+	addPadSign(treadmillBelt, "🦖 DINO SPEED TREADMILL", "Run inside Jaw for +Speed Power!", Color3.fromRGB(85, 245, 255), 34)
 
-	-- 4. UPGRADE BUTTON PADS ROW (Spaced 12 studs apart so labels never overlap!)
+	-- 4. UPGRADE BUTTON PADS ROW (Spaced 12 studs apart)
 	local expandPad = createPart({
 		Name = "ExpandPenPad",
 		Material = Enum.Material.Neon,
 		Color = Color3.fromRGB(255, 145, 50),
 		Size = Vector3.new(6.2, 1.0, 6.2),
-		Position = centerPos + Vector3.new(faceDir * 14, 0.5, -20),
+		Position = centerPos + Vector3.new(faceDir * 13, 0.5, -20),
 		Parent = folder,
 	})
-	local _, expandLabel = addPadSign(expandPad, "📈 GROW PEN (+NESTS)", "Tier 2 (11 Nests): $250", Color3.fromRGB(255, 175, 75), 24)
+	local _, expandLabel = addPadSign(expandPad, "📈 GROW PEN (+SLOTS)", "Tier 2 (11 Slots): $250", Color3.fromRGB(255, 175, 75), 26)
 
 	local treadmillUpgradePad = createPart({
 		Name = "UpgradeTreadmillPad",
 		Material = Enum.Material.Neon,
 		Color = Color3.fromRGB(75, 195, 255),
 		Size = Vector3.new(6.2, 1.0, 6.2),
-		Position = centerPos + Vector3.new(faceDir * 14, 0.5, -7),
+		Position = centerPos + Vector3.new(faceDir * 13, 0.5, -7),
 		Parent = folder,
 	})
-	local _, treadmillLabel = addPadSign(treadmillUpgradePad, "⚡ UPGRADE TREADMILL", "Candy Belt (+1.5K Spd): $300", Color3.fromRGB(95, 215, 255), 24)
+	local _, treadmillLabel = addPadSign(treadmillUpgradePad, "⚡ UPGRADE DINO BELT", "Candy Belt (+1.5K Spd): $300", Color3.fromRGB(95, 215, 255), 26)
 
 	local gelUpgradePad = createPart({
 		Name = "UpgradeGelPad",
 		Material = Enum.Material.Neon,
 		Color = Color3.fromRGB(255, 110, 230),
 		Size = Vector3.new(6.2, 1.0, 6.2),
-		Position = centerPos + Vector3.new(faceDir * 14, 0.5, 6),
+		Position = centerPos + Vector3.new(faceDir * 13, 0.5, 6),
 		Parent = folder,
 	})
-	local _, gelLabel = addPadSign(gelUpgradePad, "🌈 GOLDEN/RAINBOW GEL", "2.5x Golden Gel: $1.50K", Color3.fromRGB(255, 140, 245), 24)
+	local _, gelLabel = addPadSign(gelUpgradePad, "🌈 GOLDEN/RAINBOW GEL", "2.5x Golden Gel: $1.50K", Color3.fromRGB(255, 140, 245), 26)
 
 	local shieldPad = createPart({
 		Name = "ShieldPad",
 		Material = Enum.Material.Neon,
 		Color = Color3.fromRGB(95, 155, 255),
 		Size = Vector3.new(6.2, 1.0, 6.2),
-		Position = centerPos + Vector3.new(faceDir * 14, 0.5, 19),
+		Position = centerPos + Vector3.new(faceDir * 13, 0.5, 19),
 		Parent = folder,
 	})
-	local _, shieldLabel = addPadSign(shieldPad, "🛡️ LASER SHIELD", "Lock Out Raiders (60s)", Color3.fromRGB(115, 185, 255), 24)
+	local _, shieldLabel = addPadSign(shieldPad, "🛡️ LASER SHIELD", "Lock Out Raiders (60s)", Color3.fromRGB(115, 185, 255), 26)
 
-	-- ShieldDome is kept tiny & hidden below ground when inactive so it NEVER creates wireframe dome clutter!
 	local shieldDome = createPart({
 		Name = "ShieldDome",
 		Shape = Enum.PartType.Ball,
@@ -448,25 +553,32 @@ local function buildPlot(plotIndex: number, centerPos: Vector3, isLeftSide: bool
 		Parent = folder,
 	})
 
-	-- 5. 35 GOLDEN EGG NEST PEDESTALS (7 columns x 5 rows in the spacious back Sanctuary Garden)
+	-- 5. 35 SQUISHY LAWN SLOTS (with ClickDetectors so clicking any slot while holding a Backpack Squishy places it!)
 	local nests: { [number]: { Pedestal: Part, HatchedModel: Model? } } = {}
 	for slotIdx = 1, 35 do
-		local row = math.floor((slotIdx - 1) / 7) -- 0..4 (Level 1..5)
+		local row = math.floor((slotIdx - 1) / 7) -- 0..4
 		local col = (slotIdx - 1) % 7 -- 0..6
 		local offsetX = -faceDir * (-2 + row * 6.8)
 		local offsetZ = -21 + (col * 7.0)
-		local pedPos = centerPos + Vector3.new(offsetX, 0.6, offsetZ)
+		local pedPos = centerPos + Vector3.new(offsetX, 0.4, offsetZ)
 
 		local pedestal = createPart({
 			Name = "NestPedestal_" .. tostring(slotIdx),
 			Shape = Enum.PartType.Cylinder,
 			Material = Enum.Material.SmoothPlastic,
-			Color = if slotIdx <= 5 then Color3.fromRGB(245, 205, 85) else Color3.fromRGB(95, 115, 100),
-			Size = Vector3.new(1.2, 4.8, 4.8),
+			Color = if slotIdx <= 5 then Color3.fromRGB(165, 245, 110) else Color3.fromRGB(95, 135, 85),
+			Size = Vector3.new(0.8, 4.8, 4.8),
 			CFrame = CFrame.new(pedPos) * CFrame.Angles(0, 0, math.rad(90)),
-			Transparency = if slotIdx <= 5 then 0 else 0.45,
+			Transparency = if slotIdx <= 5 then 0.15 else 0.55,
 			Parent = folder,
 		})
+		pedestal:SetAttribute("PlotIndex", plotIndex)
+		pedestal:SetAttribute("SlotIdx", slotIdx)
+		local slotClick = Instance.new("ClickDetector")
+		slotClick.Name = "PlaceSlotClick"
+		slotClick.MaxActivationDistance = 55
+		slotClick.Parent = pedestal
+
 		nests[slotIdx] = {
 			Pedestal = pedestal,
 			HatchedModel = nil,
@@ -528,24 +640,32 @@ function WorldBuilder.BuildWorld()
 	guardiansFolder.Parent = Workspace
 
 	-- =========================================================================
-	-- 1. CENTRAL HUB RESORT PLAZA (Z: +220 to -60, Width: 340 studs)
+	-- 1. CENTRAL HUB RESORT PLAZA WITH TWO-TONE CHECKERED LIME LAWN (matching real_frame_a_01.png!)
 	-- =========================================================================
 	createPart({
 		Name = "HubOuterGrass",
-		Material = Enum.Material.Grass,
-		Color = Color3.fromRGB(72, 175, 92),
+		Material = Enum.Material.SmoothPlastic,
+		Color = Color3.fromRGB(112, 208, 52),
 		Size = Vector3.new(340, 4, 280),
 		Position = Vector3.new(0, -2.2, 80),
 		Parent = worldFolder,
 	})
-	createPart({
-		Name = "HubCenterPromenade",
-		Material = Enum.Material.SmoothPlastic,
-		Color = Color3.fromRGB(232, 236, 245),
-		Size = Vector3.new(125, 4.2, 276),
-		Position = Vector3.new(0, -2.0, 80),
-		Parent = worldFolder,
-	})
+	-- Checkered Bright Lime Grid across the Hub Promenade
+	for cx = -3, 3 do
+		for cz = -6, 6 do
+			if (cx + cz) % 2 == 0 then
+				createPart({
+					Name = "HubCheckeredTile",
+					Material = Enum.Material.SmoothPlastic,
+					Color = Color3.fromRGB(132, 226, 68),
+					Size = Vector3.new(18, 0.15, 18),
+					Position = Vector3.new(cx * 18, 0.02, 80 + cz * 18),
+					CanCollide = false,
+					Parent = worldFolder,
+				})
+			end
+		end
+	end
 
 	local spawnLoc = Instance.new("SpawnLocation")
 	spawnLoc.Name = "HubSpawn"
@@ -556,6 +676,24 @@ function WorldBuilder.BuildWorld()
 	spawnLoc.Color = Color3.fromRGB(85, 235, 255)
 	spawnLoc.TopSurface = Enum.SurfaceType.Smooth
 	spawnLoc.Parent = worldFolder
+
+	-- 3 Giant Rarity Odds & Showcase Display Boards (Gold, Cyan, Red — matching top-left of real_frame_a_01.png!)
+	local showcaseSpecs = {
+		{ Pos = Vector3.new(-32, 9, 198), Color = Color3.fromRGB(255, 210, 45), Title = "🌟 LEGENDARY EGGS", Sub = "Golden & Crowned • $600–$1,800/s" },
+		{ Pos = Vector3.new(0, 10, 202), Color = Color3.fromRGB(55, 225, 255), Title = "💎 MYTHIC SQUISHIES", Sub = "Saturn-Ringed • $2,500–$8,000/s" },
+		{ Pos = Vector3.new(32, 9, 198), Color = Color3.fromRGB(255, 65, 95), Title = "👑 BOSS GUARDIANS", Sub = "Steal While Sleeping ('Zzz') • $12,000/s!" },
+	}
+	for _, spec in ipairs(showcaseSpecs) do
+		local board = createPart({
+			Name = "RarityShowcaseBoard",
+			Material = Enum.Material.SmoothPlastic,
+			Color = spec.Color,
+			Size = Vector3.new(26, 16, 2.4),
+			Position = spec.Pos,
+			Parent = worldFolder,
+		})
+		createSurfaceBanner(board, spec.Title, spec.Sub, spec.Color)
+	end
 
 	-- Grand Golden Squishy Fountain at Hub Center (0, Y, 130)
 	createPart({
@@ -585,24 +723,25 @@ function WorldBuilder.BuildWorld()
 		CFrame = CFrame.new(0, 6.5, 130) * CFrame.Angles(0, 0, math.rad(90)),
 		Parent = worldFolder,
 	})
-	local statueSquishy = SquishyBuilder.CreateHatchedSquishy(SlimeData.ById[35], Vector3.new(0, 15, 130), 2)
+	local statueSquishy = SquishyBuilder.CreateHatchedSquishy(SlimeData.ById[35], Vector3.new(0, 15, 130), 2, 5)
 	statueSquishy.Name = "GoldenFountainStatue"
 	statueSquishy.Parent = worldFolder
 
-	-- Public Mega Turbo Treadmill in the Hub Center (0, 0.6, 85)
+	-- Public Mega Dino-Jaw Treadmill in the Hub Center (0, 0.7, 85)
 	local hubTreadmill = createPart({
 		Name = "HubPublicTreadmill",
 		Material = Enum.Material.Neon,
-		Color = Color3.fromRGB(0, 235, 255),
-		Size = Vector3.new(26, 1.4, 14),
+		Color = Color3.fromRGB(255, 95, 215),
+		Size = Vector3.new(24, 1.4, 12),
 		Position = Vector3.new(0, 0.7, 85),
 		Parent = worldFolder,
 	})
 	hubTreadmill:SetAttribute("IsTreadmill", true)
+	buildDinoJawHead(hubTreadmill, 1, 1.45, worldFolder)
 	addPadSign(
 		hubTreadmill,
-		"⚡ PUBLIC TURBO TREADMILL ⚡",
-		"Run here to train Million+ Speed Power!",
+		"🦖 MEGA DINO TREADMILL 🦖",
+		"Run inside the T-Rex Mouth for +Speed Power!",
 		Color3.fromRGB(95, 250, 255),
 		48
 	)
@@ -647,7 +786,7 @@ function WorldBuilder.BuildWorld()
 		createPart({
 			Name = "BiomeFloor",
 			Material = if lvl.Level == 1
-				then Enum.Material.Grass
+				then Enum.Material.SmoothPlastic
 				elseif lvl.Level == 3 then Enum.Material.WoodPlanks
 				elseif lvl.Level == 4 then Enum.Material.DiamondPlate
 				elseif lvl.Level == 5 then Enum.Material.Basalt
@@ -658,25 +797,45 @@ function WorldBuilder.BuildWorld()
 			Parent = biomeFolder,
 		})
 
-		-- Scenic Side Cliffs / Perimeter Walls
-		createPart({
-			Name = "LeftBoundaryWall",
-			Material = if lvl.Level == 5 then Enum.Material.Basalt else Enum.Material.SmoothPlastic,
-			Color = lvl.ThemeColor,
-			Transparency = 0.15,
-			Size = Vector3.new(6, 36, lengthZ),
-			Position = Vector3.new(-120, 16, midZ),
-			Parent = biomeFolder,
-		})
-		createPart({
-			Name = "RightBoundaryWall",
-			Material = if lvl.Level == 5 then Enum.Material.Basalt else Enum.Material.SmoothPlastic,
-			Color = lvl.ThemeColor,
-			Transparency = 0.15,
-			Size = Vector3.new(6, 36, lengthZ),
-			Position = Vector3.new(120, 16, midZ),
-			Parent = biomeFolder,
-		})
+		-- Two-Tone Checkered Biome Floor Tiles (matching real_dense_08.png!)
+		local tileAccent = lvl.FloorColor:Lerp(lvl.ThemeColor, 0.22)
+		for tx = -4, 4 do
+			for tz = -4, 4 do
+				if (tx + tz) % 2 == 0 then
+					createPart({
+						Name = "BiomeCheckeredTile",
+						Material = Enum.Material.SmoothPlastic,
+						Color = tileAccent,
+						Size = Vector3.new(24, 0.14, 26),
+						Position = Vector3.new(tx * 24, 0.04, midZ + tz * 26),
+						CanCollide = false,
+						Parent = biomeFolder,
+					})
+				end
+			end
+		end
+
+		-- Scenic Side Cliffs / Perimeter Walls with 3D Chocolate / Neon Wall Slabs
+		for side = -1, 1, 2 do
+			createPart({
+				Name = if side == -1 then "LeftBoundaryWall" else "RightBoundaryWall",
+				Material = if lvl.Level == 5 then Enum.Material.Basalt else Enum.Material.SmoothPlastic,
+				Color = lvl.ThemeColor:Lerp(Color3.fromRGB(75, 45, 35), if lvl.Level == 2 then 0.55 else 0.15),
+				Size = Vector3.new(6, 36, lengthZ),
+				Position = Vector3.new(side * 120, 16, midZ),
+				Parent = biomeFolder,
+			})
+			for wz = -3, 3 do
+				createPart({
+					Name = "WallReliefSlab",
+					Material = Enum.Material.SmoothPlastic,
+					Color = lvl.ThemeColor,
+					Size = Vector3.new(2.5, 22, 16),
+					Position = Vector3.new(side * 116, 14, midZ + wz * 34),
+					Parent = biomeFolder,
+				})
+			end
+		end
 
 		-- Grand Level Entrance Archway & SurfaceGui Signboard
 		createPart({

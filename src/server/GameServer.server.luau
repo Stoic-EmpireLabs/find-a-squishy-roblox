@@ -50,6 +50,13 @@ pcall(function()
 	dataStore = DataStoreService:GetDataStore("FindASquishy_Save_v2")
 end)
 
+export type IncubatingEggState = {
+	EggId: number,
+	SlotIdx: number,
+	RemainingSec: number,
+	Model: Model,
+}
+
 export type PlayerSession = {
 	UserId: number,
 	Coins: number,
@@ -60,6 +67,8 @@ export type PlayerSession = {
 	GelTier: number,
 	JumpTier: number,
 	PlantedEggs: { [string]: boolean },
+	SquishyLevels: { [string]: number },
+	BackpackEggs: { [string]: number },
 	OwnedTrails: { [string]: boolean },
 	EquippedTrail: string,
 	VIPGuideUnlocked: boolean,
@@ -73,6 +82,7 @@ export type PlayerSession = {
 
 local sessions: { [Player]: PlayerSession } = {}
 local carriedEggModels: { [Player]: Model } = {}
+local incubatingEggsByPlayer: { [Player]: { [number]: IncubatingEggState } } = {}
 local touchCooldowns: { [string]: number } = {}
 local guardianWaypoints: { [string]: Vector3 } = {}
 local eggLiveOffsets: { [number]: Vector3 } = {}
@@ -82,6 +92,81 @@ paintFolder.Parent = Workspace
 
 for _, sDef in ipairs(SlimeData.Slimes) do
 	eggLiveOffsets[sDef.Id] = sDef.Position
+end
+
+-- Spawns a dramatic 3D Shockwave Ring + Particle Burst + Floating 3D Text at any world position!
+local function spawnCelebrationBurst(pos: Vector3, mainColor: Color3, secColor: Color3, bannerText: string)
+	local anchor = Instance.new("Part")
+	anchor.Name = "VFXBurstAnchor"
+	anchor.Shape = Enum.PartType.Ball
+	anchor.Material = Enum.Material.Neon
+	anchor.Color = mainColor
+	anchor.Anchored = true
+	anchor.CanCollide = false
+	anchor.Transparency = 0.15
+	anchor.Size = Vector3.new(1.5, 1.5, 1.5)
+	anchor.Position = pos
+	anchor.Parent = Workspace
+
+	local ring = Instance.new("Part")
+	ring.Name = "ShockwaveRing"
+	ring.Shape = Enum.PartType.Cylinder
+	ring.Material = Enum.Material.Neon
+	ring.Color = secColor
+	ring.Anchored = true
+	ring.CanCollide = false
+	ring.Transparency = 0.1
+	ring.Size = Vector3.new(0.4, 2.5, 2.5)
+	ring.CFrame = CFrame.new(pos) * CFrame.Angles(0, 0, math.rad(90))
+	ring.Parent = Workspace
+
+	TweenService:Create(anchor, TweenInfo.new(0.65, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+		Size = Vector3.new(9.5, 9.5, 9.5),
+		Transparency = 1,
+	}):Play()
+	TweenService:Create(ring, TweenInfo.new(0.75, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Size = Vector3.new(0.2, 16, 16),
+		Transparency = 1,
+	}):Play()
+
+	local pe = Instance.new("ParticleEmitter")
+	pe.Color = ColorSequence.new(mainColor, secColor)
+	pe.LightEmission = 1
+	pe.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.9),
+		NumberSequenceKeypoint.new(0.6, 1.2),
+		NumberSequenceKeypoint.new(1, 0),
+	})
+	pe.Lifetime = NumberRange.new(0.6, 1.1)
+	pe.Speed = NumberRange.new(14, 28)
+	pe.SpreadAngle = Vector2.new(180, 180)
+	pe.Rate = 0
+	pe.Parent = anchor
+	pe:Emit(35)
+
+	local bb = Instance.new("BillboardGui")
+	bb.Size = UDim2.new(0, 240, 0, 64)
+	bb.StudsOffset = Vector3.new(0, 3.5, 0)
+	bb.AlwaysOnTop = true
+	bb.Parent = anchor
+
+	local lbl = Instance.new("TextLabel")
+	lbl.Size = UDim2.new(1, 0, 1, 0)
+	lbl.BackgroundTransparency = 1
+	lbl.Font = Enum.Font.FredokaOne
+	lbl.TextScaled = true
+	lbl.TextColor3 = mainColor
+	lbl.TextStrokeColor3 = Color3.fromRGB(15, 20, 35)
+	lbl.TextStrokeTransparency = 0
+	lbl.Text = bannerText
+	lbl.Parent = bb
+
+	TweenService:Create(bb, TweenInfo.new(1.1, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+		StudsOffset = Vector3.new(0, 8.5, 0),
+	}):Play()
+
+	Debris:AddItem(ring, 0.8)
+	Debris:AddItem(anchor, 1.2)
 end
 
 local function isOnCooldown(key: string, cooldownSec: number): boolean
@@ -119,7 +204,8 @@ local function isLevelCompleted(session: PlayerSession, levelNum: number): boole
 		return true
 	end
 	for _, sDef in ipairs(levelSlimes) do
-		if not session.PlantedEggs[tostring(sDef.Id)] then
+		local key = tostring(sDef.Id)
+		if not session.PlantedEggs[key] and not session.BackpackEggs[key] then
 			return false
 		end
 	end
@@ -142,7 +228,8 @@ local function getTotalIncomePerSec(session: PlayerSession): number
 			local id = tonumber(idStr)
 			local def = if id then SlimeData.ById[id] else nil
 			if def then
-				baseSum += def.CoinsPerSec
+				local sqLvl = session.SquishyLevels[idStr] or 1
+				baseSum += SlimeData.GetSquishyCoinsPerSec(def, sqLvl)
 			end
 		end
 	end
@@ -241,6 +328,10 @@ end
 -- ============================================================================
 local syncPlayerState: (Player) -> ()
 
+local upgradePlacedSquishy: (Player, number) -> ()
+local placeBackpackSquishyInPen: (Player, number, Tool?) -> ()
+local giveHatchedSquishyToolToPlayer: (Player, SlimeData.SlimeDef, number?) -> Tool?
+
 local function refreshPlotVisuals(plotIndex: number, player: Player?, session: PlayerSession?)
 	local plot = world.Plots[plotIndex]
 	if not plot then
@@ -277,10 +368,10 @@ local function refreshPlotVisuals(plotIndex: number, player: Player?, session: P
 				nest.HatchedModel:Destroy()
 				nest.HatchedModel = nil
 			end
-			nest.Pedestal.Transparency = if slotIdx <= 5 then 0 else 0.65
+			nest.Pedestal.Transparency = if slotIdx <= 5 then 0.15 else 0.65
 			nest.Pedestal.Color = if slotIdx <= 5
-				then Color3.fromRGB(245, 205, 95)
-				else Color3.fromRGB(90, 95, 110)
+				then Color3.fromRGB(165, 245, 110)
+				else Color3.fromRGB(90, 125, 85)
 		end
 		return
 	end
@@ -292,7 +383,7 @@ local function refreshPlotVisuals(plotIndex: number, player: Player?, session: P
 	setSignText(
 		string.format("🏡 %s's SQUISHY PEN", string.upper(player.DisplayName)),
 		string.format(
-			"%s | %d / %d Eggs Planted ($%s/s)",
+			"%s | %d / %d Squishies Making $%s/s",
 			penDef.Name,
 			plantedTotal,
 			penDef.MaxNests,
@@ -304,9 +395,9 @@ local function refreshPlotVisuals(plotIndex: number, player: Player?, session: P
 	-- Update Upgrade Pad Labels
 	if session.PenTier < #UpgradeData.PenTiers then
 		local nextPen = UpgradeData.GetPenTier(session.PenTier + 1)
-		plot.ExpandLabel.Text = string.format("Tier %d (%d Nests): $%s", nextPen.Tier, nextPen.MaxNests, UpgradeData.FormatNumber(nextPen.Cost))
+		plot.ExpandLabel.Text = string.format("Tier %d (%d Slots): $%s", nextPen.Tier, nextPen.MaxNests, UpgradeData.FormatNumber(nextPen.Cost))
 	else
-		plot.ExpandLabel.Text = "MAX PEN SIZE (35/35 Nests)!"
+		plot.ExpandLabel.Text = "MAX PEN SIZE (35/35 Slots)!"
 	end
 
 	if session.TreadmillTier < #UpgradeData.TreadmillTiers then
@@ -318,7 +409,7 @@ local function refreshPlotVisuals(plotIndex: number, player: Player?, session: P
 			UpgradeData.FormatNumber(nextTm.Cost)
 		)
 	else
-		plot.TreadmillLabel.Text = "MAX GOD-SPEED TREADMILL!"
+		plot.TreadmillLabel.Text = "MAX GOD-SPEED DINO BELT!"
 	end
 	plot.TreadmillBelt.Color = UpgradeData.GetTreadmillTier(session.TreadmillTier).Color
 
@@ -342,48 +433,73 @@ local function refreshPlotVisuals(plotIndex: number, player: Player?, session: P
 		plot.ShieldLabel.Text = "Step to Activate Laser Shield (60s)"
 	end
 
-	-- Update all 35 Nest Pedestals & Hatched Squishies
+	-- Update all 35 Nest Pedestals & Placed Squishies
+	local playerIncubating = incubatingEggsByPlayer[player] or {}
 	for slotIdx = 1, 35 do
 		local nest = plot.Nests[slotIdx]
 		local isSlotUnlocked = (slotIdx <= penDef.MaxNests)
 		local isPlanted = session.PlantedEggs[tostring(slotIdx)] == true
+		local sqLvl = session.SquishyLevels[tostring(slotIdx)] or 1
+		local isIncubating = playerIncubating[slotIdx] ~= nil
 
-		nest.Pedestal.Transparency = if isSlotUnlocked then 0 else 0.72
+		nest.Pedestal.Transparency = if isSlotUnlocked then 0.1 else 0.72
 		nest.Pedestal.Color = if isPlanted
-			then Color3.fromRGB(95, 250, 135)
-			elseif isSlotUnlocked then Color3.fromRGB(245, 205, 95)
-			else Color3.fromRGB(85, 90, 105)
+			then Color3.fromRGB(85, 255, 130)
+			elseif isIncubating then Color3.fromRGB(195, 95, 255)
+			elseif isSlotUnlocked then Color3.fromRGB(165, 245, 110)
+			else Color3.fromRGB(85, 110, 85)
 
 		if isPlanted then
-			if not nest.HatchedModel or nest.HatchedModel:GetAttribute("GelTier") ~= session.GelTier then
+			local needsRebuild = (not nest.HatchedModel)
+				or (nest.HatchedModel:GetAttribute("GelTier") ~= session.GelTier)
+				or (nest.HatchedModel:GetAttribute("SquishyLevel") ~= sqLvl)
+			if needsRebuild then
 				if nest.HatchedModel then
 					nest.HatchedModel:Destroy()
 				end
 				local slimeDef = SlimeData.ById[slotIdx]
 				if slimeDef then
-					local spawnPos = nest.Pedestal.Position + Vector3.new(0, 2.5, 0)
-					local squishyModel = SquishyBuilder.CreateHatchedSquishy(slimeDef, spawnPos, session.GelTier)
+					local spawnPos = nest.Pedestal.Position + Vector3.new(0, 2.3, 0)
+					local squishyModel = SquishyBuilder.CreateHatchedSquishy(slimeDef, spawnPos, session.GelTier, sqLvl)
 					squishyModel:SetAttribute("GelTier", session.GelTier)
+					squishyModel:SetAttribute("SquishyLevel", sqLvl)
 					squishyModel.Parent = plot.Folder
 					nest.HatchedModel = squishyModel
 
-					-- Add Click-to-Squish Fidget Coin Bonus!
-					local clickDet = Instance.new("ClickDetector")
-					clickDet.MaxActivationDistance = 32
-					clickDet.Parent = squishyModel.PrimaryPart
-					clickDet.MouseClick:Connect(function(clickingPlayer: Player)
-						local clickSession = sessions[clickingPlayer]
-						if not clickSession then
-							return
+					local body = squishyModel.PrimaryPart
+					if body then
+						-- Wire ProximityPrompt ("Level Up -> Lv.X") to upgrade this Squishy's $/sec!
+						local upgPrompt = body:FindFirstChild("UpgradeSquishyPrompt") :: ProximityPrompt?
+						if upgPrompt then
+							upgPrompt.Triggered:Connect(function(triggerPlr: Player)
+								if triggerPlr == player then
+									upgradePlacedSquishy(player, slotIdx)
+								end
+							end)
 						end
-						local bonus = math.max(5, math.floor(slimeDef.CoinsPerSec * 1.5))
-						clickSession.Coins += bonus
-						updateLeaderstats(clickingPlayer, clickSession)
-						syncPlayerState(clickingPlayer)
 
-						-- Pancake Squish Tween!
-						local body = squishyModel.PrimaryPart
-						if body then
+						-- Wire ClickDetector: Owner clicking either upgrades level (if affordable) or gives Squish Bonus!
+						local clickDet = Instance.new("ClickDetector")
+						clickDet.MaxActivationDistance = 38
+						clickDet.Parent = body
+						clickDet.MouseClick:Connect(function(clickingPlayer: Player)
+							local clickSession = sessions[clickingPlayer]
+							if not clickSession then
+								return
+							end
+							local curLvl = clickSession.SquishyLevels[tostring(slotIdx)] or 1
+							local upgCost = SlimeData.GetSquishyUpgradeCost(slimeDef, curLvl)
+							if clickingPlayer == player and clickSession.Coins >= upgCost then
+								upgradePlacedSquishy(player, slotIdx)
+								return
+							end
+
+							local cps = SlimeData.GetSquishyCoinsPerSec(slimeDef, curLvl)
+							local bonus = math.max(5, math.floor(cps * 1.5))
+							clickSession.Coins += bonus
+							updateLeaderstats(clickingPlayer, clickSession)
+							syncPlayerState(clickingPlayer)
+
 							local origSize = body.Size
 							body.Size = Vector3.new(origSize.X * 1.35, origSize.Y * 0.45, origSize.Z * 1.35)
 							TweenService:Create(
@@ -391,22 +507,193 @@ local function refreshPlotVisuals(plotIndex: number, player: Player?, session: P
 								TweenInfo.new(0.35, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out),
 								{ Size = origSize }
 							):Play()
-						end
-						notifyPlayer(
-							clickingPlayer,
-							string.format("🍮 SQUISH! +%s Bonus Coins from %s!", UpgradeData.FormatNumber(bonus), slimeDef.Name),
-							"Success"
-						)
-					end)
+							notifyPlayer(
+								clickingPlayer,
+								string.format(
+									"🍮 SQUISH! +$%s Bonus from %s [Lv.%d]! (Need $%s to Level Up)",
+									UpgradeData.FormatNumber(bonus),
+									slimeDef.Name,
+									curLvl,
+									UpgradeData.FormatNumber(upgCost)
+								),
+								"Success"
+							)
+						end)
+					end
 				end
 			end
-		else
+		elseif not isIncubating then
 			if nest.HatchedModel then
 				nest.HatchedModel:Destroy()
 				nest.HatchedModel = nil
 			end
 		end
 	end
+end
+
+upgradePlacedSquishy = function(player: Player, eggId: number)
+	local session = sessions[player]
+	local slimeDef = SlimeData.ById[eggId]
+	if not session or not slimeDef then
+		return
+	end
+	local idStr = tostring(eggId)
+	if not session.PlantedEggs[idStr] then
+		notifyPlayer(player, "Place this Squishy from your Backpack into your Pen first!", "Warning")
+		return
+	end
+	local currentLvl = session.SquishyLevels[idStr] or 1
+	local cost = SlimeData.GetSquishyUpgradeCost(slimeDef, currentLvl)
+	if session.Coins < cost then
+		notifyPlayer(
+			player,
+			string.format(
+				"Need $%s Coins to upgrade %s to Lv.%d!",
+				UpgradeData.FormatNumber(cost),
+				slimeDef.Name,
+				currentLvl + 1
+			),
+			"Error"
+		)
+		return
+	end
+
+	session.Coins -= cost
+	local newLvl = currentLvl + 1
+	session.SquishyLevels[idStr] = newLvl
+	local newCps = SlimeData.GetSquishyCoinsPerSec(slimeDef, newLvl)
+
+	if session.PlotIndex then
+		local plot = world.Plots[session.PlotIndex]
+		local nest = if plot then plot.Nests[eggId] else nil
+		if nest then
+			spawnCelebrationBurst(
+				nest.Pedestal.Position + Vector3.new(0, 3.5, 0),
+				Color3.fromRGB(85, 255, 130),
+				slimeDef.Color,
+				string.format("⬆️ LV.%d! +$%s/s!", newLvl, UpgradeData.FormatNumber(newCps))
+			)
+		end
+	end
+
+	notifyPlayer(
+		player,
+		string.format(
+			"⬆️ LEVEL UP! %s is now Lv.%d and makes +$%s/sec!",
+			slimeDef.Name,
+			newLvl,
+			UpgradeData.FormatNumber(newCps)
+		),
+		"Success"
+	)
+	syncPlayerState(player)
+end
+
+placeBackpackSquishyInPen = function(player: Player, eggId: number, toolInstance: Tool?)
+	local session = sessions[player]
+	local slimeDef = SlimeData.ById[eggId]
+	if not session or not slimeDef then
+		return
+	end
+	if not session.PlotIndex then
+		assignPlotToPlayer(player, session, nil)
+	end
+
+	local penDef = UpgradeData.GetPenTier(session.PenTier)
+	if eggId > penDef.MaxNests then
+		session.PenTier = math.max(session.PenTier, slimeDef.Level)
+	end
+
+	local idStr = tostring(eggId)
+	local sqLvl = session.BackpackEggs[idStr] or session.SquishyLevels[idStr] or 1
+	session.BackpackEggs[idStr] = nil
+	session.PlantedEggs[idStr] = true
+	session.SquishyLevels[idStr] = sqLvl
+
+	if toolInstance then
+		toolInstance:Destroy()
+	else
+		-- Remove matching tool from Backpack or Character if present
+		for _, container in ipairs({ player:FindFirstChildOfClass("Backpack"), player.Character }) do
+			if container then
+				for _, child in ipairs(container:GetChildren()) do
+					if child:IsA("Tool") and child:GetAttribute("SlimeId") == eggId then
+						child:Destroy()
+					end
+				end
+			end
+		end
+	end
+
+	local cps = SlimeData.GetSquishyCoinsPerSec(slimeDef, sqLvl)
+	if session.PlotIndex then
+		local plot = world.Plots[session.PlotIndex]
+		local nest = if plot then plot.Nests[eggId] else nil
+		if nest then
+			spawnCelebrationBurst(
+				nest.Pedestal.Position + Vector3.new(0, 3.2, 0),
+				slimeDef.Color,
+				Color3.fromRGB(85, 255, 130),
+				string.format("🥟 PLACED %s! +$%s/s", string.upper(slimeDef.Name), UpgradeData.FormatNumber(cps))
+			)
+		end
+	end
+
+	local lvlCompleted = isLevelCompleted(session, slimeDef.Level)
+	if lvlCompleted and slimeDef.Level < 5 then
+		local nextLvl = SlimeData.Levels[slimeDef.Level + 1]
+		notifyPlayer(
+			player,
+			string.format(
+				"🎉 ALL LEVEL %d SQUISHIES PLACED! Gate to Level %d (%s) is NOW UNLOCKED!",
+				slimeDef.Level,
+				nextLvl.Level,
+				nextLvl.Name
+			),
+			"Success"
+		)
+	else
+		notifyPlayer(
+			player,
+			string.format(
+				"🥟 PLACED %s [Lv.%d] in your Pen! Now generating +$%s/sec! (Click or press E on it to Level Up!)",
+				slimeDef.Name,
+				sqLvl,
+				UpgradeData.FormatNumber(cps)
+			),
+			"Success"
+		)
+	end
+
+	syncPlayerState(player)
+end
+
+giveHatchedSquishyToolToPlayer = function(player: Player, slimeDef: SlimeData.SlimeDef, sqLvl: number?): Tool?
+	local session = sessions[player]
+	local backpack = player:FindFirstChildOfClass("Backpack")
+	if not session or not backpack then
+		return nil
+	end
+	local lvl = sqLvl or 1
+	session.BackpackEggs[tostring(slimeDef.Id)] = lvl
+
+	-- Avoid duplicates in backpack
+	for _, container in ipairs({ backpack, player.Character }) do
+		if container then
+			for _, child in ipairs(container:GetChildren()) do
+				if child:IsA("Tool") and child:GetAttribute("SlimeId") == slimeDef.Id then
+					return child
+				end
+			end
+		end
+	end
+
+	local tool = SquishyBuilder.CreateSquishyBackpackTool(slimeDef, lvl)
+	tool.Activated:Connect(function()
+		placeBackpackSquishyInPen(player, slimeDef.Id, tool)
+	end)
+	tool.Parent = backpack
+	return tool
 end
 
 syncPlayerState = function(player: Player)
@@ -428,6 +715,8 @@ syncPlayerState = function(player: Player)
 		GelTier = session.GelTier,
 		JumpTier = session.JumpTier,
 		PlantedEggs = session.PlantedEggs,
+		SquishyLevels = session.SquishyLevels,
+		BackpackEggs = session.BackpackEggs,
 		PlantedCount = getPlantedCount(session),
 		MaxUnlockedLevel = getMaxUnlockedLevel(session),
 		IncomePerSec = getTotalIncomePerSec(session),
@@ -443,7 +732,7 @@ syncPlayerState = function(player: Player)
 end
 
 -- ============================================================================
--- 4. EGG CARRYING & PLANTING LOGIC
+-- 4. EGG COLLECT VFX, CARRYING, PLANTING COUNTDOWN & HATCHING INTO BACKPACK!
 -- ============================================================================
 local function clearCarriedEgg(player: Player)
 	local session = sessions[player]
@@ -466,6 +755,14 @@ local function attachCarriedEggToPlayer(player: Player, slimeDef: SlimeData.Slim
 		return
 	end
 
+	-- Dramatic Collect / Steal Egg Celebration Burst at the World Egg!
+	spawnCelebrationBurst(
+		slimeDef.Position + Vector3.new(0, 2.5, 0),
+		slimeDef.Color,
+		slimeDef.SecondaryColor,
+		string.format("🚨 STOLE %s EGG!", string.upper(slimeDef.Name))
+	)
+
 	session.CarryingEggId = slimeDef.Id
 	local carriedModel = SquishyBuilder.CreateWorldEgg(slimeDef, false)
 	carriedModel.Name = "CarriedEgg_" .. tostring(slimeDef.Id)
@@ -483,7 +780,7 @@ local function attachCarriedEggToPlayer(player: Player, slimeDef: SlimeData.Slim
 	notifyPlayer(
 		player,
 		string.format(
-			"🚨 GRABBED %s EGG! Run back to your Base Pen to Plant it before the Chasers catch you!",
+			"🚨 STOLE %s EGG! The Boss Guardian woke up (!!) — Run back to your Base Pen to Plant & Hatch it!",
 			string.upper(slimeDef.Name)
 		),
 		"Warning"
@@ -504,6 +801,14 @@ local function plantCarriedEggInPen(player: Player)
 		return
 	end
 
+	if not session.PlotIndex then
+		assignPlotToPlayer(player, session, nil)
+	end
+	local plot = if session.PlotIndex then world.Plots[session.PlotIndex] else nil
+	if not plot then
+		return
+	end
+
 	local penDef = UpgradeData.GetPenTier(session.PenTier)
 	local currentPlanted = getPlantedCount(session)
 
@@ -514,7 +819,7 @@ local function plantCarriedEggInPen(player: Player)
 		notifyPlayer(
 			player,
 			string.format(
-				"⚠️ Your Pen only has %d Nest Slots! Step on the orange [GROW PEN] pad ($%s) to unlock %d Nests!",
+				"⚠️ Your Pen only has %d Slots! Step on the orange [GROW PEN] pad ($%s) to unlock %d Slots!",
 				penDef.MaxNests,
 				UpgradeData.FormatNumber(reqPenDef.Cost),
 				reqPenDef.MaxNests
@@ -524,48 +829,134 @@ local function plantCarriedEggInPen(player: Player)
 		return
 	end
 
-	-- Plant the Egg and Hatch the Squishy!
 	clearCarriedEgg(player)
-	session.PlantedEggs[tostring(eggId)] = true
 	if session.ActiveGuideEggId == eggId then
 		session.ActiveGuideEggId = nil
 	end
 
-	-- Reward instant planting bonus
-	local hatchBonus = slimeDef.CoinsPerSec * 4
-	session.Coins += hatchBonus
+	local nest = plot.Nests[eggId]
+	local hatchPos = if nest then nest.Pedestal.Position else (plot.PlantPad.Position + Vector3.new(-6, 0, 0))
+	local hatchSec = SlimeData.GetHatchTimeSeconds(slimeDef)
 
-	local lvlCompleted = isLevelCompleted(session, slimeDef.Level)
-	if lvlCompleted and slimeDef.Level < 5 then
-		local nextLvl = SlimeData.Levels[slimeDef.Level + 1]
-		notifyPlayer(
-			player,
-			string.format(
-				"🎉 ALL LEVEL %d EGGS PLANTED! Gate to Level %d (%s) is NOW UNLOCKED!",
-				slimeDef.Level,
-				nextLvl.Level,
-				nextLvl.Name
-			),
-			"Success"
-		)
-	else
-		local levelPlanted = getPlantedCount(session, slimeDef.Level)
-		local levelTotal = #(SlimeData.ByLevel[slimeDef.Level] or {})
-		notifyPlayer(
-			player,
-			string.format(
-				"🐣 PLANTED & HATCHED %s! (+$%s/sec | Level %d: %d/%d Eggs Planted)",
-				slimeDef.Name,
-				UpgradeData.FormatNumber(slimeDef.CoinsPerSec),
-				slimeDef.Level,
-				levelPlanted,
-				levelTotal
-			),
-			"Success"
-		)
+	-- Celebration VFX when Planting the Egg!
+	spawnCelebrationBurst(
+		hatchPos + Vector3.new(0, 3.0, 0),
+		Color3.fromRGB(195, 95, 255),
+		slimeDef.Color,
+		string.format("🌱 PLANTED %s! (00:%02d)", string.upper(slimeDef.Name), hatchSec)
+	)
+
+	if not incubatingEggsByPlayer[player] then
+		incubatingEggsByPlayer[player] = {}
+	end
+	if incubatingEggsByPlayer[player][eggId] and incubatingEggsByPlayer[player][eggId].Model then
+		incubatingEggsByPlayer[player][eggId].Model:Destroy()
 	end
 
+	local plantedEggModel = SquishyBuilder.CreatePlantedEgg(slimeDef, hatchPos, hatchSec)
+	plantedEggModel.Parent = plot.Folder
+	if nest then
+		nest.HatchedModel = plantedEggModel
+	end
+
+	local incState: IncubatingEggState = {
+		EggId = eggId,
+		SlotIdx = eggId,
+		RemainingSec = hatchSec,
+		Model = plantedEggModel,
+	}
+	incubatingEggsByPlayer[player][eggId] = incState
+
+	-- Allow clicking the incubating Egg to speed up countdown by 2s per click!
+	local shell = plantedEggModel.PrimaryPart
+	if shell then
+		local cd = Instance.new("ClickDetector")
+		cd.MaxActivationDistance = 36
+		cd.Parent = shell
+		cd.MouseClick:Connect(function(clickPlr: Player)
+			if clickPlr == player and incState.RemainingSec > 1 then
+				incState.RemainingSec = math.max(1, incState.RemainingSec - 2)
+			end
+		end)
+	end
+
+	notifyPlayer(
+		player,
+		string.format(
+			"🌱 PLANTED %s EGG! Watch the 00:%02d Countdown above the Egg (or click it to hatch faster)!",
+			slimeDef.Name,
+			hatchSec
+		),
+		"Info"
+	)
 	syncPlayerState(player)
+
+	-- Live Countdown Loop (00:08 -> 00:00) with Egg Wobble -> Hatch Explosion -> Backpack Tool!
+	task.spawn(function()
+		local basePivot = plantedEggModel:GetPivot()
+		while incState.RemainingSec > 0 and plantedEggModel.Parent ~= nil do
+			-- Wobble left & right twice per second as it prepares to hatch!
+			for step = 1, 2 do
+				if plantedEggModel.Parent == nil then
+					break
+				end
+				local tilt = math.rad(if step == 1 then 14 else -14)
+				plantedEggModel:PivotTo(basePivot * CFrame.Angles(0, 0, tilt))
+				task.wait(0.5)
+			end
+			incState.RemainingSec -= 1
+
+			if shell and shell.Parent then
+				local tag = shell:FindFirstChild("CountdownTag")
+				local tLbl = if tag then tag:FindFirstChild("TimerLabel") :: TextLabel? else nil
+				if tLbl then
+					tLbl.Text = string.format("00:%02d", math.max(0, incState.RemainingSec))
+					if incState.RemainingSec <= 2 then
+						tLbl.TextColor3 = Color3.fromRGB(110, 255, 130)
+					end
+				end
+			end
+		end
+
+		if not sessions[player] then
+			return
+		end
+
+		if plantedEggModel.Parent then
+			plantedEggModel:Destroy()
+		end
+		if nest and nest.HatchedModel == plantedEggModel then
+			nest.HatchedModel = nil
+		end
+		if incubatingEggsByPlayer[player] then
+			incubatingEggsByPlayer[player][eggId] = nil
+		end
+
+		-- MASSIVE HATCH EXPLOSION VFX!
+		spawnCelebrationBurst(
+			hatchPos + Vector3.new(0, 3.8, 0),
+			 Color3.fromRGB(255, 230, 75),
+			slimeDef.Color,
+			string.format("🐣 HATCHED %s! CHECK BACKPACK!", string.upper(slimeDef.Name))
+		)
+
+		-- Reward Hatch Bonus Coins & Put the Hatched Squishy Tool into the Player's Roblox Backpack (Bottom Hotbar)!
+		local hatchBonus = slimeDef.CoinsPerSec * 4
+		session.Coins += hatchBonus
+		local tool = giveHatchedSquishyToolToPlayer(player, slimeDef, 1)
+
+		notifyPlayer(
+			player,
+			string.format(
+				"🐣 %s HATCHED! (+$%s Bonus) Select [🥟 %s] in your bottom Backpack Hotbar & Click in your Pen to place it!",
+				string.upper(slimeDef.Name),
+				UpgradeData.FormatNumber(hatchBonus),
+				slimeDef.Name
+			),
+			"Success"
+		)
+		syncPlayerState(player)
+	end)
 end
 
 -- ============================================================================
@@ -908,47 +1299,86 @@ for plotIdx, plot in pairs(world.Plots) do
 		notifyPlayer(plr, "🛡️ Base Laser Shield Activated for 60 seconds!", "Success")
 		syncPlayerState(plr)
 	end)
+	-- Clicking the Pen Lawn or any Nest Pedestal while holding a Backpack Squishy Tool places it in your Pen!
+	local function handlePlaceClick(clickPlr: Player)
+		local session = sessions[clickPlr]
+		if not session or session.PlotIndex ~= plotIdx then
+			return
+		end
+		-- Check if holding a Squishy Tool in Character
+		local char = clickPlr.Character
+		if char then
+			for _, child in ipairs(char:GetChildren()) do
+				if child:IsA("Tool") and child:GetAttribute("IsSquishyTool") then
+					local eggId = tonumber(child:GetAttribute("SlimeId"))
+					if eggId then
+						placeBackpackSquishyInPen(clickPlr, eggId, child)
+						return
+					end
+				end
+			end
+		end
+		-- Or if they have a Hatched Squishy in their Backpack, place the first one!
+		for idStr in pairs(session.BackpackEggs) do
+			local eggId = tonumber(idStr)
+			if eggId then
+				placeBackpackSquishyInPen(clickPlr, eggId, nil)
+				return
+			end
+		end
+	end
+
+	local penLawn = plot.Folder:FindFirstChild("PenLawn")
+	local lawnCd = if penLawn then penLawn:FindFirstChild("PlaceSquishyClick") :: ClickDetector? else nil
+	if lawnCd then
+		lawnCd.MouseClick:Connect(handlePlaceClick)
+	end
+	for _, nest in pairs(plot.Nests) do
+		local slotCd = nest.Pedestal:FindFirstChild("PlaceSlotClick") :: ClickDetector?
+		if slotCd then
+			slotCd.MouseClick:Connect(handlePlaceClick)
+		end
+	end
 end
 
--- Hook up World Eggs (Touch to Pickup / BounceWake 3x to Wake)
+-- Hook up World Eggs (Touch OR ProximityPrompt "Steal" to Pickup / BounceWake 3x to Wake)
 for eggId, eggModel in pairs(world.WorldEggs) do
 	local slimeDef = SlimeData.ById[eggId]
 	local primary = eggModel.PrimaryPart
 	if primary and slimeDef then
-		primary.Touched:Connect(function(hit: BasePart)
-			local char = hit.Parent
-			local plr = if char then Players:GetPlayerFromCharacter(char) else nil
-			local session = if plr then sessions[plr] else nil
-			if not plr or not session or not char then
+		local function tryStealEgg(plr: Player, fromPrompt: boolean)
+			local session = sessions[plr]
+			local char = plr.Character
+			if not session or not char then
 				return
 			end
 			if isOnCooldown("EggTouch_" .. plr.UserId .. "_" .. eggId, 0.55) then
 				return
 			end
 
-			-- Check if player already planted this Egg
-			if session.PlantedEggs[tostring(eggId)] then
-				notifyPlayer(plr, string.format("✅ You already planted & hatched %s in your Pen!", slimeDef.Name), "Info")
+			local idStr = tostring(eggId)
+			if session.PlantedEggs[idStr] then
+				notifyPlayer(plr, string.format("✅ You already placed %s in your Pen!", slimeDef.Name), "Info")
 				return
 			end
-
-			-- Check if player is already carrying an Egg
+			if session.BackpackEggs[idStr] then
+				notifyPlayer(plr, string.format("🎒 You already hatched %s! Select it in your Backpack Hotbar to place it in your Pen!", slimeDef.Name), "Info")
+				return
+			end
 			if session.CarryingEggId == eggId then
 				return
 			end
 
-			-- Check Micro-Vent requirement
 			if slimeDef.IsMicroVent and not session.TinyMode then
 				notifyPlayer(
 					plr,
-					"🐭 Too big to reach inside the Tiny Vent! Open [Slimeopedia] -> Toggle [Tiny Squishy Size]!",
+					"🐭 Too big to reach inside the Tiny Vent! Open [📘 Index] -> Toggle [Tiny Squishy Size]!",
 					"Warning"
 				)
 				return
 			end
 
-			-- Handle BounceWake Eggs (Jump on top 3 times!)
-			if slimeDef.Behavior == "BounceWake" then
+			if slimeDef.Behavior == "BounceWake" and not fromPrompt then
 				local hrp = char:FindFirstChild("HumanoidRootPart") :: BasePart?
 				if hrp then
 					hrp.AssemblyLinearVelocity = Vector3.new(hrp.AssemblyLinearVelocity.X, 78, hrp.AssemblyLinearVelocity.Z)
@@ -958,7 +1388,7 @@ for eggId, eggModel in pairs(world.WorldEggs) do
 				if bounces < 3 then
 					notifyPlayer(
 						plr,
-						string.format("😴 *BOING!* (%d/3 Bounces to wake %s Egg!)", bounces, slimeDef.Name),
+						string.format("😴 *BOING!* (%d/3 Bounces to wake %s Egg — or press [E] Steal!)", bounces, slimeDef.Name),
 						"Info"
 					)
 					return
@@ -966,9 +1396,23 @@ for eggId, eggModel in pairs(world.WorldEggs) do
 				eggModel:SetAttribute("BounceCount_" .. plr.UserId, 0)
 			end
 
-			-- Attach the Egg to the player and trigger the Level Guardians to chase!
 			attachCarriedEggToPlayer(plr, slimeDef)
+		end
+
+		primary.Touched:Connect(function(hit: BasePart)
+			local char = hit.Parent
+			local plr = if char then Players:GetPlayerFromCharacter(char) else nil
+			if plr then
+				tryStealEgg(plr, false)
+			end
 		end)
+
+		local stealPrompt = primary:FindFirstChild("StealPrompt") :: ProximityPrompt?
+		if stealPrompt then
+			stealPrompt.Triggered:Connect(function(plr: Player)
+				tryStealEgg(plr, true)
+			end)
+		end
 	end
 end
 
@@ -989,7 +1433,6 @@ for _, inst in ipairs(Workspace.SquishyWorld:GetDescendants()) do
 				local plr = if char then Players:GetPlayerFromCharacter(char) else nil
 				local hrp = if char then char:FindFirstChild("HumanoidRootPart") :: BasePart? else nil
 				if plr and hrp and not isOnCooldown("Hazard_" .. plr.UserId, 0.9) then
-					-- Non-lethal fun bounce-back knockback!
 					hrp.AssemblyLinearVelocity = Vector3.new(0, 58, 42)
 					notifyPlayer(plr, "⚡ Ouch! Watch out for the Obby Lasers & Lava! Upgrade Jump Springs to clear them!", "Warning")
 				end
@@ -999,7 +1442,7 @@ for _, inst in ipairs(Workspace.SquishyWorld:GetDescendants()) do
 end
 
 -- ============================================================================
--- 6. CLIENT ACTION REQUEST HANDLER (UI Buttons, Morphs, Teleports, Family Boosts)
+-- 6. CLIENT ACTION REQUEST HANDLER (UI Buttons, Backpack Place, Level Up, Morphs, Teleports)
 -- ============================================================================
 actionRemote.OnServerEvent:Connect(function(player: Player, payload: any)
 	if type(payload) ~= "table" then
@@ -1013,13 +1456,23 @@ actionRemote.OnServerEvent:Connect(function(player: Player, payload: any)
 	local action = payload.Action
 	if action == "BuyUpgrade" then
 		buyUpgradeAction(player, tostring(payload.Category), payload.Arg)
+	elseif action == "UpgradeSquishyLevel" then
+		local eggId = tonumber(payload.SlimeId)
+		if eggId then
+			upgradePlacedSquishy(player, eggId)
+		end
+	elseif action == "PlaceBackpackSquishy" then
+		local eggId = tonumber(payload.SlimeId)
+		if eggId and session.BackpackEggs[tostring(eggId)] then
+			placeBackpackSquishyInPen(player, eggId, nil)
+		end
 	elseif action == "MorphSlime" then
 		local slimeId = tonumber(payload.SlimeId)
 		if not slimeId or slimeId == 0 then
 			session.CurrentMorphId = nil
 			applyCharacterStatsAndTrail(player, session)
 			notifyPlayer(player, "Returned to Normal Avatar!", "Info")
-		elseif session.PlantedEggs[tostring(slimeId)] then
+		elseif session.PlantedEggs[tostring(slimeId)] or session.BackpackEggs[tostring(slimeId)] then
 			session.CurrentMorphId = slimeId
 			applyCharacterStatsAndTrail(player, session)
 			local sDef = SlimeData.ById[slimeId]
@@ -1045,7 +1498,6 @@ actionRemote.OnServerEvent:Connect(function(player: Player, payload: any)
 		local char = player.Character
 		local hrp = if char then char:FindFirstChild("HumanoidRootPart") :: BasePart? else nil
 		if hrp then
-			-- Find nearest Co-op Plate B and place a helper Squishy weight on it for 25 seconds
 			local bestPlate: BasePart? = nil
 			local bestDist = 80
 			for _, pair in pairs(world.CoopPlates) do
@@ -1056,7 +1508,7 @@ actionRemote.OnServerEvent:Connect(function(player: Player, payload: any)
 				end
 			end
 			local dropPos = if bestPlate then bestPlate.Position + Vector3.new(0, 2.2, 0) else hrp.Position + Vector3.new(0, 2, -4)
-			local decoy = SquishyBuilder.CreateHatchedSquishy(SlimeData.ById[1], dropPos, session.GelTier)
+			local decoy = SquishyBuilder.CreateHatchedSquishy(SlimeData.ById[1], dropPos, session.GelTier, 1)
 			decoy.Name = "DecoyBuddyWeight"
 			decoy:SetAttribute("IsDecoyWeight", true)
 			decoy.Parent = Workspace
@@ -1072,9 +1524,8 @@ actionRemote.OnServerEvent:Connect(function(player: Player, payload: any)
 		end
 		if target == "BasePen" and session.PlotIndex then
 			local plot = world.Plots[session.PlotIndex]
-			-- If carrying an Egg outside the Safe Zone, require running to the Level Gate first!
 			if session.CarryingEggId and hrp.Position.Z < -65 then
-				notifyPlayer(player, "🏃 You're carrying an Egg! Outrun the Chasers to the Green Safe Line first!", "Warning")
+				notifyPlayer(player, "🏃 You're carrying an Egg! Outrun the Boss Guardian to the Green Safe Line first!", "Warning")
 				return
 			end
 			hrp.CFrame = CFrame.new(plot.PlantPad.Position + Vector3.new(0, 4, 0))
@@ -1116,7 +1567,6 @@ actionRemote.OnServerEvent:Connect(function(player: Player, payload: any)
 						if otherHrp and (otherHrp.Position - myHrp.Position).Magnitude <= 12 then
 							local dir = (otherHrp.Position - myHrp.Position).Unit
 							otherHrp.AssemblyLinearVelocity = dir * 65 + Vector3.new(0, 48, 0)
-							-- Steal carried Egg if they were holding one!
 							if otherSession and otherSession.CarryingEggId and not session.CarryingEggId then
 								local stolenId = otherSession.CarryingEggId
 								local sDef = SlimeData.ById[stolenId]
@@ -1154,9 +1604,11 @@ actionRemote.OnServerEvent:Connect(function(player: Player, payload: any)
 			local targetTier = math.max(session.PenTier, maxLvl)
 			session.PenTier = targetTier
 			for _, sDef in ipairs(SlimeData.ByLevel[maxLvl] or {}) do
-				session.PlantedEggs[tostring(sDef.Id)] = true
+				local idStr = tostring(sDef.Id)
+				session.PlantedEggs[idStr] = true
+				session.SquishyLevels[idStr] = math.max(1, session.SquishyLevels[idStr] or 1)
 			end
-			notifyPlayer(player, string.format("🐣 Family Boost: Planted all Level %d Eggs & Unlocked Gate!", maxLvl), "Success")
+			notifyPlayer(player, string.format("🐣 Family Boost: Hatched & Placed all Level %d Squishies!", maxLvl), "Success")
 		end
 		syncPlayerState(player)
 	end
@@ -1166,7 +1618,7 @@ end)
 -- 7. MASTER HEARTBEAT LOOPS (Treadmill, Guardian Chasers, Living Eggs, Gates, Income)
 -- ============================================================================
 
--- Loop A: Passive Pen Income & Treadmill Speed Training (Every 0.5s)
+-- Loop A: Passive Pen Income & Dino-Jaw Treadmill Speed Training (Every 0.5s)
 task.spawn(function()
 	local tickCounter = 0
 	while true do
@@ -1176,7 +1628,6 @@ task.spawn(function()
 		for _, player in ipairs(Players:GetPlayers()) do
 			local session = sessions[player]
 			if session then
-				-- 1. Every 1.0s (2 ticks), generate passive Pen Coins
 				if tickCounter % 2 == 0 then
 					local income = getTotalIncomePerSec(session)
 					if income > 0 then
@@ -1184,14 +1635,12 @@ task.spawn(function()
 					end
 				end
 
-				-- 2. Check if Player is running on ANY Treadmill Belt + Spawn Floor Coloring Paint!
 				local char = player.Character
 				local hrp = if char then char:FindFirstChild("HumanoidRootPart") :: BasePart? else nil
 				local hum = if char then char:FindFirstChildOfClass("Humanoid") else nil
 				if hrp and hum and hum.Health > 0 then
 					local pos = hrp.Position
 
-					-- Check Base Treadmill or Public Hub Treadmill
 					local onTreadmill = false
 					if session.PlotIndex then
 						local myBelt = world.Plots[session.PlotIndex].TreadmillBelt
@@ -1217,9 +1666,41 @@ task.spawn(function()
 						local gain = math.floor(tmDef.SpeedPerTick * trailMult)
 						session.SpeedPower += gain
 						hum.WalkSpeed = UpgradeData.SpeedPowerToWalkSpeed(session.SpeedPower)
+
+						-- Floating Red Sneaker "+Speed" Popup just like real_frame_a_01.png!
+						local popPart = Instance.new("Part")
+						popPart.Name = "SneakerSpeedPopup"
+						popPart.Size = Vector3.new(0.2, 0.2, 0.2)
+						popPart.Transparency = 1
+						popPart.Anchored = true
+						popPart.CanCollide = false
+						popPart.Position = pos + Vector3.new(math.random(-35, 35) / 10, math.random(10, 35) / 10, math.random(-35, 35) / 10)
+						popPart.Parent = Workspace
+
+						local sbb = Instance.new("BillboardGui")
+						sbb.Size = UDim2.new(0, 125, 0, 42)
+						sbb.AlwaysOnTop = true
+						sbb.MaxDistance = 60
+						sbb.Parent = popPart
+
+						local slbl = Instance.new("TextLabel")
+						slbl.Size = UDim2.new(1, 0, 1, 0)
+						slbl.BackgroundTransparency = 1
+						slbl.Font = Enum.Font.FredokaOne
+						slbl.TextScaled = true
+						slbl.TextColor3 = Color3.fromRGB(95, 245, 115)
+						slbl.TextStrokeColor3 = Color3.fromRGB(15, 25, 20)
+						slbl.TextStrokeTransparency = 0
+						slbl.Text = "👟 +" .. UpgradeData.FormatNumber(gain)
+						slbl.Parent = sbb
+
+						TweenService:Create(popPart, TweenInfo.new(0.75, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+							Position = popPart.Position + Vector3.new(0, 4.2, 0),
+						}):Play()
+						Debris:AddItem(popPart, 0.8)
 					end
 
-					-- 3. Floor Coloring Paint Trail Splat when moving!
+					-- Floor Coloring Paint Trail Splat when moving!
 					local trailDef = UpgradeData.GetTrailById(session.EquippedTrail)
 					if trailDef and trailDef.PaintFloor and hum.MoveDirection.Magnitude > 0.1 then
 						local splat = Instance.new("Part")
@@ -1238,12 +1719,11 @@ task.spawn(function()
 						Debris:AddItem(splat, 3.5)
 					end
 
-					-- 4. Server-Side Level Gate Enforcement (Cannot pass Gate N unless Levels 1..N are 100% planted!)
+					-- Server-Side Level Gate Enforcement
 					local maxUnlocked = getMaxUnlockedLevel(session)
 					for gateLvl = 1, 4 do
 						local gatePart = world.LevelGates[gateLvl]
 						if gatePart and maxUnlocked <= gateLvl and pos.Z < (gatePart.Position.Z - 1.0) then
-							-- Bounce player gently back in front of the locked gate
 							hrp.CFrame = CFrame.new(math.clamp(pos.X, -65, 65), 5, gatePart.Position.Z + 8)
 							if not isOnCooldown("GateWarn_" .. player.UserId, 2.0) then
 								local plantedInLvl = getPlantedCount(session, gateLvl)
@@ -1251,7 +1731,7 @@ task.spawn(function()
 								notifyPlayer(
 									player,
 									string.format(
-										"🔒 Gate Locked! You must FIND & PLANT all %d Eggs in Level %d first! (Planted: %d/%d)",
+										"🔒 Gate Locked! You must HATCH & PLACE all %d Squishies in Level %d first! (%d/%d)",
 										totalInLvl,
 										gateLvl,
 										plantedInLvl,
@@ -1273,21 +1753,20 @@ task.spawn(function()
 	end
 end)
 
--- Loop B: Animal & Brainrot Chaser Guardians AI + Living Eggs + Co-op Buddy Vaults (Every 0.12s)
+-- Loop B: Colossal Boss Guardians AI ("Zzz" -> "!!") + Living Eggs + Co-op Buddy Vaults (Every 0.12s)
 task.spawn(function()
 	local dt = 0.12
 	while true do
 		task.wait(dt)
 		local now = os.clock()
 
-		-- 1. Update All 10 Animal & Brainrot Chaser Guardians!
+		-- 1. Update All 10 Colossal Boss Guardians!
 		for gId, gEntry in pairs(world.WorldGuardians) do
 			local gDef = gEntry.Def
 			local gModel = gEntry.Model
 			local gBody = gModel.PrimaryPart
 			local lvlDef = SlimeData.Levels[gDef.Level]
 			if gBody and lvlDef then
-				-- Check if ANY player in this Level is currently carrying an Egg!
 				local targetPlayer: Player? = nil
 				local targetHrp: BasePart? = nil
 				local bestDist = 260
@@ -1298,7 +1777,6 @@ task.spawn(function()
 					local hrp = if char then char:FindFirstChild("HumanoidRootPart") :: BasePart? else nil
 					if session and session.CarryingEggId and hrp then
 						local pPos = hrp.Position
-						-- Chasers hunt players inside their Level corridor (until they cross the Safe Line at ZStart!)
 						if pPos.Z <= (lvlDef.ZStart - 2) and pPos.Z >= (lvlDef.ZEnd - 5) then
 							local dist = (pPos - gBody.Position).Magnitude
 							if dist < bestDist then
@@ -1312,22 +1790,29 @@ task.spawn(function()
 
 				local tagGui = gBody:FindFirstChild("GuardianTag")
 				local statusLbl = if tagGui then tagGui:FindFirstChild("StatusLabel") :: TextLabel? else nil
+				local headPart = gModel:FindFirstChild("Head")
+				local sleepGui = if headPart then headPart:FindFirstChild("SleepEmoteGui") else nil
+				local emoteLbl = if sleepGui then sleepGui:FindFirstChild("EmoteLabel") :: TextLabel? else nil
 
 				if targetPlayer and targetHrp then
-					-- CHASE THE EGG CARRIER!
+					-- WAKE UP ("!!") & CHASE THE EGG THIEF!
+					if emoteLbl then
+						emoteLbl.Text = "!!"
+						emoteLbl.TextColor3 = Color3.fromRGB(255, 55, 65)
+					end
+
 					local targetPos = Vector3.new(targetHrp.Position.X, gDef.HomePosition.Y, targetHrp.Position.Z)
 					local delta = targetPos - gBody.Position
 					local dist = delta.Magnitude
 
 					local session = sessions[targetPlayer]
 					local playerSpdPower = if session then session.SpeedPower else 100
-					-- Effective chase speed: if player trained their SpeedPower >= RequiredSpeedPower, player can outrun the Guardian!
 					local speedRatio = math.clamp(gDef.RequiredSpeedPower / math.max(100, playerSpdPower), 0.55, 1.35)
 					local effectiveStep = gDef.ChaseSpeed * speedRatio * dt
 
 					if statusLbl then
 						statusLbl.Text = string.format(
-							"🚨 CHASING %s! (Req: %s Speed!)",
+							"🚨 AWAKE! CHASING %s! (Req: %s Spd)",
 							string.upper(targetPlayer.DisplayName),
 							UpgradeData.FormatNumber(gDef.RequiredSpeedPower)
 						)
@@ -1337,11 +1822,10 @@ task.spawn(function()
 					if dist > 0.5 then
 						local moveDir = delta.Unit
 						local nextPos = gBody.Position + moveDir * math.min(dist, effectiveStep)
-						local bounceY = math.abs(math.sin(now * 10)) * 1.2
+						local bounceY = math.abs(math.sin(now * 10)) * 1.4
 						gModel:PivotTo(CFrame.lookAt(nextPos + Vector3.new(0, bounceY, 0), targetPos + Vector3.new(0, bounceY, 0)))
 					end
 
-					-- Did the Guardian catch the Egg Carrier?
 					if dist <= 6.2 and session then
 						local droppedId = session.CarryingEggId
 						local droppedDef = if droppedId then SlimeData.ById[droppedId] else nil
@@ -1350,7 +1834,7 @@ task.spawn(function()
 						notifyPlayer(
 							targetPlayer,
 							string.format(
-								"💥 CAUGHT BY %s! You dropped the %s Egg! Train on your Treadmill to reach %s Speed Power!",
+								"💥 CAUGHT BY %s! You dropped the %s Egg! Train on your Dino Treadmill to reach %s Speed Power!",
 								string.upper(gDef.Name),
 								if droppedDef then droppedDef.Name else "Squishy",
 								UpgradeData.FormatNumber(gDef.RequiredSpeedPower)
@@ -1360,13 +1844,17 @@ task.spawn(function()
 						syncPlayerState(targetPlayer)
 					end
 				else
-					-- PATROL MODE
+					-- SLEEPING / GUARDING MODE ("Zzz")
+					if emoteLbl then
+						emoteLbl.Text = if math.floor(now * 2) % 2 == 0 then "Zzz" else "Z"
+						emoteLbl.TextColor3 = Color3.fromRGB(65, 225, 255)
+					end
 					if statusLbl then
 						statusLbl.Text = string.format(
-							"😴 Guarding Eggs (Speed Power: %s)",
+							"💤 Sleeping near Eggs (Speed: %s)",
 							UpgradeData.FormatNumber(gDef.RequiredSpeedPower)
 						)
-						statusLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+						statusLbl.TextColor3 = Color3.fromRGB(125, 235, 255)
 					end
 
 					local wp = guardianWaypoints[gId]
@@ -1384,7 +1872,7 @@ task.spawn(function()
 					local delta = wp - gBody.Position
 					if delta.Magnitude > 0.5 then
 						local nextPos = gBody.Position + delta.Unit * math.min(delta.Magnitude, gDef.PatrolSpeed * dt)
-						local hopY = math.abs(math.sin(now * 5)) * 0.5
+						local hopY = math.abs(math.sin(now * 4)) * 0.45
 						gModel:PivotTo(CFrame.lookAt(nextPos + Vector3.new(0, hopY, 0), wp + Vector3.new(0, hopY, 0)))
 					end
 				end
@@ -1418,7 +1906,6 @@ task.spawn(function()
 						local fleeDir = Vector3.new(curPos.X - closestHrp.Position.X, 0, curPos.Z - closestHrp.Position.Z)
 						if fleeDir.Magnitude > 0.1 then
 							local nextPos = curPos + fleeDir.Unit * (14 * dt)
-							-- Clamp within level bounds near home
 							nextPos = Vector3.new(
 								math.clamp(nextPos.X, basePos.X - 20, basePos.X + 20),
 								basePos.Y + math.abs(math.sin(now * 9)) * 1.4,
@@ -1428,7 +1915,6 @@ task.spawn(function()
 							eggModel:PivotTo(CFrame.new(nextPos))
 						end
 					else
-						-- Gently return toward home spot
 						local returnPos = curPos:Lerp(basePos, 0.08)
 						eggLiveOffsets[eggId] = returnPos
 						eggModel:PivotTo(CFrame.new(returnPos + Vector3.new(0, math.sin(now * 3 + eggId) * 0.35, 0)))
@@ -1452,7 +1938,7 @@ task.spawn(function()
 			end
 		end
 
-		-- 3. Update Co-op Buddy Plates (Open Vault Door when Plate A & Plate B are pressed or Decoy Weight is active!)
+		-- 3. Update Co-op Buddy Plates
 		for lvlNum, plates in pairs(world.CoopPlates) do
 			local door = world.CoopDoors[lvlNum]
 			if door then
@@ -1482,7 +1968,7 @@ task.spawn(function()
 					end
 				end
 
-				local vaultOpen = (aPressed and bPressed) or bPressed -- If Decoy Weight is dropped or 2 players stand on plates!
+				local vaultOpen = (aPressed and bPressed) or bPressed
 				plates.PlateA.Color = if aPressed then Color3.fromRGB(85, 255, 120) else Color3.fromRGB(255, 185, 55)
 				plates.PlateB.Color = if bPressed then Color3.fromRGB(85, 255, 120) else Color3.fromRGB(255, 185, 55)
 				door.CanCollide = not vaultOpen
@@ -1499,7 +1985,7 @@ end)
 local function loadPlayerSession(player: Player): PlayerSession
 	local defaultSession: PlayerSession = {
 		UserId = player.UserId,
-		Coins = 100, -- Starter coins so kids can test anEgg Guide or Trail right away!
+		Coins = 100,
 		StoredPenCoins = 0,
 		SpeedPower = 100,
 		PenTier = 1,
@@ -1507,6 +1993,8 @@ local function loadPlayerSession(player: Player): PlayerSession
 		GelTier = 1,
 		JumpTier = 1,
 		PlantedEggs = {},
+		SquishyLevels = {},
+		BackpackEggs = {},
 		OwnedTrails = {},
 		EquippedTrail = "",
 		VIPGuideUnlocked = false,
@@ -1531,6 +2019,12 @@ local function loadPlayerSession(player: Player): PlayerSession
 			defaultSession.JumpTier = tonumber(saved.JumpTier) or 1
 			if type(saved.PlantedEggs) == "table" then
 				defaultSession.PlantedEggs = saved.PlantedEggs
+			end
+			if type(saved.SquishyLevels) == "table" then
+				defaultSession.SquishyLevels = saved.SquishyLevels
+			end
+			if type(saved.BackpackEggs) == "table" then
+				defaultSession.BackpackEggs = saved.BackpackEggs
 			end
 			if type(saved.OwnedTrails) == "table" then
 				defaultSession.OwnedTrails = saved.OwnedTrails
@@ -1557,6 +2051,8 @@ local function savePlayerSession(player: Player)
 			GelTier = session.GelTier,
 			JumpTier = session.JumpTier,
 			PlantedEggs = session.PlantedEggs,
+			SquishyLevels = session.SquishyLevels,
+			BackpackEggs = session.BackpackEggs,
 			OwnedTrails = session.OwnedTrails,
 			EquippedTrail = session.EquippedTrail,
 			VIPGuideUnlocked = session.VIPGuideUnlocked,
@@ -1588,11 +2084,21 @@ local function onPlayerAdded(player: Player)
 	sessions[player] = session
 	assignPlotToPlayer(player, session, nil)
 
+	local function restoreBackpackTools()
+		for idStr, lvl in pairs(session.BackpackEggs) do
+			local id = tonumber(idStr)
+			local sDef = if id then SlimeData.ById[id] else nil
+			if sDef then
+				giveHatchedSquishyToolToPlayer(player, sDef, lvl)
+			end
+		end
+	end
+
 	player.CharacterAdded:Connect(function(character: Model)
 		clearCarriedEgg(player)
 		task.wait(0.25)
 		applyCharacterStatsAndTrail(player, session)
-		-- Spawn player right in front of their assigned Base Pen on join!
+		restoreBackpackTools()
 		if session.PlotIndex then
 			local plot = world.Plots[session.PlotIndex]
 			local hrp = character:FindFirstChild("HumanoidRootPart") :: BasePart?
@@ -1610,6 +2116,7 @@ local function onPlayerAdded(player: Player)
 	if player.Character then
 		task.spawn(function()
 			applyCharacterStatsAndTrail(player, session)
+			restoreBackpackTools()
 			syncPlayerState(player)
 		end)
 	end
@@ -1622,6 +2129,14 @@ end
 
 Players.PlayerRemoving:Connect(function(player: Player)
 	clearCarriedEgg(player)
+	if incubatingEggsByPlayer[player] then
+		for _, inc in pairs(incubatingEggsByPlayer[player]) do
+			if inc.Model and inc.Model.Parent then
+				inc.Model:Destroy()
+			end
+		end
+		incubatingEggsByPlayer[player] = nil
+	end
 	local session = sessions[player]
 	if session and session.PlotIndex then
 		refreshPlotVisuals(session.PlotIndex, nil, nil)

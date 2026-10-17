@@ -58,8 +58,8 @@ SlimeData.Levels = {
 		ZStart = -320,
 		ZEnd = -580,
 		GateZ = -580,
-		ThemeColor = Color3.fromRGB(255, 125, 195),
-		FloorColor = Color3.fromRGB(248, 182, 218),
+		ThemeColor = Color3.fromRGB(255, 115, 190),
+		FloorColor = Color3.fromRGB(218, 118, 172),
 		RequiredPlantedCount = 5,
 		EggCount = 6,
 	},
@@ -782,11 +782,42 @@ SlimeData.Slimes = {
 SlimeData.ById = {} :: { [number]: SlimeDef }
 SlimeData.ByLevel = {} :: { [number]: { SlimeDef } }
 
+local speciesRotation = {
+	"Cow",
+	"Axolotl",
+	"Boba",
+	"Frog",
+	"Cat",
+	"Dragon",
+	"Unicorn",
+	"Puppy",
+}
+
 for _, levelDef in ipairs(SlimeData.Levels) do
 	SlimeData.ByLevel[levelDef.Level] = {}
 end
 
 for _, slime in ipairs(SlimeData.Slimes) do
+	local sp = speciesRotation[((slime.Id - 1) % #speciesRotation) + 1]
+	local nm = string.lower(slime.Name)
+	if string.find(nm, "frog") or string.find(nm, "sprout") or string.find(nm, "moss") then
+		sp = "Frog"
+	elseif string.find(nm, "milk") or string.find(nm, "cow") or string.find(nm, "butter") or string.find(nm, "mochi") then
+		sp = "Cow"
+	elseif string.find(nm, "boba") or string.find(nm, "soda") or string.find(nm, "slush") or string.find(nm, "cotton") or string.find(nm, "taffy") then
+		sp = "Boba"
+	elseif string.find(nm, "axolotl") or string.find(nm, "gummy") or string.find(nm, "bubble") or string.find(nm, "plasma") then
+		sp = "Axolotl"
+	elseif string.find(nm, "cat") or string.find(nm, "teddy") or string.find(nm, "plush") or string.find(nm, "pixel") then
+		sp = "Cat"
+	elseif string.find(nm, "dragon") or string.find(nm, "magma") or string.find(nm, "lava") or string.find(nm, "obsidian") or string.find(nm, "cinder") then
+		sp = "Dragon"
+	elseif string.find(nm, "sovereign") or string.find(nm, "star") or string.find(nm, "celestial") or string.find(nm, "unicorn") then
+		sp = "Unicorn"
+	end
+	slime.Species = sp
+	slime.HatchTime = 4 + (slime.Level * 2) -- 6s (Lvl 1), 8s (Lvl 2), 10s (Lvl 3), 12s (Lvl 4), 14s (Lvl 5)
+
 	SlimeData.ById[slime.Id] = slime
 	if not SlimeData.ByLevel[slime.Level] then
 		SlimeData.ByLevel[slime.Level] = {}
@@ -794,4 +825,19 @@ for _, slime in ipairs(SlimeData.Slimes) do
 	table.insert(SlimeData.ByLevel[slime.Level], slime)
 end
 
+function SlimeData.GetHatchTimeSeconds(slimeDef: SlimeDef): number
+	return (slimeDef :: any).HatchTime or (4 + slimeDef.Level * 2)
+end
+
+function SlimeData.GetSquishyCoinsPerSec(slimeDef: SlimeDef, squishyLevel: number): number
+	local lvl = math.clamp(squishyLevel or 1, 1, 15)
+	return math.floor(slimeDef.CoinsPerSec * (1.55 ^ (lvl - 1)))
+end
+
+function SlimeData.GetSquishyUpgradeCost(slimeDef: SlimeDef, currentLvl: number): number
+	local lvl = math.clamp(currentLvl or 1, 1, 15)
+	return math.max(25, math.floor(slimeDef.CoinsPerSec * 10 * (1.75 ^ (lvl - 1))))
+end
+
 return SlimeData
+
