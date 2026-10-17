@@ -16,6 +16,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local SlimeData = require(Shared:WaitForChild("SlimeData"))
 local UpgradeData = require(Shared:WaitForChild("UpgradeData"))
 local SquishyBuilder = require(Shared:WaitForChild("SquishyBuilder"))
+local PrebuiltLoader = require(Shared:WaitForChild("PrebuiltLoader"))
 local WorldBuilder = require(script.Parent:WaitForChild("WorldBuilder"))
 
 -- ============================================================================
@@ -41,8 +42,20 @@ actionRemote.Name = "ActionRequest"
 actionRemote.Parent = remotesFolder
 
 -- ============================================================================
--- 2. BUILD WORLD & INITIALIZE STATE TABLES
+-- 2. ENSURE PRE-BUILT 3D COMMUNITY ASSETS & BUILD WORLD
 -- ============================================================================
+do
+	local startWait = os.clock()
+	while not ReplicatedStorage:GetAttribute("PrebuiltAssetsReady") and (os.clock() - startWait) < 6.0 do
+		task.wait(0.1)
+	end
+	if not ReplicatedStorage:GetAttribute("PrebuiltAssetsReady") then
+		pcall(function()
+			PrebuiltLoader.EnsurePrebuiltAssets()
+		end)
+	end
+end
+
 local world = WorldBuilder.BuildWorld()
 
 local dataStore = nil
