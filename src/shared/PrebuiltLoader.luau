@@ -24,20 +24,23 @@ PrebuiltLoader.CATALOG = {
 		{ id = 15850322685, mode = "pack", maxItems = 26 }, -- Egg Pets KIT (26 Eggs & Pets)
 	},
 	Plushies = {
-		{ id = 88570972702446, mode = "pack", maxItems = 8 }, -- Squishmallows Collection [4 Pack]
 		{ id = 8539945428, mode = "single" }, -- Axolotl Squishmallow
 		{ id = 5495888435, mode = "single" }, -- Archie Dino Squishmallow
 		{ id = 18138469368, mode = "single" }, -- Owl Squishmallow
 		{ id = 82569740083425, mode = "single" }, -- Chiikawa Sitting Plushie
 		{ id = 14229848241, mode = "single" }, -- Alien Plushie
 		{ id = 135340189465574, mode = "single" }, -- CodysTooBig Plushie
+		{ id = 15995361431, mode = "single" }, -- Fluffy Bear Plushie
+		{ id = 14934035048, mode = "single" }, -- Plushie Mesh
+		{ id = 516657473, mode = "single" }, -- Classic Plushie Mesh
 		{ id = 15850322685, mode = "pack", maxItems = 26 }, -- Egg Pets KIT (26 Pets/Eggs)
-		{ id = 85981822715000, mode = "pack", maxItems = 35 }, -- Simulator Pet Pack
-		{ id = 111425439021374, mode = "pack", maxItems = 35 }, -- Plushie Pack
 	},
 	Monsters = {
-		{ id = 83305565669388, mode = "pack", maxItems = 26 }, -- Cute Stylized Monster Pack - 25 Enemies + Boss
 		{ id = 16506307978, mode = "single" }, -- Cute Monster
+		{ id = 11496443982, mode = "single" }, -- Stylized Cat Monster
+		{ id = 147423889, mode = "single" }, -- Frost Monster
+		{ id = 279264243, mode = "single" }, -- Finnigan Monster
+		{ id = 21066713, mode = "single" }, -- Green Harold Monster
 	},
 	Dinosaurs = {
 		{ id = 5495888435, mode = "single" }, -- Dino Squishmallow
@@ -47,6 +50,7 @@ PrebuiltLoader.CATALOG = {
 	Aquatic = {
 		{ id = 8539945428, mode = "single" }, -- Axolotl Squishmallow
 		{ id = 10712062163, mode = "single" }, -- Great White Shark Mesh
+		{ id = 58126777, mode = "single" }, -- Squid Mesh
 	},
 	Dragons = {
 		{ id = 5472478735, mode = "single" }, -- Dragon Mesh
@@ -69,12 +73,10 @@ PrebuiltLoader.CATALOG = {
 		{ id = 4893246329, mode = "single" }, -- Low Poly Tree (1000+ upvotes)
 		{ id = 12549617200, mode = "single" }, -- Low Poly Tree 2
 		{ id = 10707210767, mode = "single" }, -- Low Poly Tree 3
-		{ id = 114770591532161, mode = "pack", maxItems = 18 }, -- Low Poly Trees Bushes Rocks and Flowers
 	},
 	Rocks = {
 		{ id = 130260542676735, mode = "single" }, -- Low Poly Rock
 		{ id = 16098456067, mode = "single" }, -- Low-Poly Rock 2
-		{ id = 109124332536987, mode = "pack", maxItems = 12 }, -- Stylized Low Poly Rock Pack
 	},
 	Bushes = {
 		{ id = 7191673673, mode = "single" }, -- Low Poly Bush
@@ -84,15 +86,15 @@ PrebuiltLoader.CATALOG = {
 		{ id = 10149073107, mode = "pack", maxItems = 16 }, -- Small Candy Pack (Decorations)
 	},
 	Crystals = {
-		{ id = 134557069734192, mode = "pack", maxItems = 18 }, -- Stylized Gem Pack x35 Crystal Cluster Geode Shard
-		{ id = 109124332536987, mode = "pack", maxItems = 12 }, -- Stylized Rock/Crystal Pack
+		{ id = 157006174, mode = "single" }, -- Crystal Cluster Mesh
+		{ id = 4576917611, mode = "single" }, -- Crystal Mesh
+		{ id = 13046396807, mode = "single" }, -- Crystal Cylinder Mesh
 	},
 	Coral = {
-		{ id = 14816833452, mode = "pack", maxItems = 18 }, -- [PBR] Coral Pack
+		{ id = 14816833452, mode = "pack", maxItems = 18 }, -- Coral Pack
 	},
 	PalmTrees = {
 		{ id = 10562894034, mode = "single" }, -- Palm Tree (Realistic)
-		{ id = 94325172197842, mode = "pack", maxItems = 6 }, -- Stylized Palm Tree Pack
 	},
 	VolcanoRocks = {
 		{ id = 5425109622, mode = "single" }, -- Volcano Rock
@@ -103,11 +105,10 @@ PrebuiltLoader.CATALOG = {
 	},
 	Treadmill = {
 		{ id = 109866492613700, mode = "single" }, -- Treadmill
-		{ id = 114934621952263, mode = "pack", maxItems = 4 }, -- Treadmill Pack
+		{ id = 5244605990, mode = "single" }, -- Treadmill 2
 	},
 	MarketStall = {
 		{ id = 10970560969, mode = "single" }, -- Tent Market Stall
-		{ id = 104874561792809, mode = "single" }, -- Stylized Market Stall
 		{ id = 86311252190175, mode = "single" }, -- Market Stall
 	},
 	BirdNest = {
@@ -145,6 +146,7 @@ local function sanitizePart(part: BasePart)
 			or child:IsA("Fire")
 			or child:IsA("Smoke")
 			or child:IsA("Sparkles")
+			or child:IsA("SurfaceAppearance")
 		then
 			child:Destroy()
 		end
@@ -404,54 +406,53 @@ function PrebuiltLoader.EnsurePrebuiltAssets(customObjectFetcher: ((number) -> {
 	end
 
 	local totalLoaded = 0
-	local jobIndex = 0
-	local numWorkers = 4
-	local activeWorkers = numWorkers
+	local fetchedCache: { [number]: { Model } } = {}
 
-	for _ = 1, numWorkers do
-		task.spawn(function()
-			while true do
-				jobIndex += 1
-				local myIdx = jobIndex
-				if myIdx > #jobs then
-					break
-				end
-				local job = jobs[myIdx]
-				local okFetch, objects = pcall(fetchObjects, job.spec.id)
-				if okFetch and objects and #objects > 0 then
-					pcall(function()
-						if job.spec.mode == "single" then
-							local model = extractSingleItem(objects, job.categoryName, job.specIdx)
-							if model then
-								model.Name = string.format("%s_%d", job.categoryName, #job.catFolder:GetChildren() + 1)
-								model.Parent = job.catFolder
-								totalLoaded += 1
-							end
-						else
-							local models = extractItemsFromPack(objects, job.categoryName, job.spec.maxItems or 25)
-							for _, m in ipairs(models) do
-								m.Name = string.format("%s_%d", job.categoryName, #job.catFolder:GetChildren() + 1)
-								m.Parent = job.catFolder
-								totalLoaded += 1
-							end
-						end
-					end)
-					for _, obj in ipairs(objects) do
-						pcall(function()
-							obj:Destroy()
-						end)
-					end
-				else
-					warn(string.format("[PrebuiltLoader] Could not fetch asset %d (%s)", job.spec.id, job.categoryName))
-				end
+	for _, job in ipairs(jobs) do
+		task.wait()
+		local cachedModels = fetchedCache[job.spec.id]
+		if cachedModels then
+			for _, templateModel in ipairs(cachedModels) do
+				local cloned = templateModel:Clone()
+				cloned.Name = string.format("%s_%d", job.categoryName, #job.catFolder:GetChildren() + 1)
+				cloned.Parent = job.catFolder
+				totalLoaded += 1
 			end
-			activeWorkers -= 1
-		end)
-	end
-
-	local startWait = os.clock()
-	while activeWorkers > 0 and (os.clock() - startWait) < 15.0 do
-		task.wait(0.1)
+		else
+			local okFetch, objects = pcall(fetchObjects, job.spec.id)
+			if okFetch and objects and #objects > 0 then
+				local extractedList: { Model } = {}
+				pcall(function()
+					if job.spec.mode == "single" then
+						local model = extractSingleItem(objects, job.categoryName, job.specIdx)
+						if model then
+							model.Name = string.format("%s_%d", job.categoryName, #job.catFolder:GetChildren() + 1)
+							model.Parent = job.catFolder
+							table.insert(extractedList, model)
+							totalLoaded += 1
+						end
+					else
+						local models = extractItemsFromPack(objects, job.categoryName, job.spec.maxItems or 25)
+						for _, m in ipairs(models) do
+							m.Name = string.format("%s_%d", job.categoryName, #job.catFolder:GetChildren() + 1)
+							m.Parent = job.catFolder
+							table.insert(extractedList, m)
+							totalLoaded += 1
+						end
+					end
+				end)
+				if #extractedList > 0 then
+					fetchedCache[job.spec.id] = extractedList
+				end
+				for _, obj in ipairs(objects) do
+					pcall(function()
+						obj:Destroy()
+					end)
+				end
+			else
+				warn(string.format("[PrebuiltLoader] Could not fetch asset %d (%s)", job.spec.id, job.categoryName))
+			end
+		end
 	end
 
 	prebuiltRoot:SetAttribute("LoadedCount", totalLoaded)
