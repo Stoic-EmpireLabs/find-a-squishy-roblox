@@ -403,22 +403,16 @@ local function buildPlot(plotIndex: number, centerPos: Vector3, isLeftSide: bool
 	lawnClick.MaxActivationDistance = 65
 	lawnClick.Parent = penLawn
 
-	-- Two-Tone Checkered Grass Squares on the Pen Lawn (matching real_frame_a_01.png!)
-	for gx = -3, 2 do
-		for gz = -2, 2 do
-			if (gx + gz) % 2 == 0 then
-				createPart({
-					Name = "CheckeredTile",
-					Material = Enum.Material.SmoothPlastic,
-					Color = Color3.fromRGB(134, 224, 68),
-					Size = Vector3.new(11.5, 0.12, 10.5),
-					Position = centerPos + Vector3.new(gx * 11.5 + 5, 0.04, gz * 10.5),
-					CanCollide = false,
-					Parent = folder,
-				})
-			end
-		end
-	end
+	-- Clean Central Accent Walkway Stripe inside the Pen (Zero coplanar tile overdraw!)
+	createPart({
+		Name = "PenWalkwayStripe",
+		Material = Enum.Material.SmoothPlastic,
+		Color = Color3.fromRGB(134, 224, 68),
+		Size = Vector3.new(20, 0.1, 54),
+		Position = centerPos + Vector3.new(faceDir * 22, 0.03, 0),
+		CanCollide = false,
+		Parent = folder,
+	})
 
 	-- Warm Wooden Ranch Fences enclosing Back, North, South, and Front Corners (leaving center gate open)
 	local cNW = centerPos + Vector3.new(-faceDir * 37, 0, -28)
@@ -578,10 +572,6 @@ local function buildPlot(plotIndex: number, centerPos: Vector3, isLeftSide: bool
 		})
 		pedestal:SetAttribute("PlotIndex", plotIndex)
 		pedestal:SetAttribute("SlotIdx", slotIdx)
-		local slotClick = Instance.new("ClickDetector")
-		slotClick.Name = "PlaceSlotClick"
-		slotClick.MaxActivationDistance = 55
-		slotClick.Parent = pedestal
 
 		nests[slotIdx] = {
 			Pedestal = pedestal,
@@ -644,7 +634,7 @@ function WorldBuilder.BuildWorld()
 	guardiansFolder.Parent = Workspace
 
 	-- =========================================================================
-	-- 1. CENTRAL HUB RESORT PLAZA WITH TWO-TONE CHECKERED LIME LAWN (matching real_frame_a_01.png!)
+	-- 1. CENTRAL HUB RESORT PLAZA (High-FPS Single-Mesh Promenade!)
 	-- =========================================================================
 	createPart({
 		Name = "HubOuterGrass",
@@ -654,22 +644,15 @@ function WorldBuilder.BuildWorld()
 		Position = Vector3.new(0, -2.2, 80),
 		Parent = worldFolder,
 	})
-	-- Checkered Bright Lime Grid across the Hub Promenade
-	for cx = -3, 3 do
-		for cz = -6, 6 do
-			if (cx + cz) % 2 == 0 then
-				createPart({
-					Name = "HubCheckeredTile",
-					Material = Enum.Material.SmoothPlastic,
-					Color = Color3.fromRGB(132, 226, 68),
-					Size = Vector3.new(18, 0.15, 18),
-					Position = Vector3.new(cx * 18, 0.02, 80 + cz * 18),
-					CanCollide = false,
-					Parent = worldFolder,
-				})
-			end
-		end
-	end
+	createPart({
+		Name = "HubPromenadeLawn",
+		Material = Enum.Material.SmoothPlastic,
+		Color = Color3.fromRGB(132, 226, 68),
+		Size = Vector3.new(86, 0.15, 250),
+		Position = Vector3.new(0, 0.02, 80),
+		CanCollide = false,
+		Parent = worldFolder,
+	})
 
 	local spawnLoc = Instance.new("SpawnLocation")
 	spawnLoc.Name = "HubSpawn"
@@ -801,23 +784,17 @@ function WorldBuilder.BuildWorld()
 			Parent = biomeFolder,
 		})
 
-		-- Two-Tone Checkered Biome Floor Tiles (matching real_dense_08.png!)
+		-- Clean Central Biome Walkway Stripe (Zero GPU Overdraw!)
 		local tileAccent = lvl.FloorColor:Lerp(lvl.ThemeColor, 0.22)
-		for tx = -4, 4 do
-			for tz = -4, 4 do
-				if (tx + tz) % 2 == 0 then
-					createPart({
-						Name = "BiomeCheckeredTile",
-						Material = Enum.Material.SmoothPlastic,
-						Color = tileAccent,
-						Size = Vector3.new(24, 0.14, 26),
-						Position = Vector3.new(tx * 24, 0.04, midZ + tz * 26),
-						CanCollide = false,
-						Parent = biomeFolder,
-					})
-				end
-			end
-		end
+		createPart({
+			Name = "BiomeCenterPath",
+			Material = Enum.Material.SmoothPlastic,
+			Color = tileAccent,
+			Size = Vector3.new(36, 0.14, lengthZ - 12),
+			Position = Vector3.new(0, 0.04, midZ),
+			CanCollide = false,
+			Parent = biomeFolder,
+		})
 
 		-- Scenic Side Cliffs / Perimeter Walls with 3D Chocolate / Neon Wall Slabs
 		for side = -1, 1, 2 do

@@ -58,6 +58,9 @@ local function formatNumber(n: number): string
 end
 
 local function addRarityParticles(parentPart: BasePart, color1: Color3, color2: Color3, rate: number)
+	if rate < 18 then
+		return
+	end
 	local pe = Instance.new("ParticleEmitter")
 	pe.Name = "RaritySparkles"
 	pe.Color = ColorSequence.new(color1, color2)
@@ -71,9 +74,9 @@ local function addRarityParticles(parentPart: BasePart, color1: Color3, color2: 
 		NumberSequenceKeypoint.new(0, 0.05),
 		NumberSequenceKeypoint.new(1, 1),
 	})
-	pe.Lifetime = NumberRange.new(0.7, 1.2)
-	pe.Rate = math.min(rate, 4)
-	pe.Speed = NumberRange.new(2, 5)
+	pe.Lifetime = NumberRange.new(0.6, 1.0)
+	pe.Rate = 2
+	pe.Speed = NumberRange.new(2, 4)
 	pe.SpreadAngle = Vector2.new(180, 180)
 	pe.Parent = parentPart
 end
