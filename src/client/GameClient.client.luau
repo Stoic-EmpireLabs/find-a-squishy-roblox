@@ -304,12 +304,13 @@ gridLayout.Parent = indexScroll
 
 local indexCards: { [string]: { Frame: Frame, Status: TextLabel } } = {}
 for idx, slime in ipairs(SlimeData.Slimes) do
+	local anySlime = slime :: any
 	local card = Instance.new("Frame")
 	card.LayoutOrder = idx
 	card.BackgroundColor3 = Color3.fromRGB(36, 42, 68)
 	card.Parent = indexScroll
 	addCorner(card, 10)
-	addStroke(card, slime.BodyColor, 2)
+	addStroke(card, anySlime.BodyColor or slime.Color or Color3.fromRGB(255, 255, 255), 2)
 
 	local nameLbl = Instance.new("TextLabel")
 	nameLbl.Size = UDim2.new(1, -8, 0, 42)
@@ -329,10 +330,10 @@ for idx, slime in ipairs(SlimeData.Slimes) do
 	statusLbl.Font = Enum.Font.GothamBold
 	statusLbl.TextSize = 13
 	statusLbl.TextColor3 = Color3.fromRGB(170, 180, 205)
-	statusLbl.Text = string.format("🔒 $%d/s", slime.IncomePerSec)
+	statusLbl.Text = string.format("🔒 $%d/s", anySlime.IncomePerSec or slime.CoinsPerSec or 10)
 	statusLbl.Parent = card
 
-	indexCards[slime.Id] = { Frame = card, Status = statusLbl }
+	indexCards[tostring(slime.Id)] = { Frame = card, Status = statusLbl }
 end
 indexScroll.CanvasSize = UDim2.fromOffset(0, math.ceil(#SlimeData.Slimes / 4) * 104)
 

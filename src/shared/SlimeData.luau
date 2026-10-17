@@ -778,7 +778,16 @@ SlimeData.Slimes = {
 	},
 }
 
-SlimeData.ById = {} :: { [number]: SlimeDef }
+SlimeData.RarityColors = {
+	Common = Color3.fromRGB(185, 225, 255),
+	Uncommon = Color3.fromRGB(110, 250, 145),
+	Rare = Color3.fromRGB(85, 195, 255),
+	Epic = Color3.fromRGB(215, 115, 255),
+	Legendary = Color3.fromRGB(255, 205, 65),
+	Mythic = Color3.fromRGB(255, 85, 165),
+}
+
+SlimeData.ById = {} :: { [any]: SlimeDef }
 SlimeData.ByLevel = {} :: { [number]: { SlimeDef } }
 
 local speciesRotation = {
@@ -792,14 +801,53 @@ local speciesRotation = {
 	"Puppy",
 }
 
+local floorMaterials = {
+	[1] = Enum.Material.LeafyGrass,
+	[2] = Enum.Material.SmoothPlastic,
+	[3] = Enum.Material.Sand,
+	[4] = Enum.Material.Slate,
+	[5] = Enum.Material.Basalt,
+}
+
+local requiredSpeeds = {
+	[1] = 16,
+	[2] = 24,
+	[3] = 34,
+	[4] = 46,
+	[5] = 60,
+}
+
 for _, levelDef in ipairs(SlimeData.Levels) do
-	SlimeData.ByLevel[levelDef.Level] = {}
+	local lvl = levelDef.Level
+	local anyLvl = levelDef :: any
+	anyLvl.Id = lvl
+	anyLvl.SecondaryColor = levelDef.ThemeColor
+	anyLvl.GateColor = levelDef.ThemeColor
+	anyLvl.FloorMaterial = floorMaterials[lvl] or Enum.Material.SmoothPlastic
+	anyLvl.RequiredSpeed = requiredSpeeds[lvl] or 16
+	anyLvl.RequiredCoins = (lvl - 1) * 500
+	anyLvl.Guardians = {}
+	SlimeData.ByLevel[lvl] = {}
+end
+
+for _, g in ipairs(SlimeData.Guardians) do
+	local anyG = g :: any
+	anyG.Color = g.PrimaryColor
+	anyG.Center = g.HomePosition
+	anyG.Radius = g.PatrolRadius
+	local lvlDef = SlimeData.Levels[g.Level] :: any
+	if lvlDef and lvlDef.Guardians then
+		table.insert(lvlDef.Guardians, g)
+	end
 end
 
 local levelEggIndices: { [number]: number } = { [1] = 0, [2] = 0, [3] = 0, [4] = 0, [5] = 0 }
 
 for _, slime in ipairs(SlimeData.Slimes) do
-	local sp = speciesRotation[((slime.Id - 1) % #speciesRotation) + 1]
+	local anySlime = slime :: any
+	local numId = tonumber(slime.Id) or 1
+	anySlime.NumericId = numId
+	local sp = speciesRotation[((numId - 1) % #speciesRotation) + 1]
 	local nm = string.lower(slime.Name)
 	if string.find(nm, "frog") or string.find(nm, "sprout") or string.find(nm, "moss") then
 		sp = "Frog"
@@ -816,8 +864,8 @@ for _, slime in ipairs(SlimeData.Slimes) do
 	elseif string.find(nm, "sovereign") or string.find(nm, "star") or string.find(nm, "celestial") or string.find(nm, "unicorn") then
 		sp = "Unicorn"
 	end
-	slime.Species = sp
-	slime.HatchTime = 3 + (slime.Level * 2) -- Fast exciting hatch timers: 5s, 7s, 9s, 11s, 13s!
+	anySlime.Species = sp
+	anySlime.HatchTime = 3 + (slime.Level * 2)
 
 	-- Pure "Steal My Egg" layout: all Eggs sit in rich clusters right around the Sleeping Bosses!
 	slime.Behavior = "Static"
@@ -837,11 +885,32 @@ for _, slime in ipairs(SlimeData.Slimes) do
 	slime.Position = Vector3.new(xPos, 3.8, zCenter + zOffset)
 	slime.Hint = string.format("Guarded by the Sleeping Boss in %s! Hold E to Steal!", if lvlDef then lvlDef.Name else ("Zone " .. lvlNum))
 
-	SlimeData.ById[slime.Id] = slime
+	-- Alias fields for WorldBuilder / GameServer / GameClient compatibility
+	anySlime.Id = tostring(numId)
+	anySlime.BodyColor = slime.Color
+	anySlime.IncomePerSec = slime.CoinsPerSec
+	anySlime.CoinReward = math.max(25, slime.CoinsPerSec * 4)
+	anySlime.SpawnOffset = slime.Position
+
+	SlimeData.ById[numId] = slime
+	SlimeData.ById[tostring(numId)] = slime
 	if not SlimeData.ByLevel[slime.Level] then
 		SlimeData.ByLevel[slime.Level] = {}
 	end
 	table.insert(SlimeData.ByLevel[slime.Level], slime)
+end
+
+function SlimeData.CountFound(foundMap: { [any]: boolean }?): number
+	if not foundMap then
+		return 0
+	end
+	local count = 0
+	for _, v in pairs(foundMap) do
+		if v then
+			count += 1
+		end
+	end
+	return count
 end
 
 function SlimeData.GetHatchTimeSeconds(slimeDef: SlimeDef): number
@@ -859,4 +928,5 @@ function SlimeData.GetSquishyUpgradeCost(slimeDef: SlimeDef, currentLvl: number)
 end
 
 return SlimeData
+
 

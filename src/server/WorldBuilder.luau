@@ -3,12 +3,12 @@
 	WorldBuilder.luau
 	Pure "Steal My Egg!" 3D World Builder (Compact Map, Oversized Objects, 60 FPS):
 	  - Compact Map Width (136 studs) & 95-Stud Biome Arenas (Z = 0 to -475)
-	  - Checkered Vibrant Green Safe Zone (Z = 0 to 105) framed by Big 26-32 Stud 3D Houses
+	  - Checkered Vibrant Green Safe Zone (Z = 0 to 108) framed by Big 26-30 Stud 3D Houses
 	  - 4 Fenced Player Base Plots with:
-	      * Giant 18-Stud 3D Green Dino-Jaw Speed Treadmill + Glowing Pink Belt
-	      * 5 Purple Glowing Hatch Incubator Rings
-	      * 12 Lawn Pedestals for Hatched Squishies + Cash Collector Chest + 26-Stud Base House
-	  - Each Biome Arena has:
+	      * Giant 18-Stud 3D Green Dino-Jaw Speed Treadmill + Glowing Pink Belt (front & center!)
+	      * 5 Clean Glowing Purple Hatch Incubator Rings on the lawn
+	      * 12 Lawn Pedestals for Hatched Squishies + Cash Collector Chest + 24-Stud Base House
+	  - Open Sightlines from Safe Zone straight into Stage 1..5 Arenas:
 	      * Front Obby Gauntlet (Hazard Moat, 3D Bridges, Obby Kit Obstacles, Spinning Sweeper Bar, Super Bounce Pads)
 	      * Back Boss Nest surrounded by Giant 18-28 Stud 3D Lollipops / Trees / Palm Trees / Crystals / Volcano Rocks
 	      * 2 Giant 21-Stud Sleeping Bosses guarding a dense Cluster of 5-9 Oversized Ornate Eggs (6.8-8.5 studs tall)
@@ -26,7 +26,7 @@ local PrebuiltLoader = require(Shared:WaitForChild("PrebuiltLoader"))
 local WorldBuilder = {}
 
 local MAP_WIDTH = 136
-local WALL_HEIGHT = 24
+local WALL_HEIGHT = 22
 local WALL_THICKNESS = 6
 
 local function makePart(props: { [string]: any }): Part
@@ -60,7 +60,7 @@ local function createBillboardText(parent: Instance, text: string, color: Color3
 	bb.Size = size or UDim2.fromOffset(220, 56)
 	bb.StudsOffset = offset
 	bb.AlwaysOnTop = true
-	bb.MaxDistance = 120
+	bb.MaxDistance = 130
 	bb.Parent = parent
 
 	local lbl = Instance.new("TextLabel")
@@ -101,12 +101,12 @@ local function setupVibrantLighting()
 	sky.Parent = Lighting
 
 	local atmo = Instance.new("Atmosphere")
-	atmo.Density = 0.20
+	atmo.Density = 0.18
 	atmo.Offset = 0.15
 	atmo.Color = Color3.fromRGB(190, 230, 255)
 	atmo.Decay = Color3.fromRGB(150, 205, 250)
 	atmo.Glare = 0.08
-	atmo.Haze = 0.6
+	atmo.Haze = 0.5
 	atmo.Parent = Lighting
 
 	local cc = Instance.new("ColorCorrectionEffect")
@@ -117,19 +117,16 @@ local function setupVibrantLighting()
 end
 
 local function placePrebuiltAsset(category: string, index: number, parent: Instance, pos: Vector3, yawDeg: number, targetHeight: number, canCollide: boolean?): Model?
-	local model = PrebuiltLoader.CloneNormalizedTemplate(category, index, targetHeight)
+	local model = PrebuiltLoader.CloneNormalizedTemplate(category, index, targetHeight, canCollide)
 	if not model then
 		return nil
 	end
-	if canCollide ~= nil and model.PrimaryPart then
-		model.PrimaryPart.CanCollide = canCollide
-	end
-	model:PivotTo(CFrame.new(pos.X, pos.Y + (targetHeight * 0.5), pos.Z) * CFrame.Angles(0, math.rad(yawDeg), 0))
+	model:PivotTo(CFrame.new(pos.X, pos.Y, pos.Z) * CFrame.Angles(0, math.rad(yawDeg), 0))
 	model.Parent = parent
 	return model
 end
 
--- Builds a Big 26-30 Stud Cartoon House (uses Prebuilt "Houses" template if available, plus a vibrant 3D roof/door silhouette)
+-- Builds a Big 24-28 Stud Cartoon House (uses Prebuilt "Houses" template if available, plus a vibrant 3D roof/door silhouette)
 local function buildBigCartoonHouse(parent: Instance, pos: Vector3, yawDeg: number, wallColor: Color3, roofColor: Color3, houseIdx: number, targetHeight: number)
 	local placed = placePrebuiltAsset("Houses", houseIdx, parent, pos, yawDeg, targetHeight, true)
 	if placed then
@@ -155,7 +152,6 @@ local function buildBigCartoonHouse(parent: Instance, pos: Vector3, yawDeg: numb
 	})
 	hModel.PrimaryPart = body
 
-	-- Pitched roof
 	makePart({
 		Name = "HouseRoof",
 		Size = Vector3.new(w + 3.5, roofH, d + 3.5),
@@ -164,7 +160,6 @@ local function buildBigCartoonHouse(parent: Instance, pos: Vector3, yawDeg: numb
 		Material = Enum.Material.SmoothPlastic,
 		Parent = hModel,
 	})
-	-- Chimney
 	makePart({
 		Name = "Chimney",
 		Size = Vector3.new(3.2, roofH + 4, 3.2),
@@ -173,7 +168,6 @@ local function buildBigCartoonHouse(parent: Instance, pos: Vector3, yawDeg: numb
 		Material = Enum.Material.Brick,
 		Parent = hModel,
 	})
-	-- Door & Glowing Windows
 	makePart({
 		Name = "FrontDoor",
 		Size = Vector3.new(4.8, 8.2, 0.8),
@@ -247,13 +241,6 @@ local function buildDinoJawTreadmill(parent: Instance, treadCenter: Vector3, fac
 	end
 
 	-- 2. Giant 18-Stud Green T-Rex Arching Over the Back of the Treadmill!
-	local archCenter = treadCenter + Vector3.new(-faceDir * 4.5, 0, 0)
-	local yawDeg = if faceDir > 0 then 90 else -90
-
-	-- Also place Prebuilt Dinosaur mesh if loaded
-	placePrebuiltAsset("TreadmillDino", 1, dinoFolder, archCenter + Vector3.new(-faceDir * 2.2, 0, 0), yawDeg, 17.5, false)
-
-	-- Guaranteed 3D Voxel Green Dino Head & Open Jaw Arching Over the Belt (exact match to real_game_annotated_1_base_loop.png)
 	local dinoGreen = Color3.fromRGB(58, 198, 68)
 	local dinoDark = Color3.fromRGB(38, 148, 48)
 	local mouthRed = Color3.fromRGB(195, 55, 65)
@@ -333,14 +320,14 @@ local function buildDinoJawTreadmill(parent: Instance, treadCenter: Vector3, fac
 		snout,
 		"🦖 +1 SPEED TREADMILL\nRun on Pink Belt = Permanent +Speed!",
 		Color3.fromRGB(85, 255, 140),
-		Vector3.new(0, 5.5, 0),
+		Vector3.new(0, 5.2, 0),
 		UDim2.fromOffset(250, 62)
 	)
 
 	return belt
 end
 
--- Builds 4 Fenced Player Base Plots in the Checkered Green Safe Zone (Z = 0..105)
+-- Builds 4 Fenced Player Base Plots in the Checkered Green Safe Zone (Z = 0..108)
 local function buildSafeZoneAndPlots(worldFolder: Folder)
 	local hubFolder = Instance.new("Folder")
 	hubFolder.Name = "SafeZoneHub"
@@ -349,8 +336,8 @@ local function buildSafeZoneAndPlots(worldFolder: Folder)
 	-- Base Green Ground
 	makePart({
 		Name = "HubGrassMain",
-		Size = Vector3.new(MAP_WIDTH, 2, 112),
-		Position = Vector3.new(0, -1, 52),
+		Size = Vector3.new(MAP_WIDTH, 2, 114),
+		Position = Vector3.new(0, -1, 55),
 		Color = Color3.fromRGB(88, 198, 78),
 		Material = Enum.Material.LeafyGrass,
 		Parent = hubFolder,
@@ -376,37 +363,37 @@ local function buildSafeZoneAndPlots(worldFolder: Folder)
 	-- Central Stone Path leading straight to Biome 1 Gate (Z = 0)
 	makePart({
 		Name = "CentralPath",
-		Size = Vector3.new(24, 0.25, 104),
-		Position = Vector3.new(0, 0.12, 50),
+		Size = Vector3.new(26, 0.25, 108),
+		Position = Vector3.new(0, 0.12, 54),
 		Color = Color3.fromRGB(228, 214, 185),
 		Material = Enum.Material.Cobblestone,
 		Parent = hubFolder,
 	})
 
-	-- SpawnLocation right in the middle of the Safe Zone facing Biome 1 (-Z)
+	-- SpawnLocation on the Central Stone Path facing Biome 1 (-Z)
 	local existingSpawn = Workspace:FindFirstChildOfClass("SpawnLocation")
 	if not existingSpawn then
 		local spawnLoc = Instance.new("SpawnLocation")
 		spawnLoc.Name = "SpawnLocation"
 		spawnLoc.Anchored = true
 		spawnLoc.Size = Vector3.new(12, 1, 12)
-		spawnLoc.CFrame = CFrame.new(0, 0.5, 52)
+		spawnLoc.CFrame = CFrame.new(0, 0.5, 42)
 		spawnLoc.Neutral = true
 		spawnLoc.Transparency = 1
 		spawnLoc.CanCollide = false
 		spawnLoc.Parent = Workspace
 	else
-		existingSpawn.CFrame = CFrame.new(0, 0.5, 52)
+		existingSpawn.CFrame = CFrame.new(0, 0.5, 42)
 		existingSpawn.Transparency = 1
 		existingSpawn.CanCollide = false
 	end
 
-	-- Center Hub Fountain at (0, 0, 82)
-	local fountainModel = placePrebuiltAsset("HubFountain", 1, hubFolder, Vector3.new(0, 0, 84), 0, 14.0, true)
+	-- Center Hub Fountain at back of Safe Zone (0, 0, 94) so it never blocks camera
+	local fountainModel = placePrebuiltAsset("HubFountain", 1, hubFolder, Vector3.new(0, 0, 94), 0, 13.0, true)
 	local fountainTop = makePart({
 		Name = "FountainSignAnchor",
 		Size = Vector3.new(2, 2, 2),
-		Position = Vector3.new(0, 15, 84),
+		Position = Vector3.new(0, 14, 94),
 		Transparency = 1,
 		CanCollide = false,
 		Parent = fountainModel or hubFolder,
@@ -419,33 +406,33 @@ local function buildSafeZoneAndPlots(worldFolder: Folder)
 		UDim2.fromOffset(300, 68)
 	)
 
-	-- Frame the Safe Zone with Big 26-32 Stud Cartoon Houses & Trees
+	-- Frame the Back of the Safe Zone with Big 26-28 Stud Cartoon Houses
 	local borderHouses = {
-		{ Pos = Vector3.new(-54, 0, 98), Yaw = 0, Wall = Color3.fromRGB(255, 195, 95), Roof = Color3.fromRGB(215, 65, 65), Idx = 1, H = 28 },
-		{ Pos = Vector3.new(54, 0, 98), Yaw = 0, Wall = Color3.fromRGB(130, 210, 255), Roof = Color3.fromRGB(65, 105, 220), Idx = 2, H = 28 },
-		{ Pos = Vector3.new(-24, 0, 99), Yaw = 0, Wall = Color3.fromRGB(255, 155, 195), Roof = Color3.fromRGB(185, 60, 145), Idx = 3, H = 26 },
-		{ Pos = Vector3.new(24, 0, 99), Yaw = 0, Wall = Color3.fromRGB(165, 240, 155), Roof = Color3.fromRGB(55, 165, 85), Idx = 4, H = 26 },
+		{ Pos = Vector3.new(-54, 0, 102), Yaw = 0, Wall = Color3.fromRGB(255, 195, 95), Roof = Color3.fromRGB(215, 65, 65), Idx = 1, H = 26 },
+		{ Pos = Vector3.new(54, 0, 102), Yaw = 0, Wall = Color3.fromRGB(130, 210, 255), Roof = Color3.fromRGB(65, 105, 220), Idx = 2, H = 26 },
+		{ Pos = Vector3.new(-25, 0, 102), Yaw = 0, Wall = Color3.fromRGB(255, 155, 195), Roof = Color3.fromRGB(185, 60, 145), Idx = 3, H = 25 },
+		{ Pos = Vector3.new(25, 0, 102), Yaw = 0, Wall = Color3.fromRGB(165, 240, 155), Roof = Color3.fromRGB(55, 165, 85), Idx = 4, H = 25 },
 	}
 	for _, bh in ipairs(borderHouses) do
 		buildBigCartoonHouse(hubFolder, bh.Pos, bh.Yaw, bh.Wall, bh.Roof, bh.Idx, bh.H)
 	end
 
-	-- Back & Side Safe Zone Walls
+	-- Low Scenic Safe Zone Outer Hedge Walls
 	makePart({
 		Name = "SafeZoneBackWall",
-		Size = Vector3.new(MAP_WIDTH + 8, WALL_HEIGHT, WALL_THICKNESS),
-		Position = Vector3.new(0, WALL_HEIGHT * 0.5, 108),
-		Color = Color3.fromRGB(95, 185, 80),
-		Material = Enum.Material.SmoothPlastic,
+		Size = Vector3.new(MAP_WIDTH + 8, 14, WALL_THICKNESS),
+		Position = Vector3.new(0, 7, 112),
+		Color = Color3.fromRGB(75, 175, 65),
+		Material = Enum.Material.Grass,
 		Parent = hubFolder,
 	})
 	for _, side in ipairs({ -1, 1 }) do
 		makePart({
 			Name = "SafeZoneSideWall",
-			Size = Vector3.new(WALL_THICKNESS, WALL_HEIGHT, 112),
-			Position = Vector3.new(side * (MAP_WIDTH * 0.5 + WALL_THICKNESS * 0.5), WALL_HEIGHT * 0.5, 52),
-			Color = Color3.fromRGB(95, 185, 80),
-			Material = Enum.Material.SmoothPlastic,
+			Size = Vector3.new(WALL_THICKNESS, 14, 114),
+			Position = Vector3.new(side * (MAP_WIDTH * 0.5 + WALL_THICKNESS * 0.5), 7, 55),
+			Color = Color3.fromRGB(75, 175, 65),
+			Material = Enum.Material.Grass,
 			Parent = hubFolder,
 		})
 	end
@@ -456,10 +443,10 @@ local function buildSafeZoneAndPlots(worldFolder: Folder)
 	plotsFolder.Parent = worldFolder
 
 	local plotConfigs = {
-		{ Index = 1, Center = Vector3.new(-38, 0, 30), Color = Color3.fromRGB(80, 190, 255), FaceDir = 1 },
-		{ Index = 2, Center = Vector3.new(38, 0, 30), Color = Color3.fromRGB(255, 130, 195), FaceDir = -1 },
-		{ Index = 3, Center = Vector3.new(-38, 0, 72), Color = Color3.fromRGB(120, 235, 130), FaceDir = 1 },
-		{ Index = 4, Center = Vector3.new(38, 0, 72), Color = Color3.fromRGB(255, 200, 85), FaceDir = -1 },
+		{ Index = 1, Center = Vector3.new(-40, 0, 28), Color = Color3.fromRGB(80, 190, 255), FaceDir = 1 },
+		{ Index = 2, Center = Vector3.new(40, 0, 28), Color = Color3.fromRGB(255, 130, 195), FaceDir = -1 },
+		{ Index = 3, Center = Vector3.new(-40, 0, 72), Color = Color3.fromRGB(120, 235, 130), FaceDir = 1 },
+		{ Index = 4, Center = Vector3.new(40, 0, 72), Color = Color3.fromRGB(255, 200, 85), FaceDir = -1 },
 	}
 
 	local plotW = 46
@@ -482,13 +469,13 @@ local function buildSafeZoneAndPlots(worldFolder: Folder)
 		})
 		plotModel.PrimaryPart = basePad
 
-		-- Wooden Ranch Fence around the Plot (open facing the central stone path)
+		-- Low Wooden Ranch Fence around the Plot (open facing the central stone path)
 		local fenceColor = Color3.fromRGB(168, 112, 62)
 		for _, zOff in ipairs({ -plotD * 0.5, plotD * 0.5 }) do
 			makePart({
 				Name = "FenceRailZ",
-				Size = Vector3.new(plotW, 3.2, 1.0),
-				Position = cfg.Center + Vector3.new(0, 1.8, zOff),
+				Size = Vector3.new(plotW, 2.6, 0.9),
+				Position = cfg.Center + Vector3.new(0, 1.5, zOff),
 				Color = fenceColor,
 				Material = Enum.Material.WoodPlanks,
 				Parent = plotModel,
@@ -496,28 +483,28 @@ local function buildSafeZoneAndPlots(worldFolder: Folder)
 		end
 		makePart({
 			Name = "FenceRailOuterX",
-			Size = Vector3.new(1.0, 3.2, plotD),
-			Position = cfg.Center + Vector3.new(-cfg.FaceDir * (plotW * 0.5), 1.8, 0),
+			Size = Vector3.new(0.9, 2.6, plotD),
+			Position = cfg.Center + Vector3.new(-cfg.FaceDir * (plotW * 0.5), 1.5, 0),
 			Color = fenceColor,
 			Material = Enum.Material.WoodPlanks,
 			Parent = plotModel,
 		})
 
-		-- Owner Signpost at Plot Entrance
+		-- Owner Signpost at Plot Front Corner
 		local signPost = makePart({
 			Name = "OwnerSign",
-			Size = Vector3.new(8.5, 4.2, 1.2),
-			Position = cfg.Center + Vector3.new(cfg.FaceDir * (plotW * 0.42), 5.2, -plotD * 0.42),
+			Size = Vector3.new(7.5, 3.6, 1.0),
+			Position = cfg.Center + Vector3.new(cfg.FaceDir * (plotW * 0.40), 4.5, -plotD * 0.44),
 			Color = cfg.Color,
 			Material = Enum.Material.SmoothPlastic,
 			Parent = plotModel,
 		})
-		createBillboardText(signPost, "🏠 PLOT #" .. tostring(cfg.Index) .. " (UNCLAIMED)", cfg.Color, Vector3.new(0, 3.4, 0))
+		createBillboardText(signPost, "🏠 PLOT #" .. tostring(cfg.Index), cfg.Color, Vector3.new(0, 3.0, 0))
 
-		-- Big 24-Stud Player Base House on Outer Back Corner
+		-- Big 22-Stud Player Base House at Outer Back Corner
 		buildBigCartoonHouse(
 			plotModel,
-			cfg.Center + Vector3.new(-cfg.FaceDir * 15, 0.5, 8),
+			cfg.Center + Vector3.new(-cfg.FaceDir * 16, 0.5, 9),
 			if cfg.FaceDir > 0 then 90 else -90,
 			cfg.Color,
 			Color3.fromRGB(225, 75, 85),
@@ -525,32 +512,32 @@ local function buildSafeZoneAndPlots(worldFolder: Folder)
 			22
 		)
 
-		-- 1. Giant 18-Stud Green Dino-Jaw Speed Treadmill on each Plot!
-		local treadCenter = cfg.Center + Vector3.new(-cfg.FaceDir * 11, 0.5, -7.5)
+		-- 1. Giant 18-Stud Green Dino-Jaw Speed Treadmill (Prominent & Unobstructed!)
+		local treadCenter = cfg.Center + Vector3.new(-cfg.FaceDir * 8, 0.5, -7.5)
 		buildDinoJawTreadmill(plotModel, treadCenter, cfg.FaceDir, cfg.Index)
 
 		-- 2. Cash Collector Chest + Glowing Green Pad at Front Entrance
 		local collectPad = makePart({
 			Name = "CollectCashPad",
-			Size = Vector3.new(7.5, 0.8, 7.5),
-			Position = cfg.Center + Vector3.new(cfg.FaceDir * 16, 0.65, -9.5),
+			Size = Vector3.new(6.8, 0.7, 6.8),
+			Position = cfg.Center + Vector3.new(cfg.FaceDir * 17, 0.6, -11.5),
 			Color = Color3.fromRGB(65, 245, 110),
 			Material = Enum.Material.Neon,
 			Parent = plotModel,
 		})
-		placePrebuiltAsset("CashChest", 1, plotModel, collectPad.Position + Vector3.new(0, 0.3, 0), if cfg.FaceDir > 0 then 90 else -90, 4.2, false)
-		createBillboardText(collectPad, "💰 COLLECT $0\n(Step Here)", Color3.fromRGB(95, 255, 130), Vector3.new(0, 5.2, 0))
+		placePrebuiltAsset("CashChest", 1, plotModel, collectPad.Position + Vector3.new(0, 0.35, 0), if cfg.FaceDir > 0 then 90 else -90, 3.8, false)
+		createBillboardText(collectPad, "💰 COLLECT $0\n(Step Here)", Color3.fromRGB(95, 255, 130), Vector3.new(0, 4.6, 0), UDim2.fromOffset(185, 48))
 
-		-- 3. Speed / Treadmill Upgrade Stall beside Cash Pad
+		-- 3. Clean Speed / Treadmill Upgrade Pedestal
 		local upgStand = makePart({
 			Name = "SpeedUpgradeStand",
-			Size = Vector3.new(5.5, 4.5, 5.5),
-			Position = cfg.Center + Vector3.new(cfg.FaceDir * 16, 2.5, 8.5),
-			Color = Color3.fromRGB(165, 95, 255),
-			Material = Enum.Material.SmoothPlastic,
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(3.2, 4.8, 4.8),
+			CFrame = CFrame.new(cfg.Center + Vector3.new(cfg.FaceDir * 17, 2.1, 11.5)) * CFrame.Angles(0, 0, math.rad(90)),
+			Color = Color3.fromRGB(85, 205, 255),
+			Material = Enum.Material.Neon,
 			Parent = plotModel,
 		})
-		placePrebuiltAsset("MarketStalls", ((cfg.Index - 1) % 2) + 1, plotModel, Vector3.new(upgStand.Position.X, 0.5, upgStand.Position.Z), if cfg.FaceDir > 0 then 90 else -90, 10.5, false)
 		local upgPrompt = Instance.new("ProximityPrompt")
 		upgPrompt.Name = "UpgradeSpeedPrompt"
 		upgPrompt.ActionText = "Upgrade Treadmill (+Speed)"
@@ -560,19 +547,19 @@ local function buildSafeZoneAndPlots(worldFolder: Folder)
 		upgPrompt.RequiresLineOfSight = false
 		upgPrompt.Parent = upgStand
 
-		-- 4. 5 Glowing Purple Hatch Incubator Rings Along the Front Edge of the Plot
+		-- 4. 5 Clean Glowing Purple Hatch Incubator Rings Along the Front Edge of the Plot
 		local incubatorsFolder = Instance.new("Folder")
 		incubatorsFolder.Name = "Incubators"
 		incubatorsFolder.Parent = plotModel
 
 		for incIdx = 1, 5 do
-			local zOff = -12 + (incIdx - 1) * 6.0
-			local incPos = cfg.Center + Vector3.new(cfg.FaceDir * 8.5, 0.65, zOff)
+			local zOff = -8.0 + (incIdx - 1) * 4.4
+			local incPos = cfg.Center + Vector3.new(cfg.FaceDir * 11.5, 0.6, zOff)
 
 			local incPad = makePart({
 				Name = "Incubator_" .. tostring(incIdx),
 				Shape = Enum.PartType.Cylinder,
-				Size = Vector3.new(1.1, 5.4, 5.4),
+				Size = Vector3.new(0.65, 3.8, 3.8),
 				CFrame = CFrame.new(incPos) * CFrame.Angles(0, 0, math.rad(90)),
 				Color = Color3.fromRGB(190, 75, 255),
 				Material = Enum.Material.Neon,
@@ -581,7 +568,17 @@ local function buildSafeZoneAndPlots(worldFolder: Folder)
 			incPad:SetAttribute("IncubatorIndex", incIdx)
 			incPad:SetAttribute("State", "Empty")
 
-			placePrebuiltAsset("IncubatorPod", 1, incubatorsFolder, incPos + Vector3.new(0, -0.2, 0), 0, 3.2, false)
+			-- Inner gold ring
+			makePart({
+				Name = "InnerNestRing",
+				Shape = Enum.PartType.Cylinder,
+				Size = Vector3.new(0.72, 2.8, 2.8),
+				CFrame = CFrame.new(incPos) * CFrame.Angles(0, 0, math.rad(90)),
+				Color = Color3.fromRGB(255, 220, 85),
+				Material = Enum.Material.SmoothPlastic,
+				CanCollide = false,
+				Parent = incPad,
+			})
 
 			local prompt = Instance.new("ProximityPrompt")
 			prompt.Name = "IncubatorPrompt"
@@ -592,7 +589,7 @@ local function buildSafeZoneAndPlots(worldFolder: Folder)
 			prompt.RequiresLineOfSight = false
 			prompt.Parent = incPad
 
-			createBillboardText(incPad, "🥚 INCUBATOR #" .. tostring(incIdx) .. "\n[EMPTY]", Color3.fromRGB(225, 175, 255), Vector3.new(0, 4.8, 0), UDim2.fromOffset(175, 46))
+			createBillboardText(incPad, "🥚 INCUBATOR #" .. tostring(incIdx), Color3.fromRGB(235, 195, 255), Vector3.new(0, 3.5, 0), UDim2.fromOffset(145, 34))
 		end
 
 		-- 5. 12 Lawn Pedestals (4x3 grid) for Placing Hatched Squishies that earn $/sec
@@ -603,14 +600,14 @@ local function buildSafeZoneAndPlots(worldFolder: Folder)
 		local slotIndex = 1
 		for row = 1, 3 do
 			for col = 1, 4 do
-				local xOff = -cfg.FaceDir * (0.5 + (row - 1) * 4.8)
-				local zOff = 1.5 + (col - 1) * 3.8
-				local pedPos = cfg.Center + Vector3.new(xOff, 0.6, zOff)
+				local xOff = cfg.FaceDir * (3.5 - (row - 1) * 4.5)
+				local zOff = 2.0 + (col - 1) * 3.8
+				local pedPos = cfg.Center + Vector3.new(xOff, 0.58, zOff)
 
 				local ped = makePart({
 					Name = "Pedestal_" .. tostring(slotIndex),
 					Shape = Enum.PartType.Cylinder,
-					Size = Vector3.new(0.7, 4.0, 4.0),
+					Size = Vector3.new(0.55, 3.6, 3.6),
 					CFrame = CFrame.new(pedPos) * CFrame.Angles(0, 0, math.rad(90)),
 					Color = Color3.fromRGB(115, 225, 105),
 					Material = Enum.Material.SmoothPlastic,
@@ -625,22 +622,24 @@ end
 
 -- Builds Themed Perimeter Walls for Each Compact 95-Stud Biome Arena
 local function buildBiomePerimeter(parent: Instance, levelInfo: any, halfW: number)
+	local id = levelInfo.Id or levelInfo.Level or 1
 	local zMid = (levelInfo.ZStart + levelInfo.ZEnd) * 0.5
 	local length = math.abs(levelInfo.ZStart - levelInfo.ZEnd)
+	local wallColor = levelInfo.SecondaryColor or levelInfo.ThemeColor or Color3.fromRGB(120, 200, 120)
 
 	for _, side in ipairs({ -1, 1 }) do
 		local wallX = side * (halfW + WALL_THICKNESS * 0.5)
 		makePart({
-			Name = "BiomeWall_" .. tostring(levelInfo.Id) .. "_" .. tostring(side),
+			Name = "BiomeWall_" .. tostring(id) .. "_" .. tostring(side),
 			Size = Vector3.new(WALL_THICKNESS, WALL_HEIGHT, length),
 			Position = Vector3.new(wallX, WALL_HEIGHT * 0.5, zMid),
-			Color = levelInfo.SecondaryColor,
+			Color = wallColor,
 			Material = Enum.Material.SmoothPlastic,
 			Parent = parent,
 		})
 
 		-- Level 2 Candy Kingdom: Giant 3D Chocolate Bar & Wafer Cookie Walls (matches real_game_annotated_2_biome_boss_eggs.png)
-		if levelInfo.Id == 2 then
+		if id == 2 then
 			for zSeg = levelInfo.ZStart - 10, levelInfo.ZEnd + 10, -18 do
 				makePart({
 					Name = "ChocoWallBlock",
@@ -665,10 +664,11 @@ end
 
 -- Builds the Front Obby Gauntlet + Oversized Scenery + Boss Egg Nest in each Biome Arena
 local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstaclesFolder: Folder)
-	local id = levelInfo.Id
+	local id = levelInfo.Id or levelInfo.Level or 1
 	local zStart = levelInfo.ZStart
 	local zEnd = levelInfo.ZEnd
 	local zBoss = zStart - 56 -- Where the 2 Sleeping Bosses & Egg Cluster live
+	local secColor = levelInfo.SecondaryColor or levelInfo.ThemeColor or Color3.fromRGB(120, 220, 120)
 
 	-- 1. Front Obby Gauntlet (between Gate at zStart and Boss Nest at zBoss)
 	local moatZ = zStart - 22
@@ -690,8 +690,8 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 	moat:SetAttribute("HazardDropEgg", true)
 	moat:SetAttribute("KnockbackImpulse", 55)
 
-	-- Left & Right Safe Bridges + Stepping Stones across the Hazard Moat
-	for _, bridgeX in ipairs({ -30, 30 }) do
+	-- Left & Right Safe Bridges across the Hazard Moat
+	for _, bridgeX in ipairs({ -28, 28 }) do
 		local placedBridge = placePrebuiltAsset("Bridges", ((id + (if bridgeX > 0 then 1 else 0)) % 2) + 1, parent, Vector3.new(bridgeX, 0.2, moatZ), 0, 5.2, true)
 		if not placedBridge then
 			makePart({
@@ -764,12 +764,12 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(0.6, 58, 58),
 		CFrame = CFrame.new(0, 0.3, zBoss) * CFrame.Angles(0, 0, math.rad(90)),
-		Color = levelInfo.SecondaryColor,
+		Color = secColor,
 		Material = Enum.Material.SmoothPlastic,
 		Parent = parent,
 	})
 
-	-- 3. Oversized 18-28 Stud Biome Scenery Framing the Arena (No tiny clutter!)
+	-- 3. Oversized 18-28 Stud Biome Scenery Framing the Arena
 	local scenerySpots = {
 		Vector3.new(-52, 0, zStart - 16),
 		Vector3.new(52, 0, zStart - 16),
@@ -786,10 +786,8 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 		if id == 1 then
 			placePrebuiltAsset("MeadowTrees", ((idx - 1) % 3) + 1, parent, sPos, yaw, 24.0, true)
 		elseif id == 2 then
-			-- Giant 22-26 Stud Swirl Lollipops & Candy Trees (matches real_game_annotated_2_biome_boss_eggs.png)
-			local candyPlaced = placePrebuiltAsset("CandyProps", ((idx - 1) % 5) + 1, parent, sPos, yaw, 24.0, true)
-			if not candyPlaced or idx % 2 == 0 then
-				-- Guaranteed Giant Swirl Lollipop
+			placePrebuiltAsset("CandyProps", ((idx - 1) % 5) + 1, parent, sPos, yaw, 24.0, true)
+			if idx % 2 == 0 then
 				local stick = makePart({
 					Name = "GiantLollipopStick",
 					Shape = Enum.PartType.Cylinder,
@@ -819,32 +817,39 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 	end
 end
 
--- Builds the Biome Divider Gate with a Speed Requirement Barrier in the Doorway
+-- Builds an Open Sightline Biome Archway Gate (so players can always see all 5 Biomes ahead!)
 local function buildLevelGate(parent: Instance, levelInfo: any, halfW: number): Part
+	local id = levelInfo.Id or levelInfo.Level or 1
 	local zPos = levelInfo.ZStart
+	local gateColor = levelInfo.GateColor or levelInfo.ThemeColor or Color3.fromRGB(95, 215, 110)
+	local secColor = levelInfo.SecondaryColor or levelInfo.ThemeColor or Color3.fromRGB(120, 230, 130)
+
 	local gateModel = Instance.new("Model")
-	gateModel.Name = "Gate_Level_" .. tostring(levelInfo.Id)
+	gateModel.Name = "Gate_Level_" .. tostring(id)
 	gateModel.Parent = parent
 
-	local doorWidth = 34
+	local doorWidth = 44
 	local sideWallWidth = halfW - (doorWidth * 0.5)
 
 	for _, side in ipairs({ -1, 1 }) do
-		local xCenter = side * ((doorWidth * 0.5) + (sideWallWidth * 0.5))
-		makePart({
-			Name = "DividerWall",
-			Size = Vector3.new(sideWallWidth, WALL_HEIGHT, 4),
-			Position = Vector3.new(xCenter, WALL_HEIGHT * 0.5, zPos),
-			Color = levelInfo.GateColor,
-			Material = Enum.Material.SmoothPlastic,
-			Parent = gateModel,
-		})
+		-- Low 4.5-stud themed border fence on sides so sightlines into all biomes stay 100% open!
+		if id > 1 then
+			local xCenter = side * ((doorWidth * 0.5) + (sideWallWidth * 0.5))
+			makePart({
+				Name = "DividerFence",
+				Size = Vector3.new(sideWallWidth, 4.5, 2.5),
+				Position = Vector3.new(xCenter, 2.25, zPos),
+				Color = gateColor,
+				Material = Enum.Material.SmoothPlastic,
+				Parent = gateModel,
+			})
+		end
 
 		makePart({
 			Name = "GatePillar",
-			Size = Vector3.new(5.5, WALL_HEIGHT + 5, 5.5),
-			Position = Vector3.new(side * (doorWidth * 0.5), (WALL_HEIGHT + 5) * 0.5, zPos),
-			Color = levelInfo.SecondaryColor,
+			Size = Vector3.new(4.5, 20, 4.5),
+			Position = Vector3.new(side * (doorWidth * 0.5), 10, zPos),
+			Color = secColor,
 			Material = Enum.Material.SmoothPlastic,
 			Parent = gateModel,
 		})
@@ -852,32 +857,32 @@ local function buildLevelGate(parent: Instance, levelInfo: any, halfW: number): 
 
 	local header = makePart({
 		Name = "GateHeader",
-		Size = Vector3.new(doorWidth + 10, 6.5, 6.5),
-		Position = Vector3.new(0, WALL_HEIGHT + 3, zPos),
-		Color = levelInfo.GateColor,
+		Size = Vector3.new(doorWidth + 8, 4.5, 5.0),
+		Position = Vector3.new(0, 21.5, zPos),
+		Color = gateColor,
 		Material = Enum.Material.SmoothPlastic,
 		Parent = gateModel,
 	})
 
 	local reqSpeed = levelInfo.RequiredSpeed or 16
 	local reqText = if reqSpeed <= 16
-		then string.format("STAGE %d: %s (OPEN!)", levelInfo.Id, string.upper(levelInfo.Name))
-		else string.format("STAGE %d: %s  [⚡ %d SPEED REQUIRED]", levelInfo.Id, string.upper(levelInfo.Name), reqSpeed)
+		then string.format("STAGE %d: %s (OPEN!)", id, string.upper(levelInfo.Name))
+		else string.format("STAGE %d: %s  [⚡ %d SPEED REQUIRED]", id, string.upper(levelInfo.Name), reqSpeed)
 
-	createBillboardText(header, reqText, Color3.fromRGB(255, 255, 255), Vector3.new(0, 5.2, 0), UDim2.fromOffset(320, 68))
+	createBillboardText(header, reqText, Color3.fromRGB(255, 255, 255), Vector3.new(0, 4.5, 0), UDim2.fromOffset(320, 62))
 
 	local barrier = makePart({
-		Name = "GateBarrier_" .. tostring(levelInfo.Id),
-		Size = Vector3.new(doorWidth - 2, WALL_HEIGHT, 2.2),
-		Position = Vector3.new(0, WALL_HEIGHT * 0.5, zPos),
-		Color = levelInfo.GateColor,
+		Name = "GateBarrier_" .. tostring(id),
+		Size = Vector3.new(doorWidth - 2, 18, 1.8),
+		Position = Vector3.new(0, 9, zPos),
+		Color = gateColor,
 		Material = Enum.Material.ForceField,
-		Transparency = if reqSpeed <= 16 then 0.88 else 0.32,
+		Transparency = if reqSpeed <= 16 then 1.0 else 0.55,
 		CanCollide = reqSpeed > 16,
 		Parent = gateModel,
 	})
-	barrier:SetAttribute("LevelId", levelInfo.Id)
-	barrier:SetAttribute("RequiredCoins", levelInfo.RequiredCoins)
+	barrier:SetAttribute("LevelId", id)
+	barrier:SetAttribute("RequiredCoins", levelInfo.RequiredCoins or 0)
 	barrier:SetAttribute("RequiredSpeed", reqSpeed)
 
 	return barrier
@@ -925,8 +930,9 @@ function WorldBuilder.BuildWorld(): {
 	obstaclesFolder.Parent = worldFolder
 
 	for _, levelInfo in ipairs(SlimeData.Levels) do
+		local lvlId = levelInfo.Id or levelInfo.Level
 		local lvlFolder = Instance.new("Folder")
-		lvlFolder.Name = "Level_" .. tostring(levelInfo.Id) .. "_" .. levelInfo.Name
+		lvlFolder.Name = "Level_" .. tostring(lvlId) .. "_" .. levelInfo.Name
 		lvlFolder.Parent = levelsFolder
 
 		local zLength = math.abs(levelInfo.ZStart - levelInfo.ZEnd)
@@ -938,7 +944,7 @@ function WorldBuilder.BuildWorld(): {
 			Size = Vector3.new(MAP_WIDTH, 2, zLength),
 			Position = Vector3.new(0, -1, zMid),
 			Color = levelInfo.FloorColor,
-			Material = levelInfo.FloorMaterial,
+			Material = levelInfo.FloorMaterial or Enum.Material.SmoothPlastic,
 			Parent = lvlFolder,
 		})
 
@@ -947,7 +953,7 @@ function WorldBuilder.BuildWorld(): {
 			Name = "CenterLane",
 			Size = Vector3.new(20, 0.16, zLength - 8),
 			Position = Vector3.new(0, 0.08, zMid),
-			Color = levelInfo.SecondaryColor,
+			Color = levelInfo.SecondaryColor or levelInfo.ThemeColor,
 			Material = Enum.Material.SmoothPlastic,
 			CanCollide = false,
 			Parent = lvlFolder,
@@ -956,14 +962,14 @@ function WorldBuilder.BuildWorld(): {
 		buildBiomePerimeter(lvlFolder, levelInfo, halfW)
 		buildBiomeArenaContent(lvlFolder, levelInfo, obstaclesFolder)
 
-		gateBarriers[levelInfo.Id] = buildLevelGate(lvlFolder, levelInfo, halfW)
+		gateBarriers[lvlId] = buildLevelGate(lvlFolder, levelInfo, halfW)
 
 		if levelInfo.Guardians then
 			for idx, gData in ipairs(levelInfo.Guardians) do
-				local gId = string.format("Guardian_%d_%d", levelInfo.Id, idx)
-				local gModel = SquishyBuilder.CreateGuardianModel(gData.Name, gData.Color, gData.Radius)
+				local gId = gData.Id or string.format("Guardian_%d_%d", lvlId, idx)
+				local gModel = SquishyBuilder.CreateGuardianModel(gData)
 				gModel.Name = gId
-				gModel:PivotTo(CFrame.new(gData.Center))
+				gModel:PivotTo(CFrame.new(gData.Center or gData.HomePosition))
 				gModel.Parent = guardiansFolder
 
 				guardians[gId] = {
@@ -981,17 +987,17 @@ function WorldBuilder.BuildWorld(): {
 		Name = "EndOfWorldWall",
 		Size = Vector3.new(MAP_WIDTH + 8, WALL_HEIGHT + 10, WALL_THICKNESS),
 		Position = Vector3.new(0, (WALL_HEIGHT + 10) * 0.5, lastLevel.ZEnd - 2),
-		Color = lastLevel.SecondaryColor,
+		Color = lastLevel.SecondaryColor or lastLevel.ThemeColor,
 		Material = Enum.Material.SmoothPlastic,
 		Parent = worldFolder,
 	})
 
 	-- Spawn the 35 Oversized Ornate Eggs Clustered Around the Sleeping Bosses!
 	for _, slime in ipairs(SlimeData.Slimes) do
-		local eggModel = SquishyBuilder.CreateWorldEgg(slime)
-		eggModel:PivotTo(CFrame.new(slime.SpawnOffset))
+		local eggModel = SquishyBuilder.CreateWorldEgg(slime, true)
+		eggModel:PivotTo(CFrame.new(slime.SpawnOffset or slime.Position))
 		eggModel.Parent = eggsFolder
-		worldEggs[slime.Id] = eggModel
+		worldEggs[tostring(slime.Id)] = eggModel
 	end
 
 	return {

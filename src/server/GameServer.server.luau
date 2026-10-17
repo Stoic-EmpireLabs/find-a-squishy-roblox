@@ -596,21 +596,10 @@ local function refreshBackpackTools(player: Player)
 		if count > 0 and sId ~= equippedSquishyId then
 			local sData = SlimeData.ById[sId]
 			if sData then
-				local tool = Instance.new("Tool")
+				local tool = SquishyBuilder.CreateSquishyBackpackTool(sData, 1)
 				tool.Name = if count > 1 then string.format("%s (x%d)", sData.Name, count) else sData.Name
-				tool.ToolTip = string.format("%s ($%d/s) - Walk to your Base Pedestal to Place!", sData.Rarity, sData.IncomePerSec)
-				tool.RequiresHandle = true
+				tool.ToolTip = string.format("%s ($%d/s) - Click or Press E on a Base Pedestal to Place!", sData.Rarity, sData.IncomePerSec)
 				tool:SetAttribute("SquishyId", sId)
-
-				local handle = Instance.new("Part")
-				handle.Name = "Handle"
-				handle.Shape = Enum.PartType.Ball
-				handle.Size = Vector3.new(2.2, 2.2, 2.2)
-				handle.Color = sData.BodyColor
-				handle.Material = Enum.Material.SmoothPlastic
-				handle.CanCollide = false
-				handle.Massless = true
-				handle.Parent = tool
 
 				tool.Equipped:Connect(function()
 					session.EquippedId = sId
@@ -1397,10 +1386,9 @@ local function setupPlayer(player: Player)
 
 	player.CharacterAdded:Connect(function(char: Model)
 		task.wait(0.15)
-		local plotModel = getPlotModel(assignedPlot)
 		local hrp = char:FindFirstChild("HumanoidRootPart") :: BasePart?
-		if plotModel and plotModel.PrimaryPart and hrp then
-			hrp.CFrame = CFrame.new(plotModel.PrimaryPart.Position + Vector3.new(0, 4, -8), Vector3.new(0, 4, -40))
+		if hrp then
+			hrp.CFrame = CFrame.new(Vector3.new(0, 4.5, 38), Vector3.new(0, 4.5, -55))
 		end
 		applyPlayerSpeed(player)
 		refreshBackpackTools(player)
@@ -1408,6 +1396,10 @@ local function setupPlayer(player: Player)
 
 	if player.Character then
 		task.spawn(function()
+			local hrp = player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+			if hrp then
+				hrp.CFrame = CFrame.new(Vector3.new(0, 4.5, 38), Vector3.new(0, 4.5, -55))
+			end
 			applyPlayerSpeed(player)
 			refreshBackpackTools(player)
 		end)

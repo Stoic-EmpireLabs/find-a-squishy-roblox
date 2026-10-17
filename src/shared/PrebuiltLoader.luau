@@ -586,6 +586,7 @@ function PrebuiltLoader.CloneNormalizedTemplate(
 	root.Massless = true
 	root.CastShadow = false
 	root.CFrame = CFrame.new(bottomCenter + Vector3.new(0, root.Size.Y * 0.5, 0))
+	root.PivotOffset = CFrame.new(0, -root.Size.Y * 0.5, 0)
 	root.Parent = cloned
 
 	for _, desc in ipairs(cloned:GetDescendants()) do
