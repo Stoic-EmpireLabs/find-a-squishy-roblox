@@ -35,36 +35,41 @@ local function makePart(props: { [string]: any }): Part
 	p.CanCollide = if props.CanCollide ~= nil then props.CanCollide else true
 	p.CanTouch = if props.CanTouch ~= nil then props.CanTouch else false
 	p.CanQuery = if props.CanQuery ~= nil then props.CanQuery else p.CanCollide
-	p.CastShadow = false
+	p.CastShadow = if props.CastShadow ~= nil then props.CastShadow else true
 	p.Size = props.Size or Vector3.new(4, 1, 4)
-	p.Color = props.Color or Color3.fromRGB(200, 200, 200)
-	local reqMat = props.Material or Enum.Material.Plastic
+	local rawColor: Color3 = props.Color or Color3.fromRGB(200, 200, 200)
+	local reqMat: Enum.Material = props.Material or Enum.Material.SmoothPlastic
 	if props.Shape then
 		p.Shape = props.Shape
 	end
 
-	-- Authentic "Find The Squishies" Classic Stud Surface Aesthetic on all non-Neon/non-Glass Block parts!
-	local isSpecialMat = (reqMat == Enum.Material.Neon or reqMat == Enum.Material.Glass or reqMat == Enum.Material.ForceField or reqMat == Enum.Material.Water)
-	if not isSpecialMat and (not props.Shape or props.Shape == Enum.PartType.Block) and props.NoStuds ~= true then
-		p.Material = Enum.Material.Plastic
-		p.TopSurface = Enum.SurfaceType.Studs
-		p.BottomSurface = Enum.SurfaceType.Inlet
-		if p.Size.Y >= 2.2 then
-			p.FrontSurface = Enum.SurfaceType.Studs
-			p.BackSurface = Enum.SurfaceType.Studs
-			p.LeftSurface = Enum.SurfaceType.Studs
-			p.RightSurface = Enum.SurfaceType.Studs
+	-- PHASE 2.1 ZERO MAP GLOW & ANTI-LEGO RULE:
+	-- 1. Strip all Enum.Material.Neon from the map environment (only collectibles/eggs/coins in SquishyBuilder glow!)
+	-- 2. Remove all Lego studs (Enum.SurfaceType.Studs / Inlet) across all terrain, walls, and buildings.
+	if reqMat == Enum.Material.Neon and props.AllowCollectibleNeon ~= true then
+		local partName = tostring(props.Name or "")
+		if string.find(partName, "Laser") or string.find(partName, "Beam") or string.find(partName, "DropZone") or string.find(partName, "Bridge") then
+			reqMat = Enum.Material.Glass
+		elseif string.find(partName, "Pool") or string.find(partName, "Moat") or string.find(partName, "Lava") or string.find(partName, "Magma") then
+			reqMat = Enum.Material.Slate
 		else
-			p.FrontSurface = Enum.SurfaceType.Smooth
-			p.BackSurface = Enum.SurfaceType.Smooth
-			p.LeftSurface = Enum.SurfaceType.Smooth
-			p.RightSurface = Enum.SurfaceType.Smooth
+			reqMat = Enum.Material.SmoothPlastic
 		end
-	else
-		p.Material = reqMat
-		p.TopSurface = Enum.SurfaceType.Smooth
-		p.BottomSurface = Enum.SurfaceType.Smooth
+		-- Tone down overly bright neon environment colors into grounded natural tones
+		local h, s, v = rawColor:ToHSV()
+		rawColor = Color3.fromHSV(h, math.clamp(s * 0.72, 0, 0.82), math.clamp(v * 0.82, 0.18, 0.85))
+	elseif reqMat == Enum.Material.Plastic then
+		reqMat = Enum.Material.SmoothPlastic
 	end
+
+	p.Color = rawColor
+	p.Material = reqMat
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	p.FrontSurface = Enum.SurfaceType.Smooth
+	p.BackSurface = Enum.SurfaceType.Smooth
+	p.LeftSurface = Enum.SurfaceType.Smooth
+	p.RightSurface = Enum.SurfaceType.Smooth
 
 	p.Transparency = props.Transparency or 0
 	p.Reflectance = props.Reflectance or 0
@@ -133,8 +138,8 @@ local function createSurfaceSign(
 		sg.Name = "SurfaceSign_" .. face.Name
 		sg.Face = face
 		sg.AlwaysOnTop = false
-		sg.LightInfluence = 0
-		sg.Brightness = 2
+		sg.LightInfluence = 0.25
+		sg.Brightness = 1.15
 		sg.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 		sg.PixelsPerStud = 36
 		sg.MaxDistance = maxDist or 240
@@ -178,7 +183,7 @@ local function createSurfaceSign(
 	end
 end
 
--- Newer Concentric Glowing Neon Circle Pad (for Incubators, Pedestals, Collect Pads, and Landmarks)
+-- Phase 2.1 Grounded Matte Concentric Stone/Concrete Pad (Zero Map Glow!)
 local function buildGlowingNeonCircle(
 	parent: Instance,
 	name: string,
@@ -192,8 +197,8 @@ local function buildGlowingNeonCircle(
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(0.65, outerDiameter, outerDiameter),
 		CFrame = CFrame.new(pos) * CFrame.Angles(0, 0, math.rad(90)),
-		Color = outerColor,
-		Material = Enum.Material.Neon,
+		Color = outerColor:Lerp(Color3.fromRGB(110, 114, 122), 0.32),
+		Material = Enum.Material.Cobblestone,
 		Parent = parent,
 	})
 	makePart({
@@ -201,8 +206,8 @@ local function buildGlowingNeonCircle(
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(0.70, outerDiameter * 0.80, outerDiameter * 0.80),
 		CFrame = CFrame.new(pos) * CFrame.Angles(0, 0, math.rad(90)),
-		Color = Color3.fromRGB(24, 28, 46),
-		Material = Enum.Material.SmoothPlastic,
+		Color = Color3.fromRGB(44, 48, 56),
+		Material = Enum.Material.Slate,
 		CanCollide = false,
 		Parent = outerRing,
 	})
@@ -211,8 +216,8 @@ local function buildGlowingNeonCircle(
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(0.75, outerDiameter * 0.56, outerDiameter * 0.56),
 		CFrame = CFrame.new(pos) * CFrame.Angles(0, 0, math.rad(90)),
-		Color = innerColor,
-		Material = Enum.Material.Neon,
+		Color = innerColor:Lerp(Color3.fromRGB(130, 134, 142), 0.28),
+		Material = Enum.Material.Concrete,
 		CanCollide = false,
 		Parent = outerRing,
 	})
@@ -220,13 +225,16 @@ local function buildGlowingNeonCircle(
 end
 
 local function setupVibrantLighting()
-	Lighting.Ambient = Color3.fromRGB(158, 168, 190)
-	Lighting.OutdoorAmbient = Color3.fromRGB(178, 188, 210)
-	Lighting.Brightness = 2.5
-	Lighting.ColorShift_Top = Color3.fromRGB(255, 250, 235)
+	-- Phase 2.1 Grounded Non-Glowing Map Lighting:
+	-- Lower Brightness to 1.85, Bloom.Intensity to 0.25, and tone down saturation so ONLY
+	-- Collectible Squishies, Brainrot Eggs, Hatched Brainrots, and Gold Coins glow and pop!
+	Lighting.Ambient = Color3.fromRGB(128, 136, 148)
+	Lighting.OutdoorAmbient = Color3.fromRGB(148, 156, 168)
+	Lighting.Brightness = 1.85
+	Lighting.ColorShift_Top = Color3.fromRGB(242, 238, 228)
 	Lighting.ClockTime = 13.5
 	Lighting.GeographicLatitude = 32
-	Lighting.GlobalShadows = false
+	Lighting.GlobalShadows = true
 
 	for _, child in ipairs(Lighting:GetChildren()) do
 		if child:IsA("Atmosphere") or child:IsA("BloomEffect") or child:IsA("ColorCorrectionEffect") or child:IsA("Sky") then
@@ -235,29 +243,29 @@ local function setupVibrantLighting()
 	end
 
 	local sky = Instance.new("Sky")
-	sky.SunAngularSize = 18
+	sky.SunAngularSize = 16
 	sky.MoonAngularSize = 11
 	sky.Parent = Lighting
 
 	local atmo = Instance.new("Atmosphere")
-	atmo.Density = 0.16
+	atmo.Density = 0.20
 	atmo.Offset = 0.15
-	atmo.Color = Color3.fromRGB(190, 232, 255)
-	atmo.Decay = Color3.fromRGB(150, 205, 250)
-	atmo.Glare = 0.08
-	atmo.Haze = 0.45
+	atmo.Color = Color3.fromRGB(185, 212, 235)
+	atmo.Decay = Color3.fromRGB(145, 182, 215)
+	atmo.Glare = 0.04
+	atmo.Haze = 0.55
 	atmo.Parent = Lighting
 
 	local bloom = Instance.new("BloomEffect")
-	bloom.Intensity = 0.35
-	bloom.Size = 22
-	bloom.Threshold = 0.92
+	bloom.Intensity = 0.25
+	bloom.Size = 18
+	bloom.Threshold = 0.95
 	bloom.Parent = Lighting
 
 	local cc = Instance.new("ColorCorrectionEffect")
-	cc.Brightness = 0.03
-	cc.Contrast = 0.15
-	cc.Saturation = 0.26
+	cc.Brightness = 0.0
+	cc.Contrast = 0.10
+	cc.Saturation = 0.12
 	cc.Parent = Lighting
 end
 
@@ -2161,1130 +2169,649 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 
 	if id == 1 then
 		-- =========================================================================================
-		-- STAGE 1 (SQUISHY MEADOW):
-		-- Authentic "Find The Squishies" Stepped Dirt-and-Grass Cliff Hills (`full_frame_09.png`),
-		-- Stacked Wooden Crate Archway with Plank Bridge (`fts_frame_12.png`),
-		-- Secret Dark Stone Cave Entrance with Downward Arrow (`fts_frame_02.png`), `1710` Keypad (`full_frame_17.png`),
-		-- Giant Clickable/Touch Stone Block (`Clicks Remaining` from `full_frame_18.png`),
-		-- Country Windmill, Wooden Park Gazebo (`full_frame_07.png`), and Honey Barrel Bounce Course!
+		-- STAGE 1 (Z = 0 to -160 — SQUISHY MEADOW):
+		-- Landmarks:
+		--   * Spinning Dutch Windmill (114591511925320 / StageLandmarks #1) at (-78, 0, -55)
+		--   * Giant Oak Treehouse (7860328354 / StageLandmarks #2) at (78, 0, -65)
+		--   * Mushroom Cottages (18771840070 / StageLandmarks #4) at (-72, 0, -118) & (74, 0, -122)
+		-- Obby & Hidden Spots:
+		--   * Meadow Trampoline, Log-Hop & Sweeper Spinner Obby (76838144711090, 14796107102, 10202936)
+		--     from (42, 2, -45) up to the Treehouse Roof at (78, 26, -65) and across a rope bridge
+		--     to the Windmill Balcony at (-78, 28, -55).
 		-- =========================================================================================
+		placePrebuiltAsset("StageLandmarks", 1, landmarksFolder, Vector3.new(-78, 0, -55), 0, 32.0, true)
+		placePrebuiltAsset("StageLandmarks", 2, landmarksFolder, Vector3.new(78, 0, -65), 180, 28.0, true)
+		placePrebuiltAsset("StageLandmarks", 4, landmarksFolder, Vector3.new(-72, 0, -118), 35, 18.0, true)
+		placePrebuiltAsset("StageLandmarks", 4, landmarksFolder, Vector3.new(74, 0, -122), -35, 18.0, true)
 
-		-- 1. Multi-Tier Stepped Dirt-and-Grass Cliff Hill at X = 26, Z = zStart - 42 (`full_frame_09.png`)
-		buildSteppedDirtGrassHill(landmarksFolder, Vector3.new(26, 0, zStart - 42), 20, 18, 3)
+		-- Accessible Treehouse Roof Deck at (78, 26, -65) & Windmill Balcony Deck at (-78, 28, -55)
+		makePart({
+			Name = "Stage1_TreehouseRoofDeck",
+			Size = Vector3.new(16, 1.2, 16),
+			Position = Vector3.new(78, 25.4, -65),
+			Color = Color3.fromRGB(132, 88, 48),
+			Material = Enum.Material.WoodPlanks,
+			Parent = landmarksFolder,
+		})
+		makePart({
+			Name = "Stage1_WindmillBalconyDeck",
+			Size = Vector3.new(16, 1.2, 16),
+			Position = Vector3.new(-78, 27.4, -55),
+			Color = Color3.fromRGB(142, 96, 54),
+			Material = Enum.Material.WoodPlanks,
+			Parent = landmarksFolder,
+		})
+		-- Spinning Dutch Windmill Rotor Blades on the Windmill
+		for rIdx = 1, 2 do
+			local rotor = makePart({
+				Name = "WindmillBlades_" .. tostring(rIdx),
+				Size = if rIdx == 1 then Vector3.new(26, 2.2, 1.0) else Vector3.new(2.2, 26, 1.0),
+				Position = Vector3.new(-78, 24, -46.5),
+				Color = Color3.fromRGB(228, 214, 178),
+				Material = Enum.Material.WoodPlanks,
+				CanCollide = false,
+				Parent = obstaclesFolder,
+			})
+			rotor:SetAttribute("WindmillRotor", true)
+			rotor:SetAttribute("SpinSpeed", 1.1)
+		end
 
-		-- 2. Twin Stacked Wooden Crate Archway with Tilted Plank Bridge & Traffic Cones at X = -26, Z = zStart - 54 (`fts_frame_12.png`)
-		buildStackedCrateArchBridge(landmarksFolder, Vector3.new(-26, 0, zStart - 54), 0)
+		-- Meadow Trampoline, Log-Hop & Sweeper Spinner Obby from (42, 2, -45) -> (78, 26, -65) -> (-78, 28, -55)
+		placePrebuiltAsset("ObbyPieces", 16, landmarksFolder, Vector3.new(42, 0, -45), 0, 4.5, true)
+		local trampPad = buildGlowingNeonCircle(
+			landmarksFolder,
+			"BouncePad",
+			Vector3.new(42, 2.0, -45),
+			7.5,
+			Color3.fromRGB(72, 168, 84),
+			Color3.fromRGB(218, 185, 64)
+		)
+		trampPad:SetAttribute("BounceImpulse", 92)
 
-		-- 3. Dark Rocky Secret Cave Entrance with White Downward Arrow, `1710` Keypad & Breakable Stone Cube at X = 26, Z = zStart - 72 (`fts_frame_02.png`, `full_frame_17.png`, `full_frame_18.png`)
+		placePrebuiltAsset("ObbyPieces", 13, landmarksFolder, Vector3.new(54, 8, -52), 25, 6.0, true)
+		placePrebuiltAsset("ObbyPieces", 9, landmarksFolder, Vector3.new(66, 16, -58), 0, 5.0, true)
+		for hop = 1, 4 do
+			local t = hop / 4
+			makePart({
+				Name = "MeadowLogHop_" .. tostring(hop),
+				Shape = Enum.PartType.Cylinder,
+				Size = Vector3.new(8.5, 3.6, 3.6),
+				CFrame = CFrame.new(
+					42 + (78 - 42) * t,
+					4 + 21 * t,
+					-45 + (-65 - -45) * t
+				),
+				Color = Color3.fromRGB(122, 82, 46),
+				Material = Enum.Material.WoodPlanks,
+				Parent = landmarksFolder,
+			})
+		end
+
+		-- High Aerial Rope Suspension Bridge connecting Treehouse Roof (78, 26, -65) to Windmill Balcony (-78, 28, -55)
+		for seg = 1, 12 do
+			local alpha = (seg - 0.5) / 12
+			local sag = math.sin(alpha * math.pi) * 2.2
+			local bx = 78 + (-78 - 78) * alpha
+			local by = 25.4 + (27.4 - 25.4) * alpha - sag
+			local bz = -65 + (-55 - -65) * alpha
+			makePart({
+				Name = "Stage1_RopeBridgePlank_" .. tostring(seg),
+				Size = Vector3.new(11.5, 0.8, 5.4),
+				Position = Vector3.new(bx, by, bz),
+				Color = Color3.fromRGB(148, 102, 58),
+				Material = Enum.Material.WoodPlanks,
+				Parent = landmarksFolder,
+			})
+		end
+
+		-- Secret Dark Stone Cave Entrance & `1710` Keypad at (26, 0, -72)
 		makePart({
 			Name = "SecretCaveOuterRock",
 			Size = Vector3.new(18, 14, 13),
 			Position = Vector3.new(26, 7.0, zStart - 72),
-			Color = Color3.fromRGB(108, 106, 122),
-			Material = Enum.Material.Plastic,
-			Parent = landmarksFolder,
-		})
-		makePart({
-			Name = "SecretCaveRoofStep",
-			Size = Vector3.new(13, 3.0, 10),
-			Position = Vector3.new(26, 15.5, zStart - 72),
-			Color = Color3.fromRGB(128, 126, 144),
-			Material = Enum.Material.Plastic,
+			Color = Color3.fromRGB(108, 110, 118),
+			Material = Enum.Material.Slate,
 			Parent = landmarksFolder,
 		})
 		makePart({
 			Name = "SecretCaveDarkOpening",
 			Size = Vector3.new(7.5, 9.5, 1.2),
 			Position = Vector3.new(26, 4.75, zStart - 65.8),
-			Color = Color3.fromRGB(12, 12, 16),
-			Material = Enum.Material.SmoothPlastic,
-			Parent = landmarksFolder,
-		})
-		makePart({
-			Name = "CaveDownArrow",
-			Size = Vector3.new(2.6, 3.0, 0.8),
-			Position = Vector3.new(26, 11.2, zStart - 65.4),
-			Color = Color3.fromRGB(235, 245, 255),
-			Material = Enum.Material.Neon,
+			Color = Color3.fromRGB(18, 20, 24),
+			Material = Enum.Material.Slate,
 			Parent = landmarksFolder,
 		})
 		local caveKeypad = makePart({
 			Name = "CaveCodeKeypad",
 			Size = Vector3.new(2.4, 3.6, 0.6),
 			Position = Vector3.new(19.8, 4.8, zStart - 65.5),
-			Color = Color3.fromRGB(45, 48, 58),
-			Material = Enum.Material.Plastic,
+			Color = Color3.fromRGB(52, 56, 64),
+			Material = Enum.Material.Metal,
 			Parent = landmarksFolder,
 		})
 		createSurfaceSign(
 			caveKeypad,
 			"1710\n[1][2][3]\n[4][5][6]\n[7][8][9]",
-			Color3.fromRGB(255, 255, 255),
+			Color3.fromRGB(245, 245, 245),
 			Color3.fromRGB(32, 36, 46),
 			{ Enum.NormalId.Back, Enum.NormalId.Front },
 			55
 		)
 
-		local clickCube = makePart({
-			Name = "BreakableStoneCube_1",
-			Size = Vector3.new(8.5, 8.5, 8.5),
-			Position = Vector3.new(-26, 4.25, zStart - 76),
-			Color = Color3.fromRGB(156, 154, 178),
-			Material = Enum.Material.Plastic,
-			Parent = obstaclesFolder,
-		})
-		clickCube:SetAttribute("WorldCoinPickup", true)
-		clickCube:SetAttribute("MinCoinValue", 150)
-		clickCube:SetAttribute("MaxCoinValue", 350)
-		createBillboardText(
-			clickCube,
-			"🪨 SECRET STONE CUBE\n[Touch to Mine Bonus Cash!]",
-			Color3.fromRGB(255, 255, 255),
-			Vector3.new(0, 5.8, 0),
-			UDim2.new(6.2, 0, 1.5, 0),
-			42
-		)
-
-		-- 4. Dedicated Right-Side Signature Landmark #1: Giant Spinning Country Windmill at X = 64, zNorth (-52)
-		makePart({
-			Name = "WindmillTower",
-			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(22, 11, 11),
-			CFrame = CFrame.new(64, 11, zNorth) * CFrame.Angles(0, 0, math.rad(90)),
-			Color = Color3.fromRGB(235, 215, 175),
-			Material = Enum.Material.Plastic,
-			Parent = landmarksFolder,
-		})
-		makePart({
-			Name = "WindmillRoof",
-			Shape = Enum.PartType.Ball,
-			Size = Vector3.new(13, 9, 13),
-			Position = Vector3.new(64, 21.5, zNorth),
-			Color = Color3.fromRGB(215, 65, 55),
-			Material = Enum.Material.Plastic,
-			Parent = landmarksFolder,
-		})
-		local rotor1 = makePart({
-			Name = "WindmillBlades_1",
-			Size = Vector3.new(26, 2.2, 1.2),
-			Position = Vector3.new(64, 18, zNorth + 6.2),
-			Color = Color3.fromRGB(255, 240, 185),
-			Material = Enum.Material.Plastic,
-			CanCollide = false,
-			Parent = obstaclesFolder,
-		})
-		rotor1:SetAttribute("WindmillRotor", true)
-		rotor1:SetAttribute("SpinSpeed", 1.1)
-
-		local rotor2 = makePart({
-			Name = "WindmillBlades_2",
-			Size = Vector3.new(2.2, 26, 1.2),
-			Position = Vector3.new(64, 18, zNorth + 6.2),
-			Color = Color3.fromRGB(255, 240, 185),
-			Material = Enum.Material.Plastic,
-			CanCollide = false,
-			Parent = obstaclesFolder,
-		})
-		rotor2:SetAttribute("WindmillRotor", true)
-		rotor2:SetAttribute("SpinSpeed", 1.1)
-
-		-- 5. Dedicated Right-Side Signature Landmark #2: Flower Gazebo at X = 64, zSouth (-86)
-		makePart({
-			Name = "GazeboFloor",
-			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(1.5, 16, 16),
-			CFrame = CFrame.new(64, 0.75, zSouth) * CFrame.Angles(0, 0, math.rad(90)),
-			Color = Color3.fromRGB(215, 168, 115),
-			Material = Enum.Material.Plastic,
-			Parent = landmarksFolder,
-		})
-		for gp = 0, 3 do
-			local ang = math.rad(gp * 90 + 45)
-			makePart({
-				Name = "GazeboPillar_" .. tostring(gp),
-				Size = Vector3.new(1.4, 11, 1.4),
-				Position = Vector3.new(64 + math.cos(ang) * 5.8, 6.2, zSouth + math.sin(ang) * 5.8),
-				Color = Color3.fromRGB(245, 238, 225),
-				Material = Enum.Material.Plastic,
-				Parent = landmarksFolder,
-			})
-		end
-		makePart({
-			Name = "GazeboFloralCanopy",
-			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(3.2, 18, 18),
-			CFrame = CFrame.new(64, 12.8, zSouth) * CFrame.Angles(0, 0, math.rad(90)),
-			Color = Color3.fromRGB(255, 115, 185),
-			Material = Enum.Material.Plastic,
-			Parent = landmarksFolder,
-		})
-		makePart({
-			Name = "GazeboTopFlower",
-			Shape = Enum.PartType.Ball,
-			Size = Vector3.new(6.5, 4.5, 6.5),
-			Position = Vector3.new(64, 15.2, zSouth),
-			Color = Color3.fromRGB(255, 225, 65),
-			Material = Enum.Material.Neon,
-			Parent = landmarksFolder,
-		})
-
-		-- 6. Honey Barrel Bounce Course (`X = 48, Z = zStart - 36..-96`) + Creator Store Meadow Trees (`X = 72`)
-		for b = 1, 4 do
-			local bz = zStart - 24 - (b * 16)
-			makePart({
-				Name = "HoneyBarrel_" .. tostring(b),
-				Shape = Enum.PartType.Cylinder,
-				Size = Vector3.new(4.2, 6.0, 6.0),
-				CFrame = CFrame.new(48, 2.1, bz) * CFrame.Angles(0, 0, math.rad(90)),
-				Color = Color3.fromRGB(168, 108, 48),
-				Material = Enum.Material.Plastic,
-				Parent = landmarksFolder,
-			})
-			local topBounce = buildGlowingNeonCircle(landmarksFolder, "BouncePad", Vector3.new(48, 4.4, bz), 5.6, Color3.fromRGB(255, 215, 45), Color3.fromRGB(255, 165, 35))
-			topBounce:SetAttribute("BounceImpulse", 84)
-		end
-		placePrebuiltAsset("MeadowTrees", 1, landmarksFolder, Vector3.new(72, 0, zStart - 68), 30, 24.0, true)
-
 	elseif id == 2 then
 		-- =========================================================================================
-		-- STAGE 2 (CHOCOLATE CANDY KINGDOM):
-		-- Dedicated Right-Side Signature Landmarks: Giant 3-Tier Flowing Chocolate Fountain +
-		-- Giant Gumball Machine Tower + Spinning Peppermint Rollers + Creator Store Candy Props,
-		-- plus ASMR Island Giant Mechanical Keyboard (`fts_frame_09.png`) & Rainbow Pop-It Board!
+		-- STAGE 2 (Z = -160 to -320 — CHOCOLATE CANDY KINGDOM):
+		-- Landmarks:
+		--   * Walk-In Gingerbread Mansion (4400478930 / StageLandmarks #5) at (-82, 0, -210)
+		--   * Spinning Candy Carousel Ride (131526002682377 / StageLandmarks #7) at (80, 0, -215)
+		--   * Candy Cane Road Arches (137470241818443 / StageLandmarks #6) over the Central Road at Z = -190, -240, -290
+		-- Obby & Hidden Spots:
+		--   * Peppermint Knockback Spinner & Wafer Bridge Obby (4514115489, 12120501468)
+		--     from (-45, 3, -195) spiraling up to the Gingerbread Attic Chimney at (-82, 30, -210)
+		--     and High Cocoa Platform at (-75, 36, -255).
 		-- =========================================================================================
-
-		-- 1. ASMR Island Giant Mechanical Keyboard (`Q W E R T Y U I O P` pastel keycaps from `fts_frame_09.png`!) at X = -24, Z = zStart - 56
-		local keyLetters = { "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "A", "S" }
-		local keyColors = {
-			Color3.fromRGB(255, 115, 195),
-			Color3.fromRGB(95, 225, 255),
-			Color3.fromRGB(145, 255, 95),
-			Color3.fromRGB(255, 235, 75),
-			Color3.fromRGB(195, 125, 255),
-			Color3.fromRGB(255, 155, 85),
-		}
-		makePart({
-			Name = "ASMRKeyboardTray",
-			Size = Vector3.new(34, 1.4, 24),
-			Position = Vector3.new(-24, 0.7, zStart - 56),
-			Color = Color3.fromRGB(58, 52, 82),
-			Material = Enum.Material.Plastic,
-			Parent = landmarksFolder,
-		})
-		for kIdx, letter in ipairs(keyLetters) do
-			local row = math.floor((kIdx - 1) / 4)
-			local col = (kIdx - 1) % 4
-			local kx = -35.5 + col * 7.6 + (row * 1.2)
-			local kz = (zStart - 47) - row * 7.2
-			local kCol = keyColors[((kIdx - 1) % #keyColors) + 1]
-			local keyCap = makePart({
-				Name = "ASMRKeycap_" .. letter,
-				Size = Vector3.new(6.4, 3.2 + (row * 1.2), 6.4),
-				Position = Vector3.new(kx, 1.6 + (row * 0.6), kz),
-				Color = kCol,
-				Material = Enum.Material.Plastic,
-				Parent = landmarksFolder,
-			})
-			createSurfaceSign(keyCap, letter, Color3.fromRGB(25, 25, 35), kCol, { Enum.NormalId.Top }, 90)
-			if kIdx % 3 == 0 then
-				local bPad = buildGlowingNeonCircle(landmarksFolder, "BouncePad", Vector3.new(kx, 3.3 + row * 1.2, kz), 5.0, kCol, Color3.fromRGB(255, 255, 255))
-				bPad:SetAttribute("BounceImpulse", 82)
-			end
-		end
-
-		-- 2. Giant Rainbow Fidget Pop-It Stepping Board at X = 24, Z = zStart - 56 (`fts_frame_09.png`)
-		for popRow = 1, 4 do
-			local popCol = keyColors[popRow]
+		placePrebuiltAsset("StageLandmarks", 5, landmarksFolder, Vector3.new(-82, 0, -210), 90, 28.0, true)
+		placePrebuiltAsset("StageLandmarks", 7, landmarksFolder, Vector3.new(80, 0, -215), -90, 26.0, true)
+		for _, archZ in ipairs({ -190, -240, -290 }) do
+			placePrebuiltAsset("StageLandmarks", 6, landmarksFolder, Vector3.new(-21, 0, archZ), 0, 22.0, true)
+			placePrebuiltAsset("StageLandmarks", 6, landmarksFolder, Vector3.new(21, 0, archZ), 180, 22.0, true)
 			makePart({
-				Name = "PopItRow_" .. tostring(popRow),
-				Size = Vector3.new(18, 1.6, 4.5),
-				Position = Vector3.new(24, 0.8 + popRow * 0.8, zStart - 38 - popRow * 5.2),
-				Color = popCol,
-				Material = Enum.Material.Plastic,
-				Parent = landmarksFolder,
-			})
-			for bubble = -1, 1 do
-				makePart({
-					Name = "PopItBubble",
-					Shape = Enum.PartType.Ball,
-					Size = Vector3.new(3.6, 2.4, 3.6),
-					Position = Vector3.new(24 + bubble * 5.2, 1.8 + popRow * 0.8, zStart - 38 - popRow * 5.2),
-					Color = popCol:Lerp(Color3.fromRGB(255, 255, 255), 0.25),
-					Material = Enum.Material.Neon,
-					Parent = landmarksFolder,
-				})
-			end
-		end
-
-		-- 3. Dedicated Right-Side Signature Landmark #1: Giant 3-Tier Flowing Chocolate Fountain (X = 64, zNorth)
-		for tier = 1, 3 do
-			local dia = 20 - (tier - 1) * 5.0
-			makePart({
-				Name = "ChocoTier_" .. tostring(tier),
-				Shape = Enum.PartType.Cylinder,
-				Size = Vector3.new(3.2, dia, dia),
-				CFrame = CFrame.new(64, tier * 4.5, zNorth) * CFrame.Angles(0, 0, math.rad(90)),
-				Color = Color3.fromRGB(115, 58, 32),
-				Material = Enum.Material.Plastic,
-				Parent = landmarksFolder,
-			})
-			makePart({
-				Name = "ChocoFlowColumn_" .. tostring(tier),
-				Shape = Enum.PartType.Cylinder,
-				Size = Vector3.new(4.5, dia * 0.68, dia * 0.68),
-				CFrame = CFrame.new(64, (tier - 0.5) * 4.5, zNorth) * CFrame.Angles(0, 0, math.rad(90)),
-				Color = Color3.fromRGB(145, 78, 42),
+				Name = "CandyCaneRoadArchCrown_" .. tostring(math.abs(archZ)),
+				Size = Vector3.new(44, 2.2, 2.4),
+				Position = Vector3.new(0, 21.5, archZ),
+				Color = Color3.fromRGB(205, 64, 78),
 				Material = Enum.Material.SmoothPlastic,
 				Parent = landmarksFolder,
 			})
 		end
-		makePart({
-			Name = "CherryTopper",
-			Shape = Enum.PartType.Ball,
-			Size = Vector3.new(5.2, 5.2, 5.2),
-			Position = Vector3.new(64, 17.5, zNorth),
-			Color = Color3.fromRGB(255, 45, 85),
-			Material = Enum.Material.Neon,
-			Parent = landmarksFolder,
-		})
 
-		-- 4. Dedicated Right-Side Signature Landmark #2: Giant Gumball Machine Tower (X = 64, zSouth)
+		-- Gingerbread Attic Chimney Platform at (-82, 30, -210) & High Cocoa Platform at (-75, 36, -255)
 		makePart({
-			Name = "GumballBase",
-			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(10, 12, 12),
-			CFrame = CFrame.new(64, 5.0, zSouth) * CFrame.Angles(0, 0, math.rad(90)),
-			Color = Color3.fromRGB(235, 55, 95),
-			Material = Enum.Material.Plastic,
+			Name = "Stage2_GingerbreadAtticPlatform",
+			Size = Vector3.new(14, 1.2, 14),
+			Position = Vector3.new(-82, 29.4, -210),
+			Color = Color3.fromRGB(152, 92, 52),
+			Material = Enum.Material.Brick,
 			Parent = landmarksFolder,
 		})
 		makePart({
-			Name = "GumballCoinChute",
-			Size = Vector3.new(3.2, 3.8, 1.6),
-			Position = Vector3.new(58.2, 5.2, zSouth),
-			Color = Color3.fromRGB(255, 215, 65),
-			Material = Enum.Material.Neon,
-			Parent = landmarksFolder,
-		})
-		makePart({
-			Name = "GumballGlassGlobe",
-			Shape = Enum.PartType.Ball,
-			Size = Vector3.new(16, 16, 16),
-			Position = Vector3.new(64, 15.5, zSouth),
-			Color = Color3.fromRGB(215, 245, 255),
-			Material = Enum.Material.Glass,
-			Transparency = 0.42,
-			Parent = landmarksFolder,
-		})
-		for gb = 1, 6 do
-			local gAng = math.rad(gb * 60)
-			makePart({
-				Name = "InnerGumball_" .. tostring(gb),
-				Shape = Enum.PartType.Ball,
-				Size = Vector3.new(3.6, 3.6, 3.6),
-				Position = Vector3.new(64 + math.cos(gAng) * 3.8, 13.5 + (gb % 2) * 2.5, zSouth + math.sin(gAng) * 3.8),
-				Color = keyColors[gb],
-				Material = Enum.Material.Neon,
-				Parent = landmarksFolder,
-			})
-		end
-
-		-- 5. Spinning Peppermint Rollers (X = 46, Z = zStart - 36..-92) + Creator Store Candy Props (X = 72)
-		for r = 1, 5 do
-			local rz = zStart - 24 - (r * 14)
-			local roller = makePart({
-				Name = "PeppermintRoller_" .. tostring(r),
-				Shape = Enum.PartType.Cylinder,
-				Size = Vector3.new(10.5, 4.0, 4.0),
-				CFrame = CFrame.new(46, 3.0, rz),
-				Color = if r % 2 == 1 then Color3.fromRGB(255, 85, 145) else Color3.fromRGB(255, 245, 250),
-				Material = Enum.Material.Plastic,
-				Parent = obstaclesFolder,
-			})
-			roller:SetAttribute("SpinSpeed", 1.6 * (if r % 2 == 1 then 1 else -1))
-		end
-		placePrebuiltAsset("CandyProps", 1, landmarksFolder, Vector3.new(72, 0, zStart - 68), 45, 24.0, true)
-
-	elseif id == 3 then
-		-- =========================================================================================
-		-- STAGE 3 (TROPICAL BEACH LAGOON):
-		-- Dedicated Right-Side Signature Landmarks: Sunken Pirate Shipwreck Deck (climbable!) +
-		-- Rotating Lighthouse Beacon + Surfboard Stepping Stones + Creator Store Palm Trees,
-		-- plus Bright Blue Lagoon with Narrow Balance Plank & Giant Yellow Studded Sponge Island (`full_frame_14.png`)!
-		-- =========================================================================================
-
-		-- 1. Bright Blue Lagoon Water Pool + Narrow Balance Plank + Giant Yellow Studded Sponge Block Island (`full_frame_14.png`) at X = -14, Z = zStart - 56
-		makePart({
-			Name = "LagoonWaterPool",
-			Size = Vector3.new(44, 0.6, 34),
-			Position = Vector3.new(-10, 0.15, zStart - 56),
-			Color = Color3.fromRGB(68, 196, 255),
-			Material = Enum.Material.Plastic,
-			Parent = landmarksFolder,
-		})
-		makePart({
-			Name = "SpongeIslandBalancePlank",
-			Size = Vector3.new(3.2, 1.2, 24),
-			Position = Vector3.new(-14, 1.2, zStart - 48),
-			Color = Color3.fromRGB(195, 125, 68),
-			Material = Enum.Material.Plastic,
-			Parent = landmarksFolder,
-		})
-		makePart({
-			Name = "GiantYellowSpongeIsland",
-			Size = Vector3.new(15, 9.5, 15),
-			Position = Vector3.new(-14, 4.75, zStart - 66),
-			Color = Color3.fromRGB(255, 242, 45),
-			Material = Enum.Material.Plastic,
-			Parent = landmarksFolder,
-		})
-
-		-- 2. Vertical Studded Rock-Climbing Hold Cliff Wall (`fts_frame_03.png`) at X = 26, Z = zStart - 56
-		makePart({
-			Name = "RockClimbingWall",
-			Size = Vector3.new(4.5, 24, 18),
-			Position = Vector3.new(26, 12, zStart - 56),
-			Color = Color3.fromRGB(142, 118, 115),
-			Material = Enum.Material.Plastic,
-			Parent = landmarksFolder,
-		})
-		local holdColors = {
-			Color3.fromRGB(255, 95, 125),
-			Color3.fromRGB(255, 225, 65),
-			Color3.fromRGB(95, 235, 115),
-			Color3.fromRGB(85, 205, 255),
-		}
-		for h = 1, 7 do
-			makePart({
-				Name = "ClimbingHold_" .. tostring(h),
-				Size = Vector3.new(2.6, 1.5, 2.8),
-				Position = Vector3.new(23.2, 2.2 + h * 2.8, (zStart - 62) + ((h % 3) * 5.2)),
-				Color = holdColors[((h - 1) % #holdColors) + 1],
-				Material = Enum.Material.Plastic,
-				Parent = landmarksFolder,
-			})
-		end
-
-		-- 3. Dedicated Right-Side Signature Landmark #1: Sunken Pirate Shipwreck Deck (climbable!) at X = 64, zNorth
-		makePart({
-			Name = "PirateShipHull",
-			Size = Vector3.new(16, 7.5, 30),
-			CFrame = CFrame.new(64, 3.8, zNorth) * CFrame.Angles(math.rad(5), math.rad(-10), math.rad(4)),
-			Color = Color3.fromRGB(128, 82, 42),
-			Material = Enum.Material.Plastic,
-			Parent = landmarksFolder,
-		})
-		makePart({
-			Name = "PirateShipCaptainCabin",
-			Size = Vector3.new(14, 6.5, 10),
-			CFrame = CFrame.new(64, 10.2, zNorth - 8),
-			Color = Color3.fromRGB(148, 96, 52),
-			Material = Enum.Material.Plastic,
-			Parent = landmarksFolder,
-		})
-		makePart({
-			Name = "PirateShipBoardingRamp",
-			Size = Vector3.new(6.5, 1.0, 16),
-			CFrame = CFrame.new(55, 3.8, zNorth + 9) * CFrame.Angles(math.rad(-22), math.rad(-25), 0),
-			Color = Color3.fromRGB(168, 112, 58),
-			Material = Enum.Material.Plastic,
-			Parent = landmarksFolder,
-		})
-		makePart({
-			Name = "PirateShipMast",
-			Size = Vector3.new(2.0, 25, 2.0),
-			Position = Vector3.new(64, 14, zNorth),
-			Color = Color3.fromRGB(98, 62, 32),
-			Material = Enum.Material.Plastic,
-			Parent = landmarksFolder,
-		})
-		makePart({
-			Name = "PirateShipSail",
-			Size = Vector3.new(14, 10, 0.9),
-			Position = Vector3.new(64, 18, zNorth + 1.2),
-			Color = Color3.fromRGB(245, 238, 215),
-			Material = Enum.Material.Plastic,
-			Parent = landmarksFolder,
-		})
-
-		-- 4. Dedicated Right-Side Signature Landmark #2: Rotating Lighthouse Beacon at X = 64, zSouth
-		makePart({
-			Name = "LighthouseTower",
-			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(24, 11.0, 11.0),
-			CFrame = CFrame.new(64, 12, zSouth) * CFrame.Angles(0, 0, math.rad(90)),
-			Color = Color3.fromRGB(245, 75, 65),
-			Material = Enum.Material.Plastic,
-			Parent = landmarksFolder,
-		})
-		makePart({
-			Name = "LighthouseWhiteStripe",
-			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(8, 11.4, 11.4),
-			CFrame = CFrame.new(64, 12, zSouth) * CFrame.Angles(0, 0, math.rad(90)),
-			Color = Color3.fromRGB(248, 248, 252),
-			Material = Enum.Material.Plastic,
-			Parent = landmarksFolder,
-		})
-		makePart({
-			Name = "LighthouseLanternRoom",
-			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(4.5, 9.5, 9.5),
-			CFrame = CFrame.new(64, 25.5, zSouth) * CFrame.Angles(0, 0, math.rad(90)),
-			Color = Color3.fromRGB(255, 245, 145),
-			Material = Enum.Material.Neon,
-			Parent = landmarksFolder,
-		})
-		local beam = makePart({
-			Name = "LighthouseBeam",
-			Size = Vector3.new(32, 1.8, 1.8),
-			Position = Vector3.new(64, 26.5, zSouth),
-			Color = Color3.fromRGB(255, 245, 125),
-			Material = Enum.Material.Neon,
-			CanCollide = false,
-			Transparency = 0.25,
-			Parent = obstaclesFolder,
-		})
-		beam:SetAttribute("SpinSpeed", 1.4)
-
-		-- 5. Surfboard Stepping Stones (X = 46, Z = zStart - 36..-90) + Creator Store Palm Trees (X = 72)
-		local surfColors = {
-			Color3.fromRGB(55, 225, 255),
-			Color3.fromRGB(255, 195, 55),
-			Color3.fromRGB(255, 95, 175),
-			Color3.fromRGB(95, 245, 135),
-		}
-		for s = 1, 4 do
-			local sz = zStart - 24 - (s * 16)
-			makePart({
-				Name = "SurfboardStone_" .. tostring(s),
-				Size = Vector3.new(4.8, 1.0, 10.5),
-				CFrame = CFrame.new(46, 1.8 + s * 1.1, sz) * CFrame.Angles(0, math.rad((s - 2) * 14), 0),
-				Color = surfColors[s],
-				Material = Enum.Material.Plastic,
-				Parent = landmarksFolder,
-			})
-		end
-		placePrebuiltAsset("PalmTrees", 1, landmarksFolder, Vector3.new(72, 0, zStart - 68), 60, 25.0, true)
-
-	elseif id == 4 then
-		-- =========================================================================================
-		-- STAGE 4 (WHISPERING BAMBOO FOREST):
-		-- Jade Koi Lotus Pond + Arched Red Torii Bridge, Giant Hollow Bamboo Grove Climb,
-		-- Spinning Jade Pagoda Tower (X = 64, zNorth), Glowing Zen Lantern Shrine (X = 64, zSouth),
-		-- and Bamboo Stepping Stalks + Bounce Lotus Pads (X = 46)!
-		-- =========================================================================================
-
-		-- 1. Jade Koi Lotus Pond + Arched Crimson Torii Bridge at X = -14, Z = zStart - 56
-		makePart({
-			Name = "BambooLotusPond",
-			Size = Vector3.new(38, 0.6, 30),
-			Position = Vector3.new(-14, 0.15, zStart - 56),
-			Color = Color3.fromRGB(55, 205, 175),
-			Material = Enum.Material.Neon,
-			Parent = landmarksFolder,
-		})
-		makePart({
-			Name = "ToriiBridgeDeck",
-			Size = Vector3.new(6.5, 1.2, 28),
-			Position = Vector3.new(-14, 1.8, zStart - 56),
-			Color = Color3.fromRGB(225, 58, 52),
+			Name = "Stage2_HighCocoaPlatform",
+			Size = Vector3.new(16, 1.4, 16),
+			Position = Vector3.new(-75, 35.3, -255),
+			Color = Color3.fromRGB(108, 62, 38),
 			Material = Enum.Material.WoodPlanks,
 			Parent = landmarksFolder,
 		})
-		for _, toriiZ in ipairs({ zStart - 44, zStart - 68 }) do
-			for _, pSide in ipairs({ -3.2, 3.2 }) do
-				makePart({
-					Name = "ToriiGatePillar",
-					Shape = Enum.PartType.Cylinder,
-					Size = Vector3.new(13, 1.4, 1.4),
-					CFrame = CFrame.new(-14 + pSide, 7.5, toriiZ) * CFrame.Angles(0, 0, math.rad(90)),
-					Color = Color3.fromRGB(225, 48, 42),
-					Material = Enum.Material.SmoothPlastic,
-					Parent = landmarksFolder,
-				})
-			end
+
+		-- Peppermint Knockback Spinner & Wafer Bridge Obby from (-45, 3, -195) -> (-82, 30, -210) -> (-75, 36, -255)
+		placePrebuiltAsset("ObbyPieces", 10, landmarksFolder, Vector3.new(-45, 1.5, -195), 0, 5.5, true)
+		placePrebuiltAsset("ObbyPieces", 5, landmarksFolder, Vector3.new(-64, 14.0, -202), 20, 8.0, true)
+		for step = 1, 6 do
+			local alpha = step / 6
 			makePart({
-				Name = "ToriiGateTopBeam",
-				Size = Vector3.new(10.5, 1.6, 1.8),
-				Position = Vector3.new(-14, 14.2, toriiZ),
-				Color = Color3.fromRGB(235, 55, 48),
+				Name = "PeppermintWaferStep_" .. tostring(step),
+				Size = Vector3.new(6.8, 1.2, 6.8),
+				Position = Vector3.new(
+					-45 + (-82 - -45) * alpha,
+					3 + 26.4 * alpha,
+					-195 + (-210 - -195) * alpha
+				),
+				Color = if step % 2 == 0 then Color3.fromRGB(218, 182, 138) else Color3.fromRGB(208, 72, 98),
+				Material = Enum.Material.WoodPlanks,
+				Parent = landmarksFolder,
+			})
+		end
+		-- High Wafer Bridge from Gingerbread Attic (-82, 30, -210) to High Cocoa Platform (-75, 36, -255)
+		for wStep = 1, 5 do
+			local alpha = wStep / 5
+			makePart({
+				Name = "CocoaWaferBridge_" .. tostring(wStep),
+				Size = Vector3.new(6.2, 1.0, 7.5),
+				Position = Vector3.new(
+					-82 + (-75 - -82) * alpha,
+					29.4 + (35.3 - 29.4) * alpha,
+					-210 + (-255 - -210) * alpha
+				),
+				Color = Color3.fromRGB(178, 122, 74),
+				Material = Enum.Material.WoodPlanks,
+				Parent = landmarksFolder,
+			})
+		end
+
+	elseif id == 3 then
+		-- =========================================================================================
+		-- STAGE 3 (Z = -320 to -480 — TROPICAL BEACH LAGOON):
+		-- Landmarks:
+		--   * Boardable Pirate Galleon Ship (7137210839 / StageLandmarks #8) at (-84, 0, -390)
+		--   * Giant Water Slide Tower (5706899551 / StageLandmarks #9) at (82, 0, -375)
+		--   * Coastal Lighthouse & Sand Castle (95052703843351, 18852029806 / StageLandmarks #11 & #10) at (76, 0, -445)
+		-- Obby & Hidden Spots:
+		--   * Moving Surfboard, Rigging Ladder & Mast Balance Obby (8517401506, 13804790028)
+		--     from (-44, 3, -355) up to the Pirate Ship Crow's Nest at (-84, 38, -390),
+		--     inside the Captain's Lower Hold, and top of the Lighthouse Lantern Room at (76, 42, -445).
+		-- =========================================================================================
+		placePrebuiltAsset("StageLandmarks", 8, landmarksFolder, Vector3.new(-84, 0, -390), 0, 36.0, true)
+		placePrebuiltAsset("StageLandmarks", 9, landmarksFolder, Vector3.new(82, 0, -375), -90, 30.0, true)
+		placePrebuiltAsset("StageLandmarks", 11, landmarksFolder, Vector3.new(76, 0, -445), 0, 42.0, true)
+		placePrebuiltAsset("StageLandmarks", 10, landmarksFolder, Vector3.new(54, 0, -442), -30, 16.0, true)
+
+		-- Accessible Pirate Ship Crow's Nest at (-84, 38, -390), Captain's Lower Hold at (-84, 4, -390), and Lighthouse Lantern Room at (76, 42, -445)
+		makePart({
+			Name = "Stage3_PirateCrowsNestDeck",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(1.4, 13, 13),
+			CFrame = CFrame.new(-84, 37.3, -390) * CFrame.Angles(0, 0, math.rad(90)),
+			Color = Color3.fromRGB(122, 78, 42),
+			Material = Enum.Material.WoodPlanks,
+			Parent = landmarksFolder,
+		})
+		local mastTruss = Instance.new("TrussPart")
+		mastTruss.Name = "Stage3_PirateRiggingLadder"
+		mastTruss.Anchored = true
+		mastTruss.Size = Vector3.new(2, 36, 2)
+		mastTruss.Position = Vector3.new(-80, 19, -390)
+		mastTruss.Color = Color3.fromRGB(138, 96, 54)
+		mastTruss.Material = Enum.Material.WoodPlanks
+		mastTruss.Parent = landmarksFolder
+
+		makePart({
+			Name = "Stage3_LighthouseLanternDeck",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(1.4, 14, 14),
+			CFrame = CFrame.new(76, 41.3, -445) * CFrame.Angles(0, 0, math.rad(90)),
+			Color = Color3.fromRGB(195, 62, 54),
+			Material = Enum.Material.Concrete,
+			Parent = landmarksFolder,
+		})
+		local lhTruss = Instance.new("TrussPart")
+		lhTruss.Name = "Stage3_LighthouseClimbLadder"
+		lhTruss.Anchored = true
+		lhTruss.Size = Vector3.new(2, 40, 2)
+		lhTruss.Position = Vector3.new(70, 20.5, -445)
+		lhTruss.Color = Color3.fromRGB(215, 218, 224)
+		lhTruss.Material = Enum.Material.Metal
+		lhTruss.Parent = landmarksFolder
+
+		-- Moving Surfboard, Rigging Ladder & Mast Balance Obby from (-44, 3, -355) -> (-84, 38, -390)
+		placePrebuiltAsset("ObbyPieces", 14, landmarksFolder, Vector3.new(-44, 2.0, -355), 0, 5.0, true)
+		placePrebuiltAsset("ObbyPieces", 18, landmarksFolder, Vector3.new(-64, 12.0, -372), 35, 14.0, true)
+		local surfColors = {
+			Color3.fromRGB(58, 168, 205),
+			Color3.fromRGB(218, 165, 58),
+			Color3.fromRGB(205, 84, 132),
+			Color3.fromRGB(78, 185, 118),
+			Color3.fromRGB(212, 112, 64),
+		}
+		for sIdx = 1, 5 do
+			local alpha = sIdx / 5
+			makePart({
+				Name = "SurfboardObbyStep_" .. tostring(sIdx),
+				Size = Vector3.new(5.2, 1.0, 10.5),
+				Position = Vector3.new(
+					-44 + (-80 - -44) * alpha,
+					3 + 16 * alpha,
+					-355 + (-390 - -355) * alpha
+				),
+				Color = surfColors[sIdx],
 				Material = Enum.Material.SmoothPlastic,
 				Parent = landmarksFolder,
 			})
 		end
 
-		-- 2. Giant Hollow Bamboo Stalk Climb at X = 24, Z = zStart - 56
-		for bIdx = 1, 5 do
-			local bx = 20 + (bIdx % 2) * 8
-			local bz = (zStart - 42) - bIdx * 5.5
+	elseif id == 4 then
+		-- =========================================================================================
+		-- STAGE 4 (Z = -480 to -640 — WHISPERING BAMBOO FOREST):
+		-- Landmarks:
+		--   * Twin Stone Dragon Statues (123493048047404 / StageLandmarks #12) at (-68, 0, -525) & (68, 0, -525)
+		--   * 3-Story Bamboo Dojo Pagoda (101559450428915 / StageLandmarks #13) at (-82, 0, -585)
+		--   * Canopy Suspension Treehouse (9839019518 / StageLandmarks #3) at (82, 18, -575)
+		-- Obby & Hidden Spots:
+		--   * Bamboo Pole-Jump, Truss Wall & Swinging Bridge Obby (12317896672, 14288014072)
+		--     from (38, 4, -510) to (82, 34, -575) and across a narrow bamboo beam
+		--     to the 3rd-Floor Pagoda Bell Chamber at (-82, 36, -585).
+		-- =========================================================================================
+		placePrebuiltAsset("StageLandmarks", 12, landmarksFolder, Vector3.new(-68, 0, -525), 90, 24.0, true)
+		placePrebuiltAsset("StageLandmarks", 12, landmarksFolder, Vector3.new(68, 0, -525), -90, 24.0, true)
+		placePrebuiltAsset("StageLandmarks", 13, landmarksFolder, Vector3.new(-82, 0, -585), 90, 38.0, true)
+		placePrebuiltAsset("StageLandmarks", 3, landmarksFolder, Vector3.new(82, 0, -575), -90, 34.0, true)
+
+		-- Canopy Treehouse Top Deck at (82, 34, -575) & 3rd-Floor Pagoda Bell Chamber Deck at (-82, 36, -585)
+		makePart({
+			Name = "Stage4_CanopyTreehouseDeck",
+			Size = Vector3.new(16, 1.2, 16),
+			Position = Vector3.new(82, 33.4, -575),
+			Color = Color3.fromRGB(118, 158, 82),
+			Material = Enum.Material.WoodPlanks,
+			Parent = landmarksFolder,
+		})
+		makePart({
+			Name = "Stage4_PagodaBellChamberDeck",
+			Size = Vector3.new(16, 1.2, 16),
+			Position = Vector3.new(-82, 35.4, -585),
+			Color = Color3.fromRGB(168, 52, 48),
+			Material = Enum.Material.WoodPlanks,
+			Parent = landmarksFolder,
+		})
+
+		-- Bamboo Pole-Jump, Truss Wall & Swinging Bridge Obby from (38, 4, -510) -> (82, 34, -575) -> (-82, 36, -585)
+		placePrebuiltAsset("ObbyPieces", 19, landmarksFolder, Vector3.new(38, 2, -510), 0, 12.0, true)
+		placePrebuiltAsset("ObbyPieces", 1, landmarksFolder, Vector3.new(60, 16, -542), 35, 10.0, true)
+		for pole = 1, 6 do
+			local alpha = pole / 6
+			local pHeight = 4 + 29.4 * alpha
 			makePart({
-				Name = "GiantBambooStalk_" .. tostring(bIdx),
+				Name = "BambooPoleJump_" .. tostring(pole),
 				Shape = Enum.PartType.Cylinder,
-				Size = Vector3.new(4.5 + bIdx * 2.5, 5.2, 5.2),
-				CFrame = CFrame.new(bx, (4.5 + bIdx * 2.5) * 0.5, bz) * CFrame.Angles(0, 0, math.rad(90)),
-				Color = Color3.fromRGB(95, 225, 115),
-				Material = Enum.Material.SmoothPlastic,
+				Size = Vector3.new(pHeight, 4.4, 4.4),
+				CFrame = CFrame.new(
+					38 + (82 - 38) * alpha,
+					pHeight * 0.5,
+					-510 + (-575 - -510) * alpha
+				) * CFrame.Angles(0, 0, math.rad(90)),
+				Color = Color3.fromRGB(88, 164, 78),
+				Material = Enum.Material.WoodPlanks,
 				Parent = landmarksFolder,
 			})
 		end
-
-		-- 3. Dedicated Right-Side Signature Landmark #1: 3-Tier Jade Pagoda Temple Tower (X = 64, zNorth)
-		for pTier = 1, 3 do
-			local w = 20 - (pTier - 1) * 4.5
+		-- Narrow High Bamboo Balance Beam from Canopy Treehouse (82, 34, -575) to Pagoda Bell Chamber (-82, 36, -585)
+		for seg = 1, 10 do
+			local alpha = (seg - 0.5) / 10
 			makePart({
-				Name = "PagodaBody_" .. tostring(pTier),
-				Size = Vector3.new(w * 0.75, 5.5, w * 0.75),
-				Position = Vector3.new(64, (pTier - 0.5) * 6.5, zNorth),
-				Color = Color3.fromRGB(235, 225, 195),
-				Material = Enum.Material.SmoothPlastic,
-				Parent = landmarksFolder,
-			})
-			makePart({
-				Name = "PagodaJadeRoof_" .. tostring(pTier),
-				Size = Vector3.new(w, 1.6, w),
-				Position = Vector3.new(64, pTier * 6.5, zNorth),
-				Color = Color3.fromRGB(58, 195, 105),
-				Material = Enum.Material.SmoothPlastic,
+				Name = "BambooSkyBridgeBeam_" .. tostring(seg),
+				Size = Vector3.new(15.5, 1.0, 4.2),
+				Position = Vector3.new(
+					82 + (-82 - 82) * alpha,
+					33.4 + (35.4 - 33.4) * alpha,
+					-575 + (-585 - -575) * alpha
+				),
+				Color = Color3.fromRGB(98, 172, 84),
+				Material = Enum.Material.WoodPlanks,
 				Parent = landmarksFolder,
 			})
 		end
-		local pagodaOrb = makePart({
-			Name = "PagodaJadeFinial",
-			Shape = Enum.PartType.Ball,
-			Size = Vector3.new(4.8, 4.8, 4.8),
-			Position = Vector3.new(64, 23.0, zNorth),
-			Color = Color3.fromRGB(135, 255, 155),
-			Material = Enum.Material.Neon,
-			CanCollide = false,
-			Parent = obstaclesFolder,
-		})
-		pagodaOrb:SetAttribute("SpinSpeed", 1.5)
-
-		-- 4. Dedicated Right-Side Signature Landmark #2: Glowing Zen Lantern Shrine (X = 64, zSouth)
-		makePart({
-			Name = "ZenShrineBase",
-			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(2.0, 16, 16),
-			CFrame = CFrame.new(64, 1.0, zSouth) * CFrame.Angles(0, 0, math.rad(90)),
-			Color = Color3.fromRGB(128, 138, 128),
-			Material = Enum.Material.Slate,
-			Parent = landmarksFolder,
-		})
-		makePart({
-			Name = "ZenLanternCore",
-			Shape = Enum.PartType.Ball,
-			Size = Vector3.new(9.5, 11.5, 9.5),
-			Position = Vector3.new(64, 9.5, zSouth),
-			Color = Color3.fromRGB(155, 255, 145),
-			Material = Enum.Material.Neon,
-			Parent = landmarksFolder,
-		})
-		makePart({
-			Name = "ZenLanternCap",
-			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(2.4, 14, 14),
-			CFrame = CFrame.new(64, 15.8, zSouth) * CFrame.Angles(0, 0, math.rad(90)),
-			Color = Color3.fromRGB(68, 165, 88),
-			Material = Enum.Material.Slate,
-			Parent = landmarksFolder,
-		})
-
-		-- 5. Lotus Bounce Stepping Course (X = 46, Z = zStart - 36..-90) + Meadow/Bamboo Trees (X = 72)
-		for b = 1, 4 do
-			local bz = zStart - 24 - (b * 16)
-			local lotusPad = buildGlowingNeonCircle(
-				landmarksFolder,
-				"BouncePad",
-				Vector3.new(46, 1.2 + b * 0.5, bz),
-				6.2,
-				Color3.fromRGB(95, 245, 135),
-				Color3.fromRGB(255, 145, 205)
-			)
-			lotusPad:SetAttribute("BounceImpulse", 90)
-		end
-		placePrebuiltAsset("MeadowTrees", 2, landmarksFolder, Vector3.new(72, 0, zStart - 68), 45, 25.0, true)
 
 	elseif id == 5 then
 		-- =========================================================================================
-		-- STAGE 5 (CRYSTAL CYBER CAVERN):
-		-- Dedicated Right-Side Signature Landmarks: Levitating Cyber-Crystal Monolith Ring +
-		-- Glowing Geode Archway + Moving Crystal Platforms + Creator Store Crystals,
-		-- plus Underground Stone Wall-Jump Ledges over Glowing Cyan Pool (`full_frame_16.png`) & Laser Vault (`full_frame_20.png`)!
+		-- STAGE 5 (Z = -640 to -800 — CRYSTAL CYBER CAVERN):
+		-- Landmarks:
+		--   * Deep Amethyst Crystal Cave (3858204539 / StageLandmarks #14) at (-84, 0, -700)
+		--   * Dark Slate Cyber Tower (116874485094995 / StageLandmarks #15) at (84, 0, -715)
+		--   * Retro Arcade Hall (73198167966628 / StageLandmarks #16) at (-74, 0, -765)
+		-- Obby & Hidden Spots:
+		--   * Timed Disappearing-Tile & Sweeper Spinner Tower Obby (76697739621349, 1172079000)
+		--     from (44, 4, -675) scaling the Cyber Tower Exterior to (84, 44, -715)
+		--     and deep inside the Crystal Cave Labyrinth at (-92, 4, -710).
 		-- =========================================================================================
+		placePrebuiltAsset("StageLandmarks", 14, landmarksFolder, Vector3.new(-84, 0, -700), 90, 28.0, true)
+		placePrebuiltAsset("StageLandmarks", 15, landmarksFolder, Vector3.new(84, 0, -715), -90, 46.0, true)
+		placePrebuiltAsset("StageLandmarks", 16, landmarksFolder, Vector3.new(-74, 0, -765), 45, 22.0, true)
 
-		-- 1. Underground Stone Cavern Wall + Wall-Jump Ledges over Glowing Cyan Water Pool (`full_frame_16.png` & `full_frame_10.png`) at X = -14, Z = zStart - 56
+		-- Accessible Cyber Tower Penthouse Deck at (84, 44, -715) & Deep Crystal Cave Chamber at (-92, 4, -710)
 		makePart({
-			Name = "CavernCyanPool",
-			Size = Vector3.new(36, 0.8, 28),
-			Position = Vector3.new(-14, 0.2, zStart - 56),
-			Color = Color3.fromRGB(85, 235, 255),
-			Material = Enum.Material.Neon,
-			Parent = landmarksFolder,
-		})
-		makePart({
-			Name = "CavernLedgeWall",
-			Size = Vector3.new(4.5, 22, 28),
-			Position = Vector3.new(6, 11, zStart - 56),
-			Color = Color3.fromRGB(112, 108, 142),
-			Material = Enum.Material.Plastic,
-			Parent = landmarksFolder,
-		})
-		local codePlaque = makePart({
-			Name = "HiddenCodePlaque_6",
-			Size = Vector3.new(0.6, 3.8, 3.8),
-			Position = Vector3.new(3.4, 16.5, zStart - 48),
-			Color = Color3.fromRGB(235, 45, 65),
-			Material = Enum.Material.Plastic,
-			Parent = landmarksFolder,
-		})
-		createSurfaceSign(codePlaque, "6", Color3.fromRGB(255, 255, 255), Color3.fromRGB(225, 38, 58), { Enum.NormalId.Left, Enum.NormalId.Right }, 80)
-
-		for l = 1, 5 do
-			makePart({
-				Name = "CavernWallJumpLedge_" .. tostring(l),
-				Size = Vector3.new(5.5, 1.8, 5.2),
-				Position = Vector3.new(1.5, l * 3.4, (zStart - 42) - l * 4.8),
-				Color = Color3.fromRGB(148, 146, 168),
-				Material = Enum.Material.Plastic,
-				Parent = landmarksFolder,
-			})
-		end
-
-		-- 2. Dark Vault Building with Red Laser Bars (`full_frame_20.png`) at X = 26, Z = zStart - 56
-		makePart({
-			Name = "CrystalLaserVault",
-			Size = Vector3.new(16, 13, 14),
-			Position = Vector3.new(26, 6.5, zStart - 56),
-			Color = Color3.fromRGB(48, 52, 68),
-			Material = Enum.Material.Plastic,
-			Parent = landmarksFolder,
-		})
-		for lb = -2, 2 do
-			makePart({
-				Name = "Stage5LaserBar_" .. tostring(lb),
-				Size = Vector3.new(0.45, 10.5, 0.45),
-				Position = Vector3.new(26 + lb * 2.2, 5.5, zStart - 48.8),
-				Color = Color3.fromRGB(255, 35, 45),
-				Material = Enum.Material.Neon,
-				CanCollide = false,
-				Parent = landmarksFolder,
-			})
-		end
-
-		-- 3. Dedicated Right-Side Signature Landmark #1: Levitating Cyber-Crystal Monolith Ring (X = 64, zNorth)
-		for m = 0, 5 do
-			local rad = math.rad(m * 60)
-			makePart({
-				Name = "CrystalMonolith_" .. tostring(m),
-				Size = Vector3.new(3.4, 18, 3.4),
-				CFrame = CFrame.new(64 + math.cos(rad) * 8.5, 9.5, zNorth + math.sin(rad) * 8.5) * CFrame.Angles(math.rad(12), rad, 0),
-				Color = Color3.fromRGB(85, 225, 255),
-				Material = Enum.Material.Neon,
-				Parent = landmarksFolder,
-			})
-		end
-		local coreCrystal = makePart({
-			Name = "CyberMonolithCore",
-			Shape = Enum.PartType.Ball,
-			Size = Vector3.new(6.8, 6.8, 6.8),
-			Position = Vector3.new(64, 14.5, zNorth),
-			Color = Color3.fromRGB(225, 115, 255),
-			Material = Enum.Material.Neon,
-			CanCollide = false,
-			Parent = obstaclesFolder,
-		})
-		coreCrystal:SetAttribute("SpinSpeed", 1.8)
-
-		-- 4. Dedicated Right-Side Signature Landmark #2: Glowing Hollow Geode Archway (X = 64, zSouth)
-		makePart({
-			Name = "GeodeArchLeft",
-			Size = Vector3.new(4.5, 17, 5.5),
-			CFrame = CFrame.new(57.5, 8.5, zSouth) * CFrame.Angles(0, 0, math.rad(-10)),
-			Color = Color3.fromRGB(165, 75, 255),
-			Material = Enum.Material.Neon,
+			Name = "Stage5_CyberTowerPenthouseDeck",
+			Size = Vector3.new(18, 1.4, 18),
+			Position = Vector3.new(84, 43.3, -715),
+			Color = Color3.fromRGB(48, 54, 72),
+			Material = Enum.Material.Slate,
 			Parent = landmarksFolder,
 		})
 		makePart({
-			Name = "GeodeArchRight",
-			Size = Vector3.new(4.5, 17, 5.5),
-			CFrame = CFrame.new(70.5, 8.5, zSouth) * CFrame.Angles(0, 0, math.rad(10)),
-			Color = Color3.fromRGB(165, 75, 255),
-			Material = Enum.Material.Neon,
-			Parent = landmarksFolder,
-		})
-		makePart({
-			Name = "GeodeArchCrown",
-			Size = Vector3.new(18, 4.5, 5.8),
-			Position = Vector3.new(64, 18.0, zSouth),
-			Color = Color3.fromRGB(95, 225, 255),
-			Material = Enum.Material.Neon,
+			Name = "Stage5_CrystalCaveLabyrinthFloor",
+			Size = Vector3.new(18, 1.0, 18),
+			Position = Vector3.new(-92, 0.5, -710),
+			Color = Color3.fromRGB(78, 58, 112),
+			Material = Enum.Material.Slate,
 			Parent = landmarksFolder,
 		})
 
-		-- 5. Moving Crystal Platforms (X = 46, Z = zStart - 36..-90) + Creator Store Crystals (X = 72)
-		for c = 1, 4 do
-			local cz = zStart - 24 - (c * 16)
-			local baseY = 2.5 + c * 1.5
+		-- Timed Disappearing-Tile & Sweeper Spinner Tower Obby from (44, 4, -675) -> (84, 44, -715)
+		placePrebuiltAsset("ObbyPieces", 2, landmarksFolder, Vector3.new(44, 2, -675), 0, 8.0, true)
+		placePrebuiltAsset("ObbyPieces", 11, landmarksFolder, Vector3.new(64, 22, -695), 0, 6.0, true)
+		for step = 1, 8 do
+			local alpha = step / 8
 			local cPlat = makePart({
-				Name = "CrystalPlatform_" .. tostring(c),
-				Shape = Enum.PartType.Cylinder,
-				Size = Vector3.new(1.8, 7.8, 7.8),
-				CFrame = CFrame.new(46, baseY, cz) * CFrame.Angles(0, 0, math.rad(90)),
-				Color = Color3.fromRGB(85, 235, 255),
-				Material = Enum.Material.Neon,
-				Parent = obstaclesFolder,
+				Name = "CyberTowerClimbStep_" .. tostring(step),
+				Size = Vector3.new(6.4, 1.2, 6.4),
+				Position = Vector3.new(
+					44 + (84 - 44) * alpha,
+					4 + 39.3 * alpha,
+					-675 + (-715 - -675) * alpha
+				),
+				Color = if step % 2 == 0 then Color3.fromRGB(68, 148, 195) else Color3.fromRGB(112, 74, 168),
+				Material = Enum.Material.Slate,
+				Parent = landmarksFolder,
 			})
-			cPlat:SetAttribute("CrystalPlatform", c)
-			cPlat:SetAttribute("BaseX", 46)
-			cPlat:SetAttribute("BaseY", baseY)
-			cPlat:SetAttribute("BaseZ", cz)
+			if step % 2 == 0 then
+				cPlat:SetAttribute("CrystalPlatform", step)
+				cPlat:SetAttribute("BaseX", cPlat.Position.X)
+				cPlat:SetAttribute("BaseY", cPlat.Position.Y)
+				cPlat:SetAttribute("BaseZ", cPlat.Position.Z)
+			end
 		end
-		placePrebuiltAsset("Crystals", 1, landmarksFolder, Vector3.new(72, 0, zStart - 68), 15, 24.0, true)
 
 	elseif id == 6 then
 		-- =========================================================================================
-		-- STAGE 6 (CLOUD SKY SANCTUARY):
-		-- Floating Rainbow Cloud Lagoon + Starlight Balance Bridge, Golden Sky Pillar Steps,
-		-- Rotating Celestial Sun-Dial Observatory (X = 64, zNorth), Angelic Sky Temple Dome (X = 64, zSouth),
-		-- and Cloud Bounce Pads (X = 46)!
+		-- STAGE 6 (Z = -800 to -960 — CLOUD SKY SANCTUARY):
+		-- Landmarks:
+		--   * Giant Rotating Sky Ferris Wheel (85537579537253 / StageLandmarks #17) at (-85, 0, -865)
+		--   * Marble Cloud & Ice Palace (154465953 / StageLandmarks #19) at (85, 0, -885)
+		--   * High Arching Sky Bridge (2135149422 / StageLandmarks #18) spanning (-70, 22, -915) to (70, 22, -915)
+		-- Obby & Hidden Spots:
+		--   * Trampoline Bounce-Chain & Moving Cloud Obby (82837302167177, 2135149422)
+		--     from (-45, 2, -835) onto the High Sky Bridge (Y = 28), inside the Ice Palace Vault,
+		--     and up to the Ferris Wheel Top Cabin at (-85, 48, -865).
 		-- =========================================================================================
+		placePrebuiltAsset("StageLandmarks", 17, landmarksFolder, Vector3.new(-85, 0, -865), 90, 48.0, true)
+		placePrebuiltAsset("StageLandmarks", 19, landmarksFolder, Vector3.new(85, 0, -885), -90, 34.0, true)
+		placePrebuiltAsset("StageLandmarks", 18, landmarksFolder, Vector3.new(0, 18, -915), 0, 18.0, true)
 
-		-- 1. Glowing Sky Mirror Pool + Golden Starlight Bridge at X = -14, Z = zStart - 56
-		makePart({
-			Name = "SkyMirrorPool",
-			Size = Vector3.new(38, 0.6, 30),
-			Position = Vector3.new(-14, 0.15, zStart - 56),
-			Color = Color3.fromRGB(155, 225, 255),
-			Material = Enum.Material.Neon,
-			Parent = landmarksFolder,
-		})
-		makePart({
-			Name = "StarlightBalanceBridge",
-			Size = Vector3.new(5.5, 1.2, 28),
-			Position = Vector3.new(-14, 1.8, zStart - 56),
-			Color = Color3.fromRGB(255, 230, 105),
-			Material = Enum.Material.Neon,
-			Parent = landmarksFolder,
-		})
-
-		-- 2. Golden Marble Pillar Climb at X = 24, Z = zStart - 56
-		for p = 1, 5 do
+		-- High Arching Sky Bridge Deck spanning (-70, 22, -915) to (70, 22, -915) with apex Y = 28, plus Ferris Wheel Top Cabin at (-85, 48, -865)
+		for seg = 1, 11 do
+			local alpha = (seg - 0.5) / 11
+			local archY = 22 + math.sin(alpha * math.pi) * 6.0
 			makePart({
-				Name = "SkySanctuaryPillar_" .. tostring(p),
-				Shape = Enum.PartType.Cylinder,
-				Size = Vector3.new(3.5 + p * 2.5, 5.5, 5.5),
-				CFrame = CFrame.new(20 + (p % 2) * 8, (3.5 + p * 2.5) * 0.5, (zStart - 42) - p * 5.5) * CFrame.Angles(0, 0, math.rad(90)),
-				Color = Color3.fromRGB(248, 250, 255),
+				Name = "Stage6_SkyBridgeArchSegment_" .. tostring(seg),
+				Size = Vector3.new(13.5, 1.2, 8.5),
+				Position = Vector3.new(-70 + 140 * alpha, archY, -915),
+				Color = Color3.fromRGB(225, 232, 242),
 				Material = Enum.Material.Marble,
 				Parent = landmarksFolder,
 			})
 		end
-
-		-- 3. Dedicated Right-Side Signature Landmark #1: Celestial Sun-Dial Observatory (X = 64, zNorth)
 		makePart({
-			Name = "CelestialObservatoryBase",
-			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(10, 16, 16),
-			CFrame = CFrame.new(64, 5.0, zNorth) * CFrame.Angles(0, 0, math.rad(90)),
-			Color = Color3.fromRGB(245, 248, 255),
+			Name = "Stage6_FerrisWheelTopCabinDeck",
+			Size = Vector3.new(14, 1.2, 14),
+			Position = Vector3.new(-85, 47.4, -865),
+			Color = Color3.fromRGB(218, 188, 92),
 			Material = Enum.Material.Marble,
 			Parent = landmarksFolder,
 		})
-		local sunRing = makePart({
-			Name = "CelestialSunRing",
-			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(2.2, 18, 18),
-			CFrame = CFrame.new(64, 18.5, zNorth),
-			Color = Color3.fromRGB(255, 225, 75),
-			Material = Enum.Material.Neon,
-			CanCollide = false,
-			Parent = obstaclesFolder,
-		})
-		sunRing:SetAttribute("SpinSpeed", 1.6)
 
-		-- 4. Dedicated Right-Side Signature Landmark #2: Angelic Sky Temple Dome (X = 64, zSouth)
-		makePart({
-			Name = "SkyTempleFloor",
-			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(2.0, 18, 18),
-			CFrame = CFrame.new(64, 1.0, zSouth) * CFrame.Angles(0, 0, math.rad(90)),
-			Color = Color3.fromRGB(245, 248, 255),
-			Material = Enum.Material.Marble,
-			Parent = landmarksFolder,
-		})
-		makePart({
-			Name = "SkyTempleGoldenDome",
-			Shape = Enum.PartType.Ball,
-			Size = Vector3.new(16, 14, 16),
-			Position = Vector3.new(64, 13.5, zSouth),
-			Color = Color3.fromRGB(255, 225, 95),
-			Material = Enum.Material.Neon,
-			Parent = landmarksFolder,
-		})
-
-		-- 5. Cloud Bounce Course (X = 46, Z = zStart - 36..-90)
-		for c = 1, 4 do
-			local cz = zStart - 24 - (c * 16)
-			local cloudBounce = buildGlowingNeonCircle(
+		-- Trampoline Bounce-Chain & Moving Cloud Obby from (-45, 2, -835) -> Sky Bridge -> Ferris Wheel Top Cabin (-85, 48, -865)
+		placePrebuiltAsset("ObbyPieces", 17, landmarksFolder, Vector3.new(-45, 0, -835), 0, 5.0, true)
+		for b = 1, 5 do
+			local alpha = b / 5
+			local cBounce = buildGlowingNeonCircle(
 				landmarksFolder,
 				"BouncePad",
-				Vector3.new(46, 1.5 + c * 0.6, cz),
-				6.6,
-				Color3.fromRGB(135, 220, 255),
-				Color3.fromRGB(255, 235, 95)
+				Vector3.new(
+					-45 + (-85 - -45) * alpha,
+					2 + 44 * alpha,
+					-835 + (-865 - -835) * alpha
+				),
+				7.2,
+				Color3.fromRGB(165, 198, 228),
+				Color3.fromRGB(225, 198, 98)
 			)
-			cloudBounce:SetAttribute("BounceImpulse", 96)
+			cBounce:SetAttribute("BounceImpulse", 98)
 		end
-		placePrebuiltAsset("Crystals", 2, landmarksFolder, Vector3.new(72, 0, zStart - 68), 30, 24.0, true)
 
 	elseif id == 7 then
 		-- =========================================================================================
-		-- STAGE 7 (MAGMA VOLCANO DOOM):
-		-- Dedicated Right-Side Signature Landmarks: Giant Erupting Magma Volcano Crater +
-		-- Obsidian Anvil Forge + Lava Geyser Jump Pads + Creator Store Volcano Rocks,
-		-- plus Stepped Basalt-and-Lava Cliff Hill & Tall Metal Truss Ladder Tower (`fts_frame_05.png`)!
+		-- STAGE 7 (Z = -960 to -1120 — MAGMA VOLCANO DOOM):
+		-- Landmarks:
+		--   * Giant Basalt Volcano Crater (256969126 / StageLandmarks #20) at (-86, 0, -1035)
+		--   * Obsidian Skull Fortress (16437023855 / StageLandmarks #21) at (86, 0, -1045)
+		--   * Basalt Highway Bridges over Lava Trenches at Z = -995, -1075
+		-- Obby & Hidden Spots:
+		--   * Sinking Basalt Pillars & Double Fire-Spinner Obby (4644268803, 79641631925549)
+		--     from (-44, 3, -990) spiraling up the Volcano Crater Rim to (-86, 46, -1035)
+		--     and across to the Obsidian Fortress Roof at (86, 42, -1045).
 		-- =========================================================================================
+		placePrebuiltAsset("StageLandmarks", 20, landmarksFolder, Vector3.new(-86, 0, -1035), 90, 46.0, true)
+		placePrebuiltAsset("StageLandmarks", 21, landmarksFolder, Vector3.new(86, 0, -1045), -90, 42.0, true)
 
-		-- 1. Stepped Basalt-and-Magma Cliff Hill + Tall Climbable Truss Tower (`fts_frame_05.png`) at X = -18, Z = zStart - 54
-		buildSteppedDirtGrassHill(
-			landmarksFolder,
-			Vector3.new(-18, 0, zStart - 54),
-			24,
-			22,
-			3,
-			Color3.fromRGB(255, 85, 25),
-			Color3.fromRGB(48, 38, 46)
-		)
-		local truss = Instance.new("TrussPart")
-		truss.Name = "VolcanoClimbTruss"
-		truss.Anchored = true
-		truss.Size = Vector3.new(2, 24, 2)
-		truss.Position = Vector3.new(-4, 12, zStart - 54)
-		truss.Color = Color3.fromRGB(95, 98, 115)
-		truss.Material = Enum.Material.Metal
-		truss.Parent = landmarksFolder
-
-		-- 2. Boiling Magma Pool + Narrow Basalt Balance Bridge at X = 22, Z = zStart - 56
-		makePart({
-			Name = "CalderaMagmaPool",
-			Size = Vector3.new(26, 0.8, 32),
-			Position = Vector3.new(22, 0.2, zStart - 56),
-			Color = Color3.fromRGB(255, 75, 20),
-			Material = Enum.Material.Neon,
-			Parent = landmarksFolder,
-		})
-		makePart({
-			Name = "CalderaBasaltBridge",
-			Size = Vector3.new(4.2, 1.2, 30),
-			Position = Vector3.new(22, 2.2, zStart - 56),
-			Color = Color3.fromRGB(58, 48, 56),
-			Material = Enum.Material.Plastic,
-			Parent = landmarksFolder,
-		})
-
-		-- 3. Dedicated Right-Side Signature Landmark #1: Giant Erupting Magma Volcano Crater (X = 64, zNorth)
-		makePart({
-			Name = "VolcanoCone",
-			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(20, 24, 24),
-			CFrame = CFrame.new(64, 10, zNorth) * CFrame.Angles(0, 0, math.rad(90)),
-			Color = Color3.fromRGB(48, 36, 44),
-			Material = Enum.Material.Plastic,
-			Parent = landmarksFolder,
-		})
-		makePart({
-			Name = "MagmaPoolTop",
-			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(1.8, 15, 15),
-			CFrame = CFrame.new(64, 20.2, zNorth) * CFrame.Angles(0, 0, math.rad(90)),
-			Color = Color3.fromRGB(255, 85, 20),
-			Material = Enum.Material.Neon,
-			Parent = landmarksFolder,
-		})
-		for ep = 1, 3 do
+		-- Basalt Highway Bridges over Lava Trenches at Z = -995 and Z = -1075
+		for _, bridgeZ in ipairs({ -995, -1075 }) do
 			makePart({
-				Name = "MagmaEruptionPlume_" .. tostring(ep),
-				Shape = Enum.PartType.Ball,
-				Size = Vector3.new(4.5 - ep * 0.6, 4.5 - ep * 0.6, 4.5 - ep * 0.6),
-				Position = Vector3.new(64 + (ep - 2) * 2.4, 22 + ep * 3.8, zNorth + (ep % 2) * 1.8),
-				Color = Color3.fromRGB(255, 145, 35),
-				Material = Enum.Material.Neon,
-				CanCollide = false,
+				Name = "LavaTrench_" .. tostring(math.abs(bridgeZ)),
+				Size = Vector3.new(196, 0.8, 12),
+				Position = Vector3.new(0, 0.15, bridgeZ),
+				Color = Color3.fromRGB(185, 68, 28),
+				Material = Enum.Material.Slate,
+				Parent = obstaclesFolder,
+			})
+			makePart({
+				Name = "BasaltHighwayBridge_" .. tostring(math.abs(bridgeZ)),
+				Size = Vector3.new(42, 1.6, 16),
+				Position = Vector3.new(0, 0.8, bridgeZ),
+				Color = Color3.fromRGB(54, 52, 58),
+				Material = Enum.Material.Basalt,
 				Parent = landmarksFolder,
 			})
 		end
 
-		-- 4. Dedicated Right-Side Signature Landmark #2: Sculpted Obsidian Anvil Forge & Molten Trough (X = 64, zSouth)
+		-- Accessible Volcano Crater Rim at (-86, 46, -1035) & Obsidian Fortress Roof at (86, 42, -1045)
 		makePart({
-			Name = "ObsidianAnvilBase",
-			Size = Vector3.new(14, 5.5, 8.5),
-			Position = Vector3.new(64, 2.75, zSouth),
-			Color = Color3.fromRGB(36, 36, 46),
-			Material = Enum.Material.Plastic,
-			Parent = landmarksFolder,
-		})
-		makePart({
-			Name = "ObsidianAnvilHorn",
-			Size = Vector3.new(18, 4.2, 6.8),
-			Position = Vector3.new(64, 7.6, zSouth),
-			Color = Color3.fromRGB(52, 52, 66),
-			Material = Enum.Material.Plastic,
-			Parent = landmarksFolder,
-		})
-		makePart({
-			Name = "ForgeMoltenLavaStrip",
-			Size = Vector3.new(14, 0.6, 3.2),
-			Position = Vector3.new(64, 9.9, zSouth),
-			Color = Color3.fromRGB(255, 95, 25),
-			Material = Enum.Material.Neon,
-			Parent = landmarksFolder,
-		})
-
-		-- 5. Lava Geyser Jump Pads (X = 46, Z = zStart - 36..-90) + Creator Store Volcano Rocks (X = 72)
-		for g = 1, 4 do
-			local gz = zStart - 24 - (g * 16)
-			local geyser = buildGlowingNeonCircle(
-				landmarksFolder,
-				"BouncePad",
-				Vector3.new(46, 0.8, gz),
-				6.8,
-				Color3.fromRGB(255, 85, 25),
-				Color3.fromRGB(255, 225, 65)
-			)
-			geyser:SetAttribute("BounceImpulse", 108)
-		end
-		placePrebuiltAsset("VolcanoRocks", 1, landmarksFolder, Vector3.new(72, 0, zStart - 68), 75, 24.0, true)
-
-	else
-		-- =========================================================================================
-		-- STAGE 8 (COSMIC VOID CITADEL):
-		-- Zero-Gravity Nebula Rift Pool + Starlight Conduit Bridge, Quantum Forcefield Vault,
-		-- Rotating Black Hole Singularity Reactor (X = 64, zNorth), Astral Citadel Stargate Arch (X = 64, zSouth),
-		-- and Levitating Asteroid Jump Pads (X = 46)!
-		-- =========================================================================================
-
-		-- 1. Zero-Gravity Nebula Rift Pool + Starlight Conduit Bridge at X = -14, Z = zStart - 56
-		makePart({
-			Name = "CosmicNebulaPool",
-			Size = Vector3.new(38, 0.8, 30),
-			Position = Vector3.new(-14, 0.2, zStart - 56),
-			Color = Color3.fromRGB(185, 55, 255),
-			Material = Enum.Material.Neon,
-			Parent = landmarksFolder,
-		})
-		makePart({
-			Name = "CosmicConduitBridge",
-			Size = Vector3.new(5.5, 1.2, 28),
-			Position = Vector3.new(-14, 2.0, zStart - 56),
-			Color = Color3.fromRGB(85, 245, 255),
-			Material = Enum.Material.Neon,
-			Parent = landmarksFolder,
-		})
-
-		-- 2. Quantum Forcefield Citadel Vault at X = 26, Z = zStart - 56
-		makePart({
-			Name = "QuantumCitadelVault",
-			Size = Vector3.new(16, 14, 14),
-			Position = Vector3.new(26, 7.0, zStart - 56),
-			Color = Color3.fromRGB(28, 18, 48),
+			Name = "Stage7_VolcanoCraterRimDeck",
+			Size = Vector3.new(18, 1.4, 18),
+			Position = Vector3.new(-86, 45.3, -1035),
+			Color = Color3.fromRGB(58, 52, 56),
 			Material = Enum.Material.Basalt,
 			Parent = landmarksFolder,
 		})
-		for qb = -2, 2 do
-			makePart({
-				Name = "QuantumLaserBar_" .. tostring(qb),
-				Size = Vector3.new(0.5, 11.5, 0.5),
-				Position = Vector3.new(26 + qb * 2.2, 6.0, zStart - 48.8),
-				Color = Color3.fromRGB(85, 245, 255),
-				Material = Enum.Material.Neon,
-				CanCollide = false,
-				Parent = landmarksFolder,
-			})
-		end
-
-		-- 3. Dedicated Right-Side Signature Landmark #1: Black Hole Singularity Reactor (X = 64, zNorth)
-		local blackHoleCore = makePart({
-			Name = "SingularityCore",
-			Shape = Enum.PartType.Ball,
-			Size = Vector3.new(11, 11, 11),
-			Position = Vector3.new(64, 14.5, zNorth),
-			Color = Color3.fromRGB(16, 8, 28),
-			Material = Enum.Material.SmoothPlastic,
+		makePart({
+			Name = "Stage7_ObsidianFortressRoofDeck",
+			Size = Vector3.new(18, 1.4, 18),
+			Position = Vector3.new(86, 41.3, -1045),
+			Color = Color3.fromRGB(42, 38, 46),
+			Material = Enum.Material.Basalt,
 			Parent = landmarksFolder,
 		})
-		local accretionDisk = makePart({
-			Name = "AccretionDiskRing",
-			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(1.6, 22, 22),
-			CFrame = CFrame.new(64, 14.5, zNorth) * CFrame.Angles(math.rad(25), 0, math.rad(75)),
-			Color = Color3.fromRGB(235, 75, 255),
-			Material = Enum.Material.Neon,
-			CanCollide = false,
-			Parent = obstaclesFolder,
-		})
-		accretionDisk:SetAttribute("SpinSpeed", 2.4)
 
-		-- 4. Dedicated Right-Side Signature Landmark #2: Astral Citadel Stargate Arch (X = 64, zSouth)
-		for sIdx = 0, 7 do
-			local ang = math.rad(sIdx * 45)
+		-- Sinking Basalt Pillars & Double Fire-Spinner Obby from (-44, 3, -990) -> (-86, 46, -1035) -> (86, 42, -1045)
+		placePrebuiltAsset("ObbyPieces", 12, landmarksFolder, Vector3.new(-44, 2, -990), 0, 5.5, true)
+		placePrebuiltAsset("ObbyPieces", 6, landmarksFolder, Vector3.new(-66, 22, -1012), 25, 10.0, true)
+		for p = 1, 7 do
+			local alpha = p / 7
+			local pH = 3 + 42.3 * alpha
 			makePart({
-				Name = "StargateSegment_" .. tostring(sIdx),
-				Size = Vector3.new(3.8, 3.8, 5.5),
-				Position = Vector3.new(64 + math.cos(ang) * 9.0, 11.5 + math.sin(ang) * 9.0, zSouth),
-				Color = if sIdx % 2 == 0 then Color3.fromRGB(195, 65, 255) else Color3.fromRGB(85, 245, 255),
-				Material = Enum.Material.Neon,
+				Name = "BasaltObbyPillar_" .. tostring(p),
+				Shape = Enum.PartType.Cylinder,
+				Size = Vector3.new(pH, 5.4, 5.4),
+				CFrame = CFrame.new(
+					-44 + (-86 - -44) * alpha,
+					pH * 0.5,
+					-990 + (-1035 - -990) * alpha
+				) * CFrame.Angles(0, 0, math.rad(90)),
+				Color = Color3.fromRGB(64, 56, 62),
+				Material = Enum.Material.Basalt,
+				Parent = landmarksFolder,
+			})
+		end
+		-- High Basalt Chain Bridge from Volcano Crater Rim (-86, 46, -1035) to Obsidian Fortress Roof (86, 42, -1045)
+		for seg = 1, 10 do
+			local alpha = (seg - 0.5) / 10
+			makePart({
+				Name = "ObsidianSkySpan_" .. tostring(seg),
+				Size = Vector3.new(16, 1.2, 5.2),
+				Position = Vector3.new(
+					-86 + (86 - -86) * alpha,
+					45.3 + (41.3 - 45.3) * alpha,
+					-1035 + (-1045 - -1035) * alpha
+				),
+				Color = Color3.fromRGB(52, 48, 56),
+				Material = Enum.Material.Basalt,
 				Parent = landmarksFolder,
 			})
 		end
 
-		-- 5. Cosmic Void Geyser Jump Pads (X = 46, Z = zStart - 36..-90)
-		for g = 1, 4 do
-			local gz = zStart - 24 - (g * 16)
-			local voidPad = buildGlowingNeonCircle(
-				landmarksFolder,
-				"BouncePad",
-				Vector3.new(46, 1.0, gz),
-				6.8,
-				Color3.fromRGB(195, 65, 255),
-				Color3.fromRGB(85, 245, 255)
-			)
-			voidPad:SetAttribute("BounceImpulse", 112)
-		end
-		placePrebuiltAsset("Crystals", 3, landmarksFolder, Vector3.new(72, 0, zStart - 68), 60, 25.0, true)
-	end
+	else
+		-- =========================================================================================
+		-- STAGE 8 (Z = -1120 to -1280 — COSMIC VOID CITADEL):
+		-- Landmarks:
+		--   * Hovering Alien UFO Mothership (50089105 / StageLandmarks #22) at (-84, 36, -1185)
+		--   * Twin Void Stone Portals (171327489 / StageLandmarks #23) at (-65, 0, -1150) & (65, 0, -1150)
+		--   * Grand Champion Throne Citadel (4790754477 / StageLandmarks #24) at (0, 14, -1262)
+		-- Obby & Hidden Spots:
+		--   * Moving Asteroid Gauntlet & UFO Climb Obby (134019342626406, 73062373189329)
+		--     from (42, 4, -1155) ascending into the UFO Mothership Deck at (-84, 36, -1185)
+		--     and across a high walkway to the Champion Throne Summit at (0, 24, -1262).
+		-- =========================================================================================
+		placePrebuiltAsset("StageLandmarks", 22, landmarksFolder, Vector3.new(-84, 36, -1185), 0, 22.0, true)
+		placePrebuiltAsset("StageLandmarks", 23, landmarksFolder, Vector3.new(-65, 0, -1150), 30, 24.0, true)
+		placePrebuiltAsset("StageLandmarks", 23, landmarksFolder, Vector3.new(65, 0, -1150), -30, 24.0, true)
+		placePrebuiltAsset("StageLandmarks", 24, landmarksFolder, Vector3.new(0, 0, -1262), 0, 28.0, true)
 
-	-- Chapter 1 & 4 Interactive Respawning Golden Squishy Coins along Obbies, Landmark Courses, Center Courses & Outer Side Mazes (6 per Stage = 48 Total)!
-	local coinSpots = {
-		Vector3.new(-83, 13.8, zStart - 58), -- Left-Side Elevated Obby Coin #1
-		Vector3.new(-72, 16.5, zStart - 80), -- Left-Side Elevated Obby Coin #2
-		Vector3.new(54, 6.8, zStart - 48), -- Right-Side Landmark Course Coin #1
-		Vector3.new(54, 8.2, zStart - 76), -- Right-Side Landmark Course Coin #2
-		Vector3.new(-168, 3.2, zStart - 50), -- Left Outer Maze Coin
-		Vector3.new(168, 3.2, zStart - 50), -- Right Outer Maze Coin
-	}
-	for cIdx, cPos in ipairs(coinSpots) do
-		local coinPart = makePart({
-			Name = string.format("WorldCoin_%d_%d", id, cIdx),
+		-- Accessible Hovering UFO Mothership Deck at (-84, 36, -1185) & Champion Throne Summit Deck at (0, 24, -1262)
+		makePart({
+			Name = "Stage8_UFOMothershipDeck",
 			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(0.9, 3.8, 3.8),
-			CFrame = CFrame.new(cPos),
-			Color = Color3.fromRGB(255, 215, 45),
-			Material = Enum.Material.Neon,
-			CanCollide = false,
-			Parent = obstaclesFolder,
+			Size = Vector3.new(2.0, 28, 28),
+			CFrame = CFrame.new(-84, 35.0, -1185) * CFrame.Angles(0, 0, math.rad(90)),
+			Color = Color3.fromRGB(68, 72, 88),
+			Material = Enum.Material.Metal,
+			Parent = landmarksFolder,
 		})
-		coinPart:SetAttribute("WorldCoinPickup", true)
-		coinPart:SetAttribute("CoinValue", 75 * id)
-		coinPart:SetAttribute("MinCoinValue", 50 * id)
-		coinPart:SetAttribute("MaxCoinValue", 125 * id)
-		coinPart:SetAttribute("SpinSpeed", 2.2)
+		makePart({
+			Name = "Stage8_ChampionThroneSummitDeck",
+			Size = Vector3.new(22, 1.5, 18),
+			Position = Vector3.new(0, 23.25, -1262),
+			Color = Color3.fromRGB(198, 162, 64),
+			Material = Enum.Material.Marble,
+			Parent = landmarksFolder,
+		})
 
-		local sfx = Instance.new("Sound")
-		sfx.Name = "CoinChime"
-		sfx.SoundId = "rbxasset://sounds/electronicpingshort.wav"
-		sfx.Volume = 0.55
-		sfx.Parent = coinPart
+		-- Moving Asteroid Gauntlet & UFO Climb Obby from (42, 4, -1155) -> (-84, 36, -1185) -> (0, 24, -1262)
+		placePrebuiltAsset("ObbyPieces", 15, landmarksFolder, Vector3.new(42, 4, -1155), 0, 8.0, true)
+		placePrebuiltAsset("ObbyPieces", 3, landmarksFolder, Vector3.new(-20, 20, -1170), 15, 10.0, true)
+		for ast = 1, 8 do
+			local alpha = ast / 8
+			local astPart = makePart({
+				Name = "CosmicAsteroidStep_" .. tostring(ast),
+				Size = Vector3.new(6.8, 1.8, 6.8),
+				Position = Vector3.new(
+					42 + (-84 - 42) * alpha,
+					4 + 31.0 * alpha,
+					-1155 + (-1185 - -1155) * alpha
+				),
+				Color = Color3.fromRGB(58, 52, 74),
+				Material = Enum.Material.Basalt,
+				Parent = landmarksFolder,
+			})
+			if ast % 2 == 0 then
+				astPart:SetAttribute("CrystalPlatform", ast)
+				astPart:SetAttribute("BaseX", astPart.Position.X)
+				astPart:SetAttribute("BaseY", astPart.Position.Y)
+				astPart:SetAttribute("BaseZ", astPart.Position.Z)
+			end
+		end
+		-- High Citadel Walkway from UFO Mothership Deck (-84, 36, -1185) to Champion Throne Summit (0, 24, -1262)
+		for seg = 1, 7 do
+			local alpha = seg / 7
+			makePart({
+				Name = "ThroneSummitWalkway_" .. tostring(seg),
+				Size = Vector3.new(12.5, 1.2, 6.2),
+				Position = Vector3.new(
+					-84 + (0 - -84) * alpha,
+					35.0 + (23.25 - 35.0) * alpha,
+					-1185 + (-1262 - -1185) * alpha
+				),
+				Color = Color3.fromRGB(78, 72, 98),
+				Material = Enum.Material.Slate,
+				Parent = landmarksFolder,
+			})
+		end
 	end
 
 	-- Chapter 1 & 4 Timed Co-Op / Solo Bridge & Gate Button (Duration attribute + live visual countdown!)
@@ -3314,12 +2841,112 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 		Size = Vector3.new(16, 1.4, 20),
 		Position = Vector3.new(0, 1.25, zStart - 24),
 		Color = Color3.fromRGB(255, 215, 65),
-		Material = Enum.Material.Neon,
+		Material = Enum.Material.Glass,
 		Transparency = 0.72,
 		CanCollide = false,
 		Parent = obstaclesFolder,
 	})
 	centerBridge:SetAttribute("ShortcutBridgeLevel", id)
+end
+
+-- =========================================================================================
+-- PHASE 2.2: CENTRAL PAVED HIGHWAY ROAD IN THE MIDDLE OF THE MAP (X = 0, Z = +180 to -1280)
+--   * 36-Stud-Wide Dark Charcoal Matte Asphalt Road (Color3.fromRGB(42, 44, 48), Enum.Material.Asphalt)
+--     running straight down X = -18 to +18 from Z = +180 (Safe Zone) to Z = -1280 (Stage 8).
+--   * Raised Concrete Sidewalks & Curbs at X = -20 and X = +20 (Enum.Material.Concrete).
+--   * Matte painted yellow dashed center lines, white crosswalks at each Stage Gate, and
+--     Cobblestone Driveways branching into all Player Plots and each Stage's Boss Nest & Obby!
+-- =========================================================================================
+local function buildCentralHighwayRoad(worldFolder: Folder)
+	local roadFolder = Instance.new("Folder")
+	roadFolder.Name = "CentralHighwayRoad"
+	roadFolder.Parent = worldFolder
+
+	local zNorthEnd = -1280
+	local zSouthEnd = 180
+	local totalRoadLength = zSouthEnd - zNorthEnd -- 1460 studs
+	local zCenter = (zSouthEnd + zNorthEnd) * 0.5 -- -550
+
+	-- 1. 36-Stud-Wide Dark Charcoal Matte Asphalt Highway Deck
+	makePart({
+		Name = "MainAsphaltHighway",
+		Size = Vector3.new(36, 0.36, totalRoadLength),
+		Position = Vector3.new(0, 0.18, zCenter),
+		Color = Color3.fromRGB(42, 44, 48),
+		Material = Enum.Material.Asphalt,
+		Parent = roadFolder,
+	})
+
+	-- 2. Raised 4-Stud Concrete Sidewalks & Curbs on Left (X = -20) and Right (X = +20)
+	for _, side in ipairs({ -1, 1 }) do
+		makePart({
+			Name = if side < 0 then "WestConcreteSidewalk" else "EastConcreteSidewalk",
+			Size = Vector3.new(4.0, 0.62, totalRoadLength),
+			Position = Vector3.new(side * 20, 0.31, zCenter),
+			Color = Color3.fromRGB(168, 172, 178),
+			Material = Enum.Material.Concrete,
+			Parent = roadFolder,
+		})
+	end
+
+	-- 3. Matte Painted Double-Yellow Dashed Center Striping down X = 0
+	for zDash = zSouthEnd - 12, zNorthEnd + 12, -24 do
+		makePart({
+			Name = "HighwayYellowCenterDash",
+			Size = Vector3.new(1.1, 0.38, 11.0),
+			Position = Vector3.new(0, 0.20, zDash),
+			Color = Color3.fromRGB(218, 182, 52),
+			Material = Enum.Material.Concrete,
+			CanCollide = false,
+			Parent = roadFolder,
+		})
+	end
+
+	-- 4. White Matte Crosswalks at Every Stage Gate (Z = 0, -160, -320, -480, -640, -800, -960, -1120) & Safe Zone (Z = 172)
+	local crosswalkZs = { 172, 0, -160, -320, -480, -640, -800, -960, -1120 }
+	for _, cwZ in ipairs(crosswalkZs) do
+		for stripe = -14, 14, 4 do
+			makePart({
+				Name = "HighwayCrosswalkStripe",
+				Size = Vector3.new(2.2, 0.40, 7.5),
+				Position = Vector3.new(stripe, 0.21, cwZ - 5),
+				Color = Color3.fromRGB(232, 236, 240),
+				Material = Enum.Material.Concrete,
+				CanCollide = false,
+				Parent = roadFolder,
+			})
+		end
+	end
+
+	-- 5. Cobblestone Driveways branching from Central Highway into Safe Zone Player Plots (Z = 54 & 136)
+	for _, plotZ in ipairs({ 54, 136 }) do
+		for _, side in ipairs({ -1, 1 }) do
+			makePart({
+				Name = "PlotCobblestoneDriveway",
+				Size = Vector3.new(46, 0.28, 14),
+				Position = Vector3.new(side * 44, 0.14, plotZ),
+				Color = Color3.fromRGB(148, 144, 136),
+				Material = Enum.Material.Cobblestone,
+				Parent = roadFolder,
+			})
+		end
+	end
+
+	-- 6. Cobblestone Branch Spurs into Each Stage's Entry Plaza, Landmarks/Obby & Boss Nest (Stages 1–8)
+	for stageId = 1, 8 do
+		local stageZStart = -(stageId - 1) * 160
+		for _, spurOffset in ipairs({ -16, -65, -116 }) do
+			makePart({
+				Name = string.format("Stage%d_CobbleSpur_%d", stageId, math.abs(spurOffset)),
+				Size = Vector3.new(112, 0.26, 10),
+				Position = Vector3.new(0, 0.13, stageZStart + spurOffset),
+				Color = Color3.fromRGB(138, 134, 128),
+				Material = Enum.Material.Cobblestone,
+				CanCollide = false,
+				Parent = roadFolder,
+			})
+		end
+	end
 end
 
 -- Builds 4 Widely Spaced Fenced Player Base Plots + South Village Boulevard in the Expanded Safe Zone (490 x 240, Z = 0..238)
@@ -3332,44 +2959,18 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 		Name = "HubGrassMain",
 		Size = Vector3.new(490, 2, 240),
 		Position = Vector3.new(0, -1, 118),
-		Color = Color3.fromRGB(88, 198, 78),
+		Color = Color3.fromRGB(74, 134, 66),
 		Material = Enum.Material.LeafyGrass,
 		Parent = hubFolder,
 	})
 
-	for xTile = -144, 144, 24 do
-		for zTile = 16, 184, 24 do
-			if ((math.floor((xTile + 144) / 24) + math.floor(zTile / 24)) % 2) == 0 then
-				makePart({
-					Name = "CheckeredTile",
-					Size = Vector3.new(24, 0.12, 24),
-					Position = Vector3.new(xTile, 0.06, zTile),
-					Color = Color3.fromRGB(72, 178, 64),
-					Material = Enum.Material.SmoothPlastic,
-					CanCollide = false,
-					Parent = hubFolder,
-				})
-			end
-		end
-	end
-
-	-- Wide Central Stone Boulevard running North-South (X = -22..+22, Z = 0..192)
-	makePart({
-		Name = "CentralPath",
-		Size = Vector3.new(44, 0.25, 196),
-		Position = Vector3.new(0, 0.12, 98),
-		Color = Color3.fromRGB(228, 214, 185),
-		Material = Enum.Material.Cobblestone,
-		Parent = hubFolder,
-	})
-
-	-- Wide South Village Cross-Boulevard (Z = 178, X = -190..+190)
+	-- Wide South Village Cross-Boulevard (Z = 178, X = -190..+190) in grounded Matte Asphalt + Concrete Curbs
 	makePart({
 		Name = "SouthBoulevardPath",
 		Size = Vector3.new(380, 0.25, 24),
 		Position = Vector3.new(0, 0.12, 178),
-		Color = Color3.fromRGB(228, 214, 185),
-		Material = Enum.Material.Cobblestone,
+		Color = Color3.fromRGB(48, 50, 56),
+		Material = Enum.Material.Asphalt,
 		Parent = hubFolder,
 	})
 
@@ -3401,25 +3002,25 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 	})
 	createBillboardText(
 		fountainTop,
-		"🥚 FIND MY SQUISHY! [117 SQUISHIES]\nEnter Stage 1 Ahead -> Steal Boss Eggs & Grab 117 Squishies Across Stages 1-8!",
+		"🥚 FIND MY SQUISHY! [117 SQUISHIES]\nFollow the Central Highway -> Steal Brainrot Eggs & Find 117 Squishies Across Stages 1-8!",
 		Color3.fromRGB(255, 235, 90),
 		Vector3.new(0, 2.5, 0),
 		UDim2.new(11.5, 0, 2.4, 0),
 		75
 	)
 
-	-- Frame the South Boulevard (Z = 202) with 4 Widely Spaced Properly Colored Houses!
+	-- Frame the South Boulevard (Z = 202) with 4 Widely Spaced Grounded Houses!
 	local borderHouses = {
-		{ Pos = Vector3.new(-118, 0, 202), Yaw = 0, Wall = Color3.fromRGB(255, 205, 105), Roof = Color3.fromRGB(215, 58, 55), Idx = 1, H = 24 },
-		{ Pos = Vector3.new(118, 0, 202), Yaw = 0, Wall = Color3.fromRGB(135, 212, 255), Roof = Color3.fromRGB(52, 96, 218), Idx = 2, H = 24 },
-		{ Pos = Vector3.new(-44, 0, 202), Yaw = 0, Wall = Color3.fromRGB(255, 165, 205), Roof = Color3.fromRGB(185, 52, 138), Idx = 3, H = 23 },
-		{ Pos = Vector3.new(44, 0, 202), Yaw = 0, Wall = Color3.fromRGB(162, 238, 158), Roof = Color3.fromRGB(48, 158, 82), Idx = 4, H = 23 },
+		{ Pos = Vector3.new(-118, 0, 202), Yaw = 0, Wall = Color3.fromRGB(212, 178, 118), Roof = Color3.fromRGB(158, 56, 52), Idx = 1, H = 24 },
+		{ Pos = Vector3.new(118, 0, 202), Yaw = 0, Wall = Color3.fromRGB(138, 175, 204), Roof = Color3.fromRGB(54, 82, 158), Idx = 2, H = 24 },
+		{ Pos = Vector3.new(-44, 0, 202), Yaw = 0, Wall = Color3.fromRGB(198, 148, 168), Roof = Color3.fromRGB(138, 54, 104), Idx = 3, H = 23 },
+		{ Pos = Vector3.new(44, 0, 202), Yaw = 0, Wall = Color3.fromRGB(142, 184, 138), Roof = Color3.fromRGB(52, 118, 68), Idx = 4, H = 23 },
 	}
 	for _, bh in ipairs(borderHouses) do
 		buildBigCartoonHouse(hubFolder, bh.Pos, bh.Yaw, bh.Wall, bh.Roof, bh.Idx, bh.H, 1)
 	end
 
-	-- Build the Authentic "Find The Squishies" Town Street (McBurger's, Squishy Market, Bus Stop, Red Shipping Container & Laser Vault)!
+	-- Build the Authentic "Find The Squishies" Town Street (McBurger's, Squishy Market, Bus Stop, Laser Vault)!
 	buildFindTheSquishiesTownStreet(hubFolder, obstaclesFolder)
 
 	-- Build the Giant Rainbow Disappearing Staircase on Stage 1's dedicated Outer West Sky Plaza (X = -236, Z = -20..-148)!
@@ -3434,10 +3035,10 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 	plotsFolder.Parent = worldFolder
 
 	local plotConfigs = {
-		{ Index = 1, Center = Vector3.new(-94, 0, 54), Color = Color3.fromRGB(80, 190, 255), Roof = Color3.fromRGB(45, 95, 210), FaceDir = 1 },
-		{ Index = 2, Center = Vector3.new(94, 0, 54), Color = Color3.fromRGB(255, 140, 195), Roof = Color3.fromRGB(190, 52, 135), FaceDir = -1 },
-		{ Index = 3, Center = Vector3.new(-94, 0, 136), Color = Color3.fromRGB(125, 235, 135), Roof = Color3.fromRGB(48, 155, 78), FaceDir = 1 },
-		{ Index = 4, Center = Vector3.new(94, 0, 136), Color = Color3.fromRGB(255, 205, 90), Roof = Color3.fromRGB(215, 68, 55), FaceDir = -1 },
+		{ Index = 1, Center = Vector3.new(-94, 0, 54), Color = Color3.fromRGB(80, 165, 215), Roof = Color3.fromRGB(45, 85, 165), FaceDir = 1 },
+		{ Index = 2, Center = Vector3.new(94, 0, 54), Color = Color3.fromRGB(205, 125, 165), Roof = Color3.fromRGB(145, 52, 108), FaceDir = -1 },
+		{ Index = 3, Center = Vector3.new(-94, 0, 136), Color = Color3.fromRGB(105, 185, 115), Roof = Color3.fromRGB(48, 125, 68), FaceDir = 1 },
+		{ Index = 4, Center = Vector3.new(94, 0, 136), Color = Color3.fromRGB(215, 175, 88), Roof = Color3.fromRGB(165, 64, 52), FaceDir = -1 },
 	}
 
 	local plotW = 58
@@ -3453,15 +3054,15 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 			Name = "BasePad",
 			Size = Vector3.new(plotW, 0.5, plotD),
 			Position = cfg.Center + Vector3.new(0, 0.25, 0),
-			Color = Color3.fromRGB(98, 212, 85),
-			Material = Enum.Material.SmoothPlastic,
+			Color = Color3.fromRGB(82, 148, 74),
+			Material = Enum.Material.LeafyGrass,
 			Parent = plotModel,
 		})
 		plotModel.PrimaryPart = basePad
 
 		-- Chapter 4 Procedural Picket Fences around the North, South, and Outer Back edges of each Plot!
-		local fenceColor = Color3.fromRGB(168, 112, 62)
-		local picketColor = Color3.fromRGB(242, 232, 210)
+		local fenceColor = Color3.fromRGB(148, 98, 56)
+		local picketColor = Color3.fromRGB(228, 218, 198)
 		local cFrontNorth = cfg.Center + Vector3.new(cfg.FaceDir * (plotW * 0.5), 0.3, -plotD * 0.5)
 		local cBackNorth = cfg.Center + Vector3.new(-cfg.FaceDir * (plotW * 0.5), 0.3, -plotD * 0.5)
 		local cBackSouth = cfg.Center + Vector3.new(-cfg.FaceDir * (plotW * 0.5), 0.3, plotD * 0.5)
@@ -3513,14 +3114,14 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 		local treadCenter = cfg.Center + Vector3.new(-cfg.FaceDir * 9, 0.5, -10.5)
 		buildDinoJawTreadmill(plotModel, treadCenter, cfg.FaceDir, cfg.Index)
 
-		-- 2. Newer Concentric Glowing Green Cash Collector Circle (Clean pad with zero blocky chest box clutter!)
+		-- 2. Grounded Matte Cash Collector Circle
 		local collectPad = buildGlowingNeonCircle(
 			plotModel,
 			"CollectCashPad",
 			cfg.Center + Vector3.new(cfg.FaceDir * 21, 0.6, -14.0),
 			7.4,
-			Color3.fromRGB(65, 250, 115),
-			Color3.fromRGB(255, 235, 85)
+			Color3.fromRGB(65, 215, 105),
+			Color3.fromRGB(225, 195, 75)
 		)
 		createBillboardText(
 			collectPad,
@@ -3531,73 +3132,67 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 			42
 		)
 
-		-- 3. Newer Concentric Glowing Cyan Speed Upgrade Circle (Attachment-based ProximityPrompt!)
+		-- 3. Grounded Matte Speed Upgrade Circle (Attachment-based ProximityPrompt!)
 		local upgStand = buildGlowingNeonCircle(
 			plotModel,
 			"SpeedUpgradeStand",
 			cfg.Center + Vector3.new(cfg.FaceDir * 21, 0.7, 14.0),
 			6.2,
-			Color3.fromRGB(65, 215, 255),
-			Color3.fromRGB(185, 110, 255)
+			Color3.fromRGB(65, 185, 225),
+			Color3.fromRGB(165, 105, 225)
 		)
 		createAttachmentPrompt(upgStand, "UpgradeSpeedPrompt", "Upgrade Treadmill (+Speed)", "🦖 Cost: $50", Vector3.new(0, 2.5, 0), 14)
 
-		-- 4. Fenced Squishy Hatchery & Roaming Ranch Pen (`HatcheryPen` — Walk-In Auto-Drop, Hatch Timer 00:05 -> Live Roaming & Growing Squishies!)
+		-- 4. Fenced Brainrot Hatchery & Roaming Ranch Pen (`HatcheryPen` — Walk-In Auto-Drop, Hatch Timer 00:05 -> Live Roaming & Growing Brainrots!)
 		local penCenter = cfg.Center + Vector3.new(cfg.FaceDir * 6.5, 0.55, 5.0)
-		local penW = 23.0
-		local penD = 19.5
+		local penW = 24.0
+		local penD = 18.0
 
 		local hatcheryPen = Instance.new("Model")
 		hatcheryPen.Name = "HatcheryPen"
 		hatcheryPen:SetAttribute("PlotIndex", cfg.Index)
+		hatcheryPen:SetAttribute("FenceLevel", 1)
+		hatcheryPen:SetAttribute("FaceDir", cfg.FaceDir)
+		hatcheryPen:SetAttribute("BaseCenterX", penCenter.X)
+		hatcheryPen:SetAttribute("BaseCenterY", penCenter.Y)
+		hatcheryPen:SetAttribute("BaseCenterZ", penCenter.Z)
 		hatcheryPen.Parent = plotModel
 
 		local penFloor = makePart({
 			Name = "HatcheryPenFloor",
 			Size = Vector3.new(penW, 0.32, penD),
 			Position = penCenter,
-			Color = Color3.fromRGB(115, 228, 95),
-			Material = Enum.Material.Grass,
+			Color = Color3.fromRGB(92, 168, 78),
+			Material = Enum.Material.LeafyGrass,
 			Parent = hatcheryPen,
 		})
 		hatcheryPen.PrimaryPart = penFloor
 
-		-- Glowing Golden Walk-In Auto-Drop Trigger Zone inside the Fenced Pen
+		-- Walk-In Auto-Drop Trigger Zone inside the Fenced Pen
 		local dropZone = makePart({
 			Name = "HatcheryDropZone",
 			Size = Vector3.new(penW - 1.2, 0.4, penD - 1.2),
 			Position = penCenter + Vector3.new(0, 0.08, 0),
-			Color = Color3.fromRGB(255, 225, 75),
-			Material = Enum.Material.Neon,
-			Transparency = 0.78,
+			Color = Color3.fromRGB(225, 195, 75),
+			Material = Enum.Material.Glass,
+			Transparency = 0.82,
 			CanCollide = false,
 			Parent = hatcheryPen,
 		})
 		dropZone:SetAttribute("PlotIndex", cfg.Index)
 
-		-- 4-Sided White & Gold Ranch Picket Enclosure around the Hatchery Pen (with wide walk-in Front Gate opening!)
-		local penFenceRailCol = Color3.fromRGB(255, 205, 65)
-		local penFencePicketCol = Color3.fromRGB(250, 248, 240)
-		local pFN = penCenter + Vector3.new(cfg.FaceDir * (penW * 0.5), 0.1, -penD * 0.5)
-		local pBN = penCenter + Vector3.new(-cfg.FaceDir * (penW * 0.5), 0.1, -penD * 0.5)
-		local pBS = penCenter + Vector3.new(-cfg.FaceDir * (penW * 0.5), 0.1, penD * 0.5)
-		local pFS = penCenter + Vector3.new(cfg.FaceDir * (penW * 0.5), 0.1, penD * 0.5)
-		local pGateNorth = penCenter + Vector3.new(cfg.FaceDir * (penW * 0.5), 0.1, -4.2)
-		local pGateSouth = penCenter + Vector3.new(cfg.FaceDir * (penW * 0.5), 0.1, 4.2)
-
-		buildProceduralPicketFence(hatcheryPen, pFN, pBN, 2.6, penFenceRailCol, penFencePicketCol)
-		buildProceduralPicketFence(hatcheryPen, pBN, pBS, 2.6, penFenceRailCol, penFencePicketCol)
-		buildProceduralPicketFence(hatcheryPen, pBS, pFS, 2.6, penFenceRailCol, penFencePicketCol)
-		buildProceduralPicketFence(hatcheryPen, pFN, pGateNorth, 2.6, penFenceRailCol, penFencePicketCol)
-		buildProceduralPicketFence(hatcheryPen, pGateSouth, pFS, 2.6, penFenceRailCol, penFencePicketCol)
+		-- 4-Sided Matte Wooden/Iron Ranch Enclosure around the Hatchery Pen (stored in `FenceWalls` so `resizePlayerFencePen` Lv.1->Lv.8 dynamically rebuilds it!)
+		local fenceWallsFolder = Instance.new("Folder")
+		fenceWallsFolder.Name = "FenceWalls"
+		fenceWallsFolder.Parent = hatcheryPen
 
 		-- Ranch Archway Gate & Overhead Sign at the Front Entrance of the Hatchery Pen
-		for _, gateZ in ipairs({ -4.2, 4.2 }) do
+		for postIdx, gateZ in ipairs({ -4.2, 4.2 }) do
 			makePart({
-				Name = "HatcheryGatePost",
+				Name = "HatcheryGatePost_" .. tostring(postIdx),
 				Size = Vector3.new(1.2, 8.8, 1.2),
 				Position = penCenter + Vector3.new(cfg.FaceDir * (penW * 0.5), 4.4, gateZ),
-				Color = penFenceRailCol,
+				Color = Color3.fromRGB(168, 118, 58),
 				Material = Enum.Material.WoodPlanks,
 				Parent = hatcheryPen,
 			})
@@ -3612,28 +3207,114 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 		})
 		createSurfaceSign(
 			gateHeader,
-			"🥚 SQUISHY HATCHERY & RANCH PEN\nWalk In With Eggs -> Hatch & Roam Inside Fence!",
+			"🥚 BRAINROT HATCHERY & RANCH PEN\nWalk In With Eggs -> Hatch & Roam Inside Fence!",
 			Color3.fromRGB(255, 235, 85),
 			Color3.fromRGB(24, 30, 52),
 			{ Enum.NormalId.Left, Enum.NormalId.Right },
 			150
 		)
 
-		-- 🌱 Grow & Level Up Station Kiosk right next to the Hatchery Pen Entrance
+		-- 5.1 🌱 LEFT SIDE OF FENCE ENTRANCE: Grow & Level Up Brainrot Stand (`GrowSquishyStand`, Lv. 1 -> Lv. 15)
+		local growStandPos = penCenter + Vector3.new(cfg.FaceDir * (penW * 0.5 + 2.6), 0.15, -6.8)
 		local growStand = buildGlowingNeonCircle(
 			hatcheryPen,
 			"GrowSquishyStand",
-			penCenter + Vector3.new(cfg.FaceDir * (penW * 0.5 + 2.2), 0.15, -6.8),
-			4.6,
-			Color3.fromRGB(95, 245, 135),
-			Color3.fromRGB(255, 225, 75)
+			growStandPos,
+			4.8,
+			Color3.fromRGB(78, 178, 98),
+			Color3.fromRGB(215, 185, 68)
 		)
+		local growPost = makePart({
+			Name = "GrowStandPost",
+			Size = Vector3.new(1.1, 4.6, 1.1),
+			Position = growStandPos + Vector3.new(0, 2.3, 0),
+			Color = Color3.fromRGB(122, 84, 48),
+			Material = Enum.Material.WoodPlanks,
+			Parent = growStand,
+		})
+		local growBoard = makePart({
+			Name = "GrowStandBoard",
+			Size = Vector3.new(1.0, 2.4, 5.8),
+			Position = growStandPos + Vector3.new(0, 5.2, 0),
+			Color = Color3.fromRGB(36, 78, 48),
+			Material = Enum.Material.SmoothPlastic,
+			Parent = growStand,
+		})
+		createSurfaceSign(
+			growBoard,
+			"🌱 GROW BRAINROT\nLv. 1 -> Lv. 15 (+$/s & Size!)",
+			Color3.fromRGB(165, 255, 175),
+			Color3.fromRGB(22, 46, 28),
+			{ Enum.NormalId.Left, Enum.NormalId.Right },
+			95
+		)
+		local growBb = createBillboardText(
+			growStand,
+			"🌱 GROW / LEVEL UP BRAINROT (Lv.1 -> Lv.15)\nBoosts $/sec & Giant Size!",
+			Color3.fromRGB(125, 245, 145),
+			Vector3.new(0, 6.8, 0),
+			UDim2.new(6.8, 0, 1.6, 0),
+			38
+		)
+		growBb.Name = "GrowStandBillboard"
 		createAttachmentPrompt(
 			growStand,
 			"UpgradeSquishyPenPrompt",
-			"🌱 Grow & Level Up Squishy (+$/s & Size!)",
-			"🏡 Squishy Ranch Grow Station",
-			Vector3.new(0, 2.4, 0),
+			"🌱 Grow & Level Up Brainrot (Lv.1 -> Lv.15)",
+			"🏡 Brainrot Ranch Grow Station (+$/s & Size)",
+			Vector3.new(0, 2.6, 0),
+			14
+		)
+
+		-- 5.2 🧱 RIGHT SIDE OF FENCE ENTRANCE: Upgrade Fence Size Stand (`UpgradeFenceStand`, Lv. 1 -> Lv. 8)
+		local fenceStandPos = penCenter + Vector3.new(cfg.FaceDir * (penW * 0.5 + 2.6), 0.15, 6.8)
+		local fenceStand = buildGlowingNeonCircle(
+			hatcheryPen,
+			"UpgradeFenceStand",
+			fenceStandPos,
+			4.8,
+			Color3.fromRGB(205, 158, 58),
+			Color3.fromRGB(82, 168, 212)
+		)
+		local fencePost = makePart({
+			Name = "FenceStandPost",
+			Size = Vector3.new(1.1, 4.6, 1.1),
+			Position = fenceStandPos + Vector3.new(0, 2.3, 0),
+			Color = Color3.fromRGB(98, 104, 118),
+			Material = Enum.Material.Metal,
+			Parent = fenceStand,
+		})
+		local fenceBoard = makePart({
+			Name = "FenceStandBoard",
+			Size = Vector3.new(1.0, 2.4, 5.8),
+			Position = fenceStandPos + Vector3.new(0, 5.2, 0),
+			Color = Color3.fromRGB(44, 52, 78),
+			Material = Enum.Material.SmoothPlastic,
+			Parent = fenceStand,
+		})
+		createSurfaceSign(
+			fenceBoard,
+			"🧱 UPGRADE FENCE SIZE\nLv. 1 -> Lv. 8 (Up to 35 Brainrots!)",
+			Color3.fromRGB(255, 225, 115),
+			Color3.fromRGB(24, 30, 48),
+			{ Enum.NormalId.Left, Enum.NormalId.Right },
+			95
+		)
+		local fenceBb = createBillboardText(
+			fenceStand,
+			"🧱 UPGRADE FENCE SIZE (Lv.1 -> Lv.2)\nFits 7 Brainrots (28x21) • $500",
+			Color3.fromRGB(255, 225, 95),
+			Vector3.new(0, 6.8, 0),
+			UDim2.new(6.8, 0, 1.6, 0),
+			38
+		)
+		fenceBb.Name = "FenceStandBillboard"
+		createAttachmentPrompt(
+			fenceStand,
+			"UpgradeFencePrompt",
+			"🧱 Upgrade Fence -> Lv.2 (7 Max Brainrots)",
+			"Cost: $500 | Fits Stage 2 Size (28x21)",
+			Vector3.new(0, 2.6, 0),
 			14
 		)
 
@@ -3643,16 +3324,16 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 		incubatorsFolder.Parent = plotModel
 
 		for incIdx = 1, 5 do
-			local zOff = -3.0 + (incIdx - 1) * 4.0
-			local incPos = cfg.Center + Vector3.new(cfg.FaceDir * 14.5, 0.6, zOff)
+			local zOff = -6.4 + (incIdx - 1) * 3.2
+			local incPos = penCenter + Vector3.new(cfg.FaceDir * (penW * 0.5 - 3.2), 0.1, zOff)
 
 			local incPad = buildGlowingNeonCircle(
 				incubatorsFolder,
 				"Incubator_" .. tostring(incIdx),
 				incPos,
-				3.8,
-				Color3.fromRGB(195, 75, 255),
-				Color3.fromRGB(255, 220, 85)
+				3.4,
+				Color3.fromRGB(158, 72, 204),
+				Color3.fromRGB(218, 188, 78)
 			)
 			incPad:SetAttribute("IncubatorIndex", incIdx)
 			incPad:SetAttribute("State", "Empty")
@@ -3667,36 +3348,185 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 			)
 		end
 
-		-- 12 Roaming Ranch Pasture Spots inside the Fenced Hatchery Pen (`Pedestals` / `Pedestal_1..12`)
+		-- All 35 Roaming Ranch Pasture Spots inside the Fenced Hatchery Pen (`Pedestals` / `Pedestal_1..35`)
 		local pedestalsFolder = Instance.new("Folder")
 		pedestalsFolder.Name = "Pedestals"
 		pedestalsFolder.Parent = plotModel
 
-		local slotIndex = 1
-		for row = 1, 3 do
-			for col = 1, 4 do
-				local xOff = cfg.FaceDir * (9.5 - (row - 1) * 5.2)
-				local zOff = -2.2 + (col - 1) * 4.6
-				local pedPos = cfg.Center + Vector3.new(xOff, 0.58, zOff)
+		for slotIndex = 1, 35 do
+			local row = math.floor((slotIndex - 1) / 5) + 1 -- 1..7
+			local col = ((slotIndex - 1) % 5) + 1 -- 1..5
+			local xOff = cfg.FaceDir * (4.5 - (row - 1) * 2.4)
+			local zOff = -6.0 + (col - 1) * 3.0
+			local pedPos = penCenter + Vector3.new(xOff, 0.06, zOff)
 
-				local ped = buildGlowingNeonCircle(
-					pedestalsFolder,
-					"Pedestal_" .. tostring(slotIndex),
-					pedPos,
-					3.4,
-					Color3.fromRGB(85, 245, 145),
-					cfg.Color
-				)
-				ped:SetAttribute("SlotIndex", slotIndex)
-				createAttachmentPrompt(
-					ped,
-					"PlaceSquishyPrompt",
-					"Release Squishy in Ranch Pen",
-					"Ranch Pen Slot #" .. tostring(slotIndex),
-					Vector3.new(0, 2.2, 0),
-					13
-				)
-				slotIndex += 1
+			local ped = buildGlowingNeonCircle(
+				pedestalsFolder,
+				"Pedestal_" .. tostring(slotIndex),
+				pedPos,
+				2.8,
+				Color3.fromRGB(82, 178, 112),
+				cfg.Color
+			)
+			ped:SetAttribute("SlotIndex", slotIndex)
+			createAttachmentPrompt(
+				ped,
+				"PlaceSquishyPrompt",
+				"Release Brainrot in Ranch Pen",
+				"Ranch Pen Slot #" .. tostring(slotIndex),
+				Vector3.new(0, 2.2, 0),
+				13
+			)
+		end
+
+		-- Initialize Physical 3D Fence at Level 1 (24x18 studs, 4 Brainrots)
+		WorldBuilder.ResizePlayerFencePen(plotModel, 1)
+	end
+end
+
+-- 5.3 Physical 3D Fence Expansion (`resizePlayerFencePen` / `WorldBuilder.ResizePlayerFencePen`):
+-- Expands the matte wooden/iron fence from 24x18 (4 Brainrots at Lv.1) -> 28x21 (7) -> 32x24 (10) -> 36x27 (14)
+-- -> 40x30 (18) -> 44x33 (23) -> 48x36 (29) -> 56x42 studs (all 35 Brainrots at Lv.8!).
+function WorldBuilder.ResizePlayerFencePen(plotModel: Model, fenceLevel: number)
+	if not plotModel then
+		return
+	end
+	local hatcheryPen = plotModel:FindFirstChild("HatcheryPen") :: Model?
+	if not hatcheryPen then
+		return
+	end
+
+	local lvl = math.clamp(tonumber(fenceLevel) or 1, 1, #SlimeData.FenceLevels)
+	local curDef = SlimeData.GetFenceLevelDef(lvl) or SlimeData.FenceLevels[1]
+	local penW = curDef.Width
+	local penD = curDef.Depth
+	local maxSlots = curDef.MaxBrainrots
+	local faceDir = (hatcheryPen:GetAttribute("FaceDir") :: number?) or 1
+	local baseCenter = Vector3.new(
+		(hatcheryPen:GetAttribute("BaseCenterX") :: number?) or 0,
+		(hatcheryPen:GetAttribute("BaseCenterY") :: number?) or 0.55,
+		(hatcheryPen:GetAttribute("BaseCenterZ") :: number?) or 0
+	)
+	hatcheryPen:SetAttribute("FenceLevel", lvl)
+
+	-- Keep the front entrance fixed near the central road while expanding the pen outward & backward as Width/Depth grow!
+	local extraW = math.max(0, penW - 24.0)
+	local extraD = math.max(0, penD - 18.0)
+	local penCenter = baseCenter + Vector3.new(-faceDir * (extraW * 0.5), 0, extraD * 0.25)
+
+	local penFloor = hatcheryPen:FindFirstChild("HatcheryPenFloor") :: BasePart?
+	if penFloor then
+		penFloor.Size = Vector3.new(penW, 0.32, penD)
+		penFloor.Position = penCenter
+	end
+	local dropZone = hatcheryPen:FindFirstChild("HatcheryDropZone") :: BasePart?
+	if dropZone then
+		dropZone.Size = Vector3.new(penW - 1.2, 0.4, penD - 1.2)
+		dropZone.Position = penCenter + Vector3.new(0, 0.08, 0)
+	end
+
+	-- Rebuild the 4-Sided Matte Wooden (Lv. 1-4) or Matte Wrought-Iron (Lv. 5-8) Fence around the expanded perimeter!
+	local fenceWallsFolder = hatcheryPen:FindFirstChild("FenceWalls")
+	if fenceWallsFolder then
+		fenceWallsFolder:ClearAllChildren()
+		local isIronTier = lvl >= 5
+		local railCol = if lvl == 1 then Color3.fromRGB(168, 122, 62)
+			elseif lvl == 2 then Color3.fromRGB(185, 108, 72)
+			elseif lvl == 3 then Color3.fromRGB(152, 114, 68)
+			elseif lvl == 4 then Color3.fromRGB(92, 154, 84)
+			elseif lvl == 5 then Color3.fromRGB(78, 86, 102)
+			elseif lvl == 6 then Color3.fromRGB(188, 158, 68)
+			elseif lvl == 7 then Color3.fromRGB(58, 52, 68)
+			else Color3.fromRGB(112, 78, 158)
+		local picketCol = if isIronTier
+			then Color3.fromRGB(54, 60, 74)
+			else Color3.fromRGB(228, 222, 208)
+		local fenceHeight = 2.6 + (lvl - 1) * 0.18
+
+		local pFN = penCenter + Vector3.new(faceDir * (penW * 0.5), 0.1, -penD * 0.5)
+		local pBN = penCenter + Vector3.new(-faceDir * (penW * 0.5), 0.1, -penD * 0.5)
+		local pBS = penCenter + Vector3.new(-faceDir * (penW * 0.5), 0.1, penD * 0.5)
+		local pFS = penCenter + Vector3.new(faceDir * (penW * 0.5), 0.1, penD * 0.5)
+		local pGateNorth = penCenter + Vector3.new(faceDir * (penW * 0.5), 0.1, -4.2)
+		local pGateSouth = penCenter + Vector3.new(faceDir * (penW * 0.5), 0.1, 4.2)
+
+		buildProceduralPicketFence(fenceWallsFolder, pFN, pBN, fenceHeight, railCol, picketCol)
+		buildProceduralPicketFence(fenceWallsFolder, pBN, pBS, fenceHeight, railCol, picketCol)
+		buildProceduralPicketFence(fenceWallsFolder, pBS, pFS, fenceHeight, railCol, picketCol)
+		buildProceduralPicketFence(fenceWallsFolder, pFN, pGateNorth, fenceHeight, railCol, picketCol)
+		buildProceduralPicketFence(fenceWallsFolder, pGateSouth, pFS, fenceHeight, railCol, picketCol)
+
+		if isIronTier then
+			for _, d in ipairs(fenceWallsFolder:GetDescendants()) do
+				if d:IsA("BasePart") then
+					d.Material = Enum.Material.Metal
+				end
+			end
+		end
+	end
+
+	-- Keep the Front Entrance Archway, Left `GrowSquishyStand` (Lv.1->15), and Right `UpgradeFenceStand` (Lv.1->8) aligned with the front gate!
+	local frontX = penCenter.X + faceDir * (penW * 0.5)
+	local post1 = hatcheryPen:FindFirstChild("HatcheryGatePost_1") :: BasePart?
+	local post2 = hatcheryPen:FindFirstChild("HatcheryGatePost_2") :: BasePart?
+	local gateArch = hatcheryPen:FindFirstChild("HatcheryGateArch") :: BasePart?
+	if post1 then
+		post1.Position = Vector3.new(frontX, penCenter.Y + 4.4, penCenter.Z - 4.2)
+	end
+	if post2 then
+		post2.Position = Vector3.new(frontX, penCenter.Y + 4.4, penCenter.Z + 4.2)
+	end
+	if gateArch then
+		gateArch.Position = Vector3.new(frontX, penCenter.Y + 9.4, penCenter.Z)
+	end
+
+	local growStand = hatcheryPen:FindFirstChild("GrowSquishyStand") :: BasePart?
+	if growStand then
+		local gPos = Vector3.new(frontX + faceDir * 2.6, penCenter.Y + 0.15, penCenter.Z - 6.8)
+		local delta = gPos - growStand.Position
+		growStand.Position = gPos
+		for _, child in ipairs(growStand:GetChildren()) do
+			if child:IsA("BasePart") then
+				child.Position += delta
+			end
+		end
+	end
+
+	local fenceStand = hatcheryPen:FindFirstChild("UpgradeFenceStand") :: BasePart?
+	if fenceStand then
+		local fPos = Vector3.new(frontX + faceDir * 2.6, penCenter.Y + 0.15, penCenter.Z + 6.8)
+		local delta = fPos - fenceStand.Position
+		fenceStand.Position = fPos
+		for _, child in ipairs(fenceStand:GetChildren()) do
+			if child:IsA("BasePart") then
+				child.Position += delta
+			end
+		end
+	end
+
+	-- Reposition all 35 Roaming Brainrot Pasture Slots (`Pedestal_1..35`) across the expanded `penW x penD` enclosure!
+	local pedestalsFolder = plotModel:FindFirstChild("Pedestals")
+	if pedestalsFolder then
+		local usableW = math.max(14.0, penW - 9.0)
+		local usableD = math.max(12.0, penD - 5.0)
+		for slotIdx = 1, 35 do
+			local ped = pedestalsFolder:FindFirstChild("Pedestal_" .. tostring(slotIdx)) :: BasePart?
+			if ped then
+				local row = math.floor((slotIdx - 1) / 5) -- 0..6 (7 rows)
+				local col = (slotIdx - 1) % 5 -- 0..4 (5 cols)
+				local xAlpha = (row / 6) - 0.5
+				local zAlpha = (col / 4) - 0.5
+				local newPedPos = penCenter + Vector3.new(-faceDir * (xAlpha * usableW), 0.06, zAlpha * usableD)
+				local delta = newPedPos - ped.Position
+				ped.Position = newPedPos
+				local isUnlockedSlot = slotIdx <= maxSlots
+				ped.Transparency = if isUnlockedSlot then 0 else 1
+				for _, child in ipairs(ped:GetChildren()) do
+					if child:IsA("BasePart") then
+						child.Position += delta
+						child.Transparency = if isUnlockedSlot then 0 else 1
+					end
+				end
 			end
 		end
 	end
@@ -3710,27 +3540,29 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 	local zBoss = zStart - 116
 	local secColor = levelInfo.SecondaryColor or levelInfo.ThemeColor or Color3.fromRGB(120, 220, 120)
 
-	-- 1. Front Hazard Moat + Procedural Plank Bridges at zStart - 24
+	-- 1. Front Hazard Moat + Procedural Plank Bridges at zStart - 24 (split cleanly outside the 36-stud Central Highway Road!)
 	local moatZ = zStart - 24
-	local moatColor = if id == 1 then Color3.fromRGB(55, 175, 255)
-		elseif id == 2 then Color3.fromRGB(255, 95, 175)
-		elseif id == 3 then Color3.fromRGB(40, 210, 245)
-		elseif id == 4 then Color3.fromRGB(65, 225, 135)
-		elseif id == 5 then Color3.fromRGB(165, 75, 255)
-		elseif id == 6 then Color3.fromRGB(135, 220, 255)
-		elseif id == 7 then Color3.fromRGB(255, 75, 20)
-		else Color3.fromRGB(205, 55, 255)
+	local moatColor = if id == 1 then Color3.fromRGB(55, 135, 185)
+		elseif id == 2 then Color3.fromRGB(165, 78, 122)
+		elseif id == 3 then Color3.fromRGB(48, 155, 185)
+		elseif id == 4 then Color3.fromRGB(58, 155, 98)
+		elseif id == 5 then Color3.fromRGB(115, 64, 168)
+		elseif id == 6 then Color3.fromRGB(115, 168, 205)
+		elseif id == 7 then Color3.fromRGB(185, 68, 28)
+		else Color3.fromRGB(135, 52, 175)
 
-	local moat = makePart({
-		Name = "HazardMoat_" .. tostring(id),
-		Size = Vector3.new(196, 0.9, 16),
-		Position = Vector3.new(0, 0.2, moatZ),
-		Color = moatColor,
-		Material = Enum.Material.Neon,
-		Parent = obstaclesFolder,
-	})
-	moat:SetAttribute("HazardDropEgg", true)
-	moat:SetAttribute("KnockbackImpulse", 55)
+	for _, side in ipairs({ -1, 1 }) do
+		local moat = makePart({
+			Name = string.format("HazardMoat_%d_%s", id, if side < 0 then "West" else "East"),
+			Size = Vector3.new(76, 0.9, 16),
+			Position = Vector3.new(side * 60, 0.2, moatZ),
+			Color = moatColor,
+			Material = Enum.Material.Slate,
+			Parent = obstaclesFolder,
+		})
+		moat:SetAttribute("HazardDropEgg", true)
+		moat:SetAttribute("KnockbackImpulse", 55)
+	end
 
 	for _, bridgeX in ipairs({ -48, 48 }) do
 		buildProceduralPlankBridge(
@@ -3738,21 +3570,21 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 			Vector3.new(bridgeX, 0.2, moatZ),
 			14,
 			20,
-			Color3.fromRGB(178, 122, 68),
-			Color3.fromRGB(115, 74, 38)
+			Color3.fromRGB(158, 108, 62),
+			Color3.fromRGB(105, 68, 36)
 		)
 	end
 
-	-- Build Sector 1 (Checklist Board + Treadmill Plaza Pad + Shortcut Button) & Sector 2 Landmarks!
+	-- Build Sector 1 (Checklist Board + Treadmill Plaza Pad + Shortcut Button) & Sector 2 Unique Landmarks/Obbies!
 	buildBiomeLandmarksAndInteractiveProps(parent, levelInfo, obstaclesFolder)
 
-	-- 2. Dedicated Left-Side Elevated Biome Sky Obby Gauntlet (`full_frame_04.png`: White-and-Blue Sky Obby Beams, Truss Ladder & Crate Steps at X = -83 to -61, Z = zStart - 34 to zStart - 95) holding the Biome Obby Shining Squishies (#103-#117)!
+	-- 2. Dedicated Left-Side Elevated Biome Sky Obby Gauntlet holding the Biome Obby Shining Squishies (#103-#117)!
 	local obbyTruss = Instance.new("TrussPart")
 	obbyTruss.Name = "ObbyStartTruss_" .. tostring(id)
 	obbyTruss.Anchored = true
 	obbyTruss.Size = Vector3.new(2, 12, 2)
 	obbyTruss.Position = Vector3.new(-83, 6.0, zStart - 35)
-	obbyTruss.Color = Color3.fromRGB(75, 145, 255)
+	obbyTruss.Color = Color3.fromRGB(78, 118, 168)
 	obbyTruss.Material = Enum.Material.Metal
 	obbyTruss.Parent = parent
 
@@ -3761,7 +3593,6 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 		local yPos = 9.0 + subIdx * 2.8
 		local zPos = zStart - 26 - subIdx * 22
 
-		-- White-and-Blue Sky Obby Balance Beam + Stepping Pads (`full_frame_04.png`)
 		if subIdx > 1 then
 			local prevX = -94 + (subIdx - 1) * 11
 			local prevY = 9.0 + (subIdx - 1) * 2.8
@@ -3771,8 +3602,8 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 				Name = string.format("SkyObbyWhiteBeam_%d", subIdx),
 				Size = Vector3.new(2.2, 0.9, 14.5),
 				CFrame = CFrame.lookAt(midPos, Vector3.new(xPos, yPos - 0.3, zPos)),
-				Color = Color3.fromRGB(245, 248, 255),
-				Material = Enum.Material.Plastic,
+				Color = Color3.fromRGB(198, 204, 214),
+				Material = Enum.Material.Concrete,
 				Parent = parent,
 			})
 		end
@@ -3782,8 +3613,8 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 				Name = string.format("ThemedObbyStep_%d_%d", subIdx, step),
 				Size = Vector3.new(4.6, 1.4, 4.6),
 				Position = Vector3.new(xPos + (step - 2) * 3.8, (yPos * step) / 3.4, zPos + (4 - step) * 4.0),
-				Color = if step % 2 == 1 then Color3.fromRGB(45, 115, 245) else Color3.fromRGB(245, 248, 255),
-				Material = Enum.Material.Plastic,
+				Color = if step % 2 == 1 then Color3.fromRGB(72, 118, 185) else Color3.fromRGB(215, 220, 228),
+				Material = Enum.Material.Concrete,
 				Parent = parent,
 			})
 		end
@@ -3794,7 +3625,7 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 			Vector3.new(xPos, yPos - 0.3, zPos),
 			8.5,
 			secColor,
-			Color3.fromRGB(255, 235, 85)
+			Color3.fromRGB(215, 195, 85)
 		)
 	end
 
@@ -3805,52 +3636,52 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 	-- 3. 4 Walk-Inside Biome Village Houses per Stage (32 Biome Houses total across Stages 1-8 at X = ±114, Z = zStart - 56 and Z = zStart - 94)!
 	local biomeHouseConfigs: { [number]: { { Side: number, Wall: Color3, Roof: Color3, Z: number } } } = {
 		[1] = {
-			{ Side = -1, Wall = Color3.fromRGB(225, 78, 68), Roof = Color3.fromRGB(145, 42, 38), Z = -56 },
-			{ Side = 1, Wall = Color3.fromRGB(255, 220, 115), Roof = Color3.fromRGB(65, 168, 82), Z = -56 },
-			{ Side = -1, Wall = Color3.fromRGB(135, 215, 255), Roof = Color3.fromRGB(48, 102, 215), Z = -94 },
-			{ Side = 1, Wall = Color3.fromRGB(255, 168, 212), Roof = Color3.fromRGB(192, 54, 138), Z = -94 },
+			{ Side = -1, Wall = Color3.fromRGB(195, 78, 68), Roof = Color3.fromRGB(125, 42, 38), Z = -56 },
+			{ Side = 1, Wall = Color3.fromRGB(215, 188, 108), Roof = Color3.fromRGB(62, 138, 74), Z = -56 },
+			{ Side = -1, Wall = Color3.fromRGB(125, 182, 215), Roof = Color3.fromRGB(48, 88, 175), Z = -94 },
+			{ Side = 1, Wall = Color3.fromRGB(212, 148, 182), Roof = Color3.fromRGB(154, 52, 115), Z = -94 },
 		},
 		[2] = {
-			{ Side = -1, Wall = Color3.fromRGB(255, 175, 215), Roof = Color3.fromRGB(215, 55, 140), Z = -216 },
-			{ Side = 1, Wall = Color3.fromRGB(155, 225, 255), Roof = Color3.fromRGB(65, 115, 235), Z = -216 },
-			{ Side = -1, Wall = Color3.fromRGB(255, 225, 135), Roof = Color3.fromRGB(225, 115, 45), Z = -254 },
-			{ Side = 1, Wall = Color3.fromRGB(205, 165, 255), Roof = Color3.fromRGB(125, 55, 215), Z = -254 },
+			{ Side = -1, Wall = Color3.fromRGB(215, 152, 185), Roof = Color3.fromRGB(175, 52, 118), Z = -216 },
+			{ Side = 1, Wall = Color3.fromRGB(142, 192, 218), Roof = Color3.fromRGB(58, 98, 188), Z = -216 },
+			{ Side = -1, Wall = Color3.fromRGB(218, 192, 122), Roof = Color3.fromRGB(185, 98, 42), Z = -254 },
+			{ Side = 1, Wall = Color3.fromRGB(178, 145, 215), Roof = Color3.fromRGB(108, 52, 175), Z = -254 },
 		},
 		[3] = {
-			{ Side = -1, Wall = Color3.fromRGB(255, 195, 130), Roof = Color3.fromRGB(225, 95, 55), Z = -376 },
-			{ Side = 1, Wall = Color3.fromRGB(130, 245, 225), Roof = Color3.fromRGB(35, 155, 165), Z = -376 },
-			{ Side = -1, Wall = Color3.fromRGB(255, 235, 135), Roof = Color3.fromRGB(45, 165, 225), Z = -414 },
-			{ Side = 1, Wall = Color3.fromRGB(255, 155, 175), Roof = Color3.fromRGB(215, 55, 85), Z = -414 },
+			{ Side = -1, Wall = Color3.fromRGB(218, 168, 118), Roof = Color3.fromRGB(185, 84, 52), Z = -376 },
+			{ Side = 1, Wall = Color3.fromRGB(118, 202, 188), Roof = Color3.fromRGB(35, 128, 138), Z = -376 },
+			{ Side = -1, Wall = Color3.fromRGB(218, 198, 122), Roof = Color3.fromRGB(45, 138, 185), Z = -414 },
+			{ Side = 1, Wall = Color3.fromRGB(215, 138, 154), Roof = Color3.fromRGB(175, 52, 76), Z = -414 },
 		},
 		[4] = {
-			{ Side = -1, Wall = Color3.fromRGB(185, 245, 175), Roof = Color3.fromRGB(48, 165, 78), Z = -536 },
-			{ Side = 1, Wall = Color3.fromRGB(245, 230, 185), Roof = Color3.fromRGB(215, 58, 52), Z = -536 },
-			{ Side = -1, Wall = Color3.fromRGB(155, 235, 195), Roof = Color3.fromRGB(38, 145, 95), Z = -574 },
-			{ Side = 1, Wall = Color3.fromRGB(215, 245, 155), Roof = Color3.fromRGB(65, 175, 68), Z = -574 },
+			{ Side = -1, Wall = Color3.fromRGB(154, 198, 145), Roof = Color3.fromRGB(46, 134, 68), Z = -536 },
+			{ Side = 1, Wall = Color3.fromRGB(208, 194, 158), Roof = Color3.fromRGB(175, 54, 48), Z = -536 },
+			{ Side = -1, Wall = Color3.fromRGB(134, 194, 165), Roof = Color3.fromRGB(38, 118, 78), Z = -574 },
+			{ Side = 1, Wall = Color3.fromRGB(178, 202, 134), Roof = Color3.fromRGB(58, 142, 62), Z = -574 },
 		},
 		[5] = {
-			{ Side = -1, Wall = Color3.fromRGB(195, 155, 255), Roof = Color3.fromRGB(105, 52, 205), Z = -696 },
-			{ Side = 1, Wall = Color3.fromRGB(125, 225, 255), Roof = Color3.fromRGB(45, 115, 215), Z = -696 },
-			{ Side = -1, Wall = Color3.fromRGB(155, 135, 235), Roof = Color3.fromRGB(75, 42, 165), Z = -734 },
-			{ Side = 1, Wall = Color3.fromRGB(225, 145, 255), Roof = Color3.fromRGB(145, 45, 195), Z = -734 },
+			{ Side = -1, Wall = Color3.fromRGB(158, 128, 205), Roof = Color3.fromRGB(88, 46, 165), Z = -696 },
+			{ Side = 1, Wall = Color3.fromRGB(112, 184, 212), Roof = Color3.fromRGB(42, 96, 175), Z = -696 },
+			{ Side = -1, Wall = Color3.fromRGB(132, 115, 195), Roof = Color3.fromRGB(64, 38, 138), Z = -734 },
+			{ Side = 1, Wall = Color3.fromRGB(184, 122, 208), Roof = Color3.fromRGB(118, 42, 158), Z = -734 },
 		},
 		[6] = {
-			{ Side = -1, Wall = Color3.fromRGB(245, 250, 255), Roof = Color3.fromRGB(255, 215, 75), Z = -856 },
-			{ Side = 1, Wall = Color3.fromRGB(225, 242, 255), Roof = Color3.fromRGB(95, 195, 255), Z = -856 },
-			{ Side = -1, Wall = Color3.fromRGB(255, 242, 225), Roof = Color3.fromRGB(255, 145, 195), Z = -894 },
-			{ Side = 1, Wall = Color3.fromRGB(235, 245, 255), Roof = Color3.fromRGB(165, 135, 255), Z = -894 },
+			{ Side = -1, Wall = Color3.fromRGB(218, 224, 232), Roof = Color3.fromRGB(208, 178, 68), Z = -856 },
+			{ Side = 1, Wall = Color3.fromRGB(198, 214, 228), Roof = Color3.fromRGB(82, 158, 208), Z = -856 },
+			{ Side = -1, Wall = Color3.fromRGB(224, 212, 198), Roof = Color3.fromRGB(205, 122, 162), Z = -894 },
+			{ Side = 1, Wall = Color3.fromRGB(208, 218, 228), Roof = Color3.fromRGB(138, 112, 208), Z = -894 },
 		},
 		[7] = {
-			{ Side = -1, Wall = Color3.fromRGB(115, 78, 88), Roof = Color3.fromRGB(215, 65, 28), Z = -1016 },
-			{ Side = 1, Wall = Color3.fromRGB(95, 75, 92), Roof = Color3.fromRGB(235, 78, 32), Z = -1016 },
-			{ Side = -1, Wall = Color3.fromRGB(82, 68, 82), Roof = Color3.fromRGB(255, 115, 28), Z = -1054 },
-			{ Side = 1, Wall = Color3.fromRGB(108, 68, 72), Roof = Color3.fromRGB(195, 42, 32), Z = -1054 },
+			{ Side = -1, Wall = Color3.fromRGB(102, 72, 82), Roof = Color3.fromRGB(178, 58, 28), Z = -1016 },
+			{ Side = 1, Wall = Color3.fromRGB(88, 68, 84), Roof = Color3.fromRGB(192, 68, 32), Z = -1016 },
+			{ Side = -1, Wall = Color3.fromRGB(76, 62, 76), Roof = Color3.fromRGB(205, 96, 28), Z = -1054 },
+			{ Side = 1, Wall = Color3.fromRGB(96, 62, 66), Roof = Color3.fromRGB(165, 38, 30), Z = -1054 },
 		},
 		[8] = {
-			{ Side = -1, Wall = Color3.fromRGB(52, 32, 88), Roof = Color3.fromRGB(195, 55, 255), Z = -1176 },
-			{ Side = 1, Wall = Color3.fromRGB(38, 42, 92), Roof = Color3.fromRGB(65, 225, 255), Z = -1176 },
-			{ Side = -1, Wall = Color3.fromRGB(64, 28, 96), Roof = Color3.fromRGB(255, 65, 195), Z = -1214 },
-			{ Side = 1, Wall = Color3.fromRGB(44, 34, 82), Roof = Color3.fromRGB(135, 85, 255), Z = -1214 },
+			{ Side = -1, Wall = Color3.fromRGB(48, 32, 78), Roof = Color3.fromRGB(154, 48, 202), Z = -1176 },
+			{ Side = 1, Wall = Color3.fromRGB(36, 40, 82), Roof = Color3.fromRGB(58, 178, 205), Z = -1176 },
+			{ Side = -1, Wall = Color3.fromRGB(58, 28, 84), Roof = Color3.fromRGB(202, 56, 158), Z = -1214 },
+			{ Side = 1, Wall = Color3.fromRGB(42, 32, 74), Roof = Color3.fromRGB(112, 72, 202), Z = -1214 },
 		},
 	}
 	local housesForLvl = biomeHouseConfigs[id]
@@ -3884,8 +3715,8 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 		Name = "SweeperBar_" .. tostring(id),
 		Size = Vector3.new(42, 1.8, 1.8),
 		Position = spinnerPos + Vector3.new(0, 0.4, 0),
-		Color = Color3.fromRGB(255, 65, 95),
-		Material = Enum.Material.Neon,
+		Color = Color3.fromRGB(205, 58, 78),
+		Material = Enum.Material.Metal,
 		Parent = obstaclesFolder,
 	})
 	sweeper:SetAttribute("SpinSpeed", (1.2 + id * 0.25) * (if id % 2 == 0 then 1 else -1))
@@ -3899,20 +3730,20 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 			"BouncePad",
 			Vector3.new(bx, 0.7, zStart - 88),
 			8.0,
-			Color3.fromRGB(255, 235, 55),
-			Color3.fromRGB(255, 115, 45)
+			Color3.fromRGB(218, 195, 55),
+			Color3.fromRGB(205, 98, 45)
 		)
 		bPad:SetAttribute("BounceImpulse", 98)
 	end
 
-	-- 5. Sector 3: Concentric Glowing Boss Nest Arena Circle (146-stud diameter) under the 2 Giant Sleeping Bosses & Widened Egg Cluster
+	-- 5. Sector 3: Grounded Matte Stone Boss Nest Arena Circle (146-stud diameter) under the 2 Giant Sleeping Bosses & Egg Cluster
 	buildGlowingNeonCircle(
 		parent,
 		"BossNestArenaPad",
-		Vector3.new(0, 0.3, zBoss),
+		Vector3.new(0, 0.12, zBoss),
 		146,
 		secColor,
-		secColor:Lerp(Color3.fromRGB(255, 255, 255), 0.35)
+		secColor:Lerp(Color3.fromRGB(215, 218, 224), 0.35)
 	)
 
 	-- 6. Oversized 22-28 Stud Biome Scenery Framing the Expanded Arena (cleanly separated from Houses & Boss Nest!)
@@ -3988,14 +3819,17 @@ local function buildLevelGate(parent: Instance, levelInfo: any, halfW: number): 
 	})
 
 	local reqSpeed = levelInfo.RequiredSpeed or 0
+	local gateCost = levelInfo.GateUnlockCost or levelInfo.RequiredCoins or 0
 	local reqText = if id <= 1
 		then string.format("STAGE %d: %s (OPEN!)", id, string.upper(levelInfo.Name))
 		else string.format(
-			"STAGE %d: %s  [100%% STAGE %d + ⚡ %s SPEED]",
+			"STAGE %d: %s\n[100%% STAGE %d • 🧱 FENCE LV.%d • ⚡ %s SPD • 💰 $%s]",
 			id,
 			string.upper(levelInfo.Name),
 			id - 1,
-			SlimeData.FormatNumber(reqSpeed)
+			id,
+			SlimeData.FormatNumber(reqSpeed),
+			SlimeData.FormatNumber(gateCost)
 		)
 
 	createSurfaceSign(
@@ -4022,8 +3856,20 @@ local function buildLevelGate(parent: Instance, levelInfo: any, halfW: number): 
 		Parent = gateModel,
 	})
 	barrier:SetAttribute("LevelId", id)
-	barrier:SetAttribute("RequiredCoins", levelInfo.RequiredCoins or 0)
+	barrier:SetAttribute("RequiredCoins", gateCost)
 	barrier:SetAttribute("RequiredSpeed", reqSpeed)
+	barrier:SetAttribute("RequiredFenceLevel", id)
+
+	if id > 1 then
+		createAttachmentPrompt(
+			barrier,
+			"UnlockStageGatePrompt",
+			string.format("🔓 Unlock Stage %d Gate ($%s)", id, SlimeData.FormatNumber(gateCost)),
+			string.format("Req: 100%% Stage %d + Fence Lv.%d + %s Spd", id - 1, id, SlimeData.FormatNumber(reqSpeed)),
+			Vector3.new(0, 4.5 - barrierHeight * 0.5, 0),
+			18
+		)
+	end
 
 	return barrier
 end
@@ -4032,6 +3878,7 @@ function WorldBuilder.BuildWorld(): {
 	WorldFolder: Folder,
 	GateBarriers: { [number]: Part },
 	WorldEggs: { [string]: Model },
+	WorldCoins: { [string]: Model },
 	Guardians: { [string]: { Model: Model, Data: any, LevelInfo: any } },
 }
 	setupVibrantLighting()
@@ -4049,12 +3896,15 @@ function WorldBuilder.BuildWorld(): {
 	local halfW = MAP_WIDTH * 0.5
 	local gateBarriers: { [number]: Part } = {}
 	local worldEggs: { [string]: Model } = {}
+	local worldCoins: { [string]: Model } = {}
 	local guardians: { [string]: { Model: Model, Data: any, LevelInfo: any } } = {}
 
 	local obstaclesFolder = Instance.new("Folder")
 	obstaclesFolder.Name = "DynamicObstacles"
 	obstaclesFolder.Parent = worldFolder
 
+	-- Phase 2.2: Build the continuous 36-stud Dark Charcoal Matte Asphalt Highway Road down the center of the map (Z = +180 to -1280)
+	buildCentralHighwayRoad(worldFolder)
 	buildSafeZoneAndPlots(worldFolder, obstaclesFolder)
 
 	local levelsFolder = Instance.new("Folder")
@@ -4065,9 +3915,24 @@ function WorldBuilder.BuildWorld(): {
 	eggsFolder.Name = "WorldEggs"
 	eggsFolder.Parent = worldFolder
 
+	local coinsFolder = Instance.new("Folder")
+	coinsFolder.Name = "WorldCoins"
+	coinsFolder.Parent = worldFolder
+
 	local guardiansFolder = Instance.new("Folder")
 	guardiansFolder.Name = "Guardians"
 	guardiansFolder.Parent = worldFolder
+
+	local naturalStageFloors: { [number]: { Color: Color3, Material: Enum.Material } } = {
+		[1] = { Color = Color3.fromRGB(76, 138, 68), Material = Enum.Material.LeafyGrass },
+		[2] = { Color = Color3.fromRGB(148, 108, 86), Material = Enum.Material.Cobblestone },
+		[3] = { Color = Color3.fromRGB(198, 178, 128), Material = Enum.Material.Sand },
+		[4] = { Color = Color3.fromRGB(68, 128, 74), Material = Enum.Material.LeafyGrass },
+		[5] = { Color = Color3.fromRGB(64, 62, 82), Material = Enum.Material.Slate },
+		[6] = { Color = Color3.fromRGB(204, 212, 224), Material = Enum.Material.Limestone },
+		[7] = { Color = Color3.fromRGB(54, 48, 52), Material = Enum.Material.Basalt },
+		[8] = { Color = Color3.fromRGB(38, 34, 52), Material = Enum.Material.Basalt },
+	}
 
 	for _, levelInfo in ipairs(SlimeData.Levels) do
 		local lvlId = levelInfo.Id or levelInfo.Level
@@ -4077,23 +3942,17 @@ function WorldBuilder.BuildWorld(): {
 
 		local zLength = math.abs(levelInfo.ZStart - levelInfo.ZEnd)
 		local zMid = (levelInfo.ZStart + levelInfo.ZEnd) * 0.5
+		local floorStyle = naturalStageFloors[lvlId] or {
+			Color = levelInfo.FloorColor,
+			Material = levelInfo.FloorMaterial or Enum.Material.LeafyGrass,
+		}
 
 		makePart({
 			Name = "Floor_" .. levelInfo.Name,
 			Size = Vector3.new(MAP_WIDTH, 2, zLength),
 			Position = Vector3.new(0, -1, zMid),
-			Color = levelInfo.FloorColor,
-			Material = levelInfo.FloorMaterial or Enum.Material.SmoothPlastic,
-			Parent = lvlFolder,
-		})
-
-		makePart({
-			Name = "CenterLane",
-			Size = Vector3.new(20, 0.16, zLength - 8),
-			Position = Vector3.new(0, 0.08, zMid),
-			Color = levelInfo.SecondaryColor or levelInfo.ThemeColor,
-			Material = Enum.Material.SmoothPlastic,
-			CanCollide = false,
+			Color = floorStyle.Color,
+			Material = floorStyle.Material,
 			Parent = lvlFolder,
 		})
 
@@ -4132,7 +3991,101 @@ function WorldBuilder.BuildWorld(): {
 		Parent = worldFolder,
 	})
 
-	-- Spawn all 117 Items (35 Boss Nest Eggs + 82 Shining Collectible Squishies across Rooftops, Rainbow Stairs, Mazes, Castle Walls & Obbies)!
+	-- Enforce Zero Map Glow Rule across all environment geometry before spawning glowing Eggs, Squishies, and Coins!
+	for _, desc in ipairs(worldFolder:GetDescendants()) do
+		if desc:IsA("BasePart") and desc.Material == Enum.Material.Neon then
+			desc.Material = Enum.Material.SmoothPlastic
+		end
+	end
+
+	-- Phase 4.1: Spawn 120 Glowing 3D Gold Coins (15 per Stage across all 8 Stages: 6 on Central Road, 5 at Landmarks, 4 on Obby Courses)!
+	local coinIdCounter = 0
+	for stageIdx = 1, 8 do
+		local zStart = -(stageIdx - 1) * 160
+		local coinValue = math.floor(15 * (2.4 ^ (stageIdx - 1)))
+		local stageCoinSpots = {
+			-- 6 Coins along the Central Asphalt Road
+			Vector3.new(-8, 2.8, zStart - 22),
+			Vector3.new(8, 2.8, zStart - 46),
+			Vector3.new(-8, 2.8, zStart - 70),
+			Vector3.new(8, 2.8, zStart - 94),
+			Vector3.new(-8, 2.8, zStart - 118),
+			Vector3.new(8, 2.8, zStart - 142),
+			-- 5 Coins inside/around Stage Landmarks & Village Houses
+			Vector3.new(-62, 3.2, zStart - 54),
+			Vector3.new(62, 3.2, zStart - 58),
+			Vector3.new(-92, 3.2, zStart - 88),
+			Vector3.new(92, 3.2, zStart - 88),
+			Vector3.new(0, 3.2, zStart - 116),
+			-- 4 Coins elevated along the Stage Obby Course
+			Vector3.new(-52, 9.5, zStart - 48),
+			Vector3.new(52, 12.5, zStart - 52),
+			Vector3.new(-74, 18.5, zStart - 64),
+			Vector3.new(74, 22.5, zStart - 68),
+		}
+		for cIdx, cPos in ipairs(stageCoinSpots) do
+			coinIdCounter += 1
+			local cIdStr = tostring(coinIdCounter)
+			local coinModel = Instance.new("Model")
+			coinModel.Name = "WorldCoin_" .. cIdStr
+			coinModel:SetAttribute("CoinId", cIdStr)
+			coinModel:SetAttribute("StageId", stageIdx)
+			coinModel:SetAttribute("CoinValue", coinValue)
+			coinModel.Parent = coinsFolder
+
+			local disc = Instance.new("Part")
+			disc.Name = "CoinCore"
+			disc.Shape = Enum.PartType.Cylinder
+			disc.Size = Vector3.new(0.85, 3.4, 3.4)
+			disc.CFrame = CFrame.new(cPos) * CFrame.Angles(0, math.rad(cIdx * 24), 0)
+			disc.Color = Color3.fromRGB(255, 215, 35)
+			disc.Material = Enum.Material.Neon
+			disc.Anchored = true
+			disc.CanCollide = false
+			disc.Parent = coinModel
+			coinModel.PrimaryPart = disc
+
+			local rim = Instance.new("Part")
+			rim.Name = "CoinRim"
+			rim.Shape = Enum.PartType.Cylinder
+			rim.Size = Vector3.new(0.65, 3.9, 3.9)
+			rim.CFrame = disc.CFrame
+			rim.Color = Color3.fromRGB(245, 175, 20)
+			rim.Material = Enum.Material.Metal
+			rim.Anchored = true
+			rim.CanCollide = false
+			rim.Parent = coinModel
+
+			local hl = Instance.new("Highlight")
+			hl.Name = "CoinPopHighlight"
+			hl.FillColor = Color3.fromRGB(255, 225, 55)
+			hl.OutlineColor = Color3.fromRGB(255, 255, 215)
+			hl.FillTransparency = 0.55
+			hl.OutlineTransparency = 0.05
+			hl.DepthMode = Enum.HighlightDepthMode.Occluded
+			hl.Parent = coinModel
+
+			local ptLight = Instance.new("PointLight")
+			ptLight.Name = "CoinPopLight"
+			ptLight.Color = Color3.fromRGB(255, 220, 65)
+			ptLight.Brightness = 1.65
+			ptLight.Range = 11
+			ptLight.Parent = disc
+
+			createBillboardText(
+				disc,
+				string.format("🪙 +$%s", SlimeData.FormatNumber(coinValue)),
+				Color3.fromRGB(255, 235, 75),
+				Vector3.new(0, 2.6, 0),
+				UDim2.new(4.2, 0, 1.1, 0),
+				18
+			)
+
+			worldCoins[cIdStr] = coinModel
+		end
+	end
+
+	-- Spawn all 117 Items (35 Boss Nest Brainrot Eggs + 82 Shining Collectible Squishies across Landmarks, Rainbow Stairs, Mazes, Castle Walls & Obbies)!
 	for _, slime in ipairs(SlimeData.Slimes) do
 		local eggModel = SquishyBuilder.CreateWorldEgg(slime, true)
 		eggModel:PivotTo(CFrame.new(slime.SpawnOffset or slime.Position))
@@ -4151,6 +4104,7 @@ function WorldBuilder.BuildWorld(): {
 		WorldFolder = worldFolder,
 		GateBarriers = gateBarriers,
 		WorldEggs = worldEggs,
+		WorldCoins = worldCoins,
 		Guardians = guardians,
 	}
 end

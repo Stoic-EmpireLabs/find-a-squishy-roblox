@@ -902,28 +902,46 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 
 	local indexTitle = Instance.new("TextLabel")
 	indexTitle.Name = "IndexTitle"
-	indexTitle.Size = UDim2.fromScale(0.80, 0.055)
+	indexTitle.Size = UDim2.fromScale(0.54, 0.055)
 	indexTitle.Position = UDim2.fromScale(0.095, 0.012)
 	indexTitle.BackgroundTransparency = 1
 	indexTitle.Font = Enum.Font.FredokaOne
 	indexTitle.TextXAlignment = Enum.TextXAlignment.Left
 	indexTitle.TextColor3 = Color3.fromRGB(255, 235, 95)
-	indexTitle.Text = "📘 <b>3D SQUISHY & EGG INDEX (0 / 117)</b>"
+	indexTitle.Text = "📘 <b>3D BRAINROT & SQUISHY INDEX (0 / 117)</b>"
 	indexTitle.Parent = indexModal
-	addTextSizeConstraint(indexTitle, 14, 28)
+	addTextSizeConstraint(indexTitle, 13, 26)
 	addTextStroke(indexTitle, Color3.fromRGB(12, 16, 28), 2.2)
+
+	local buyHintIndexSize = UDim2.fromScale(0.26, 0.076)
+	local buyHintIndexBtn = Instance.new("TextButton")
+	buyHintIndexBtn.Name = "BuyHintIndexBtn"
+	buyHintIndexBtn.Size = buyHintIndexSize
+	buyHintIndexBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+	buyHintIndexBtn.Position = UDim2.fromScale(0.785, 0.058)
+	buyHintIndexBtn.BackgroundColor3 = Color3.fromRGB(45, 195, 255)
+	buyHintIndexBtn.AutoButtonColor = false
+	buyHintIndexBtn.Font = Enum.Font.FredokaOne
+	buyHintIndexBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	buyHintIndexBtn.Text = "🔍 <b>BUY SQUISHY HINT ($500)</b>"
+	buyHintIndexBtn.Parent = indexModal
+	addCorner(buyHintIndexBtn, 10)
+	addStroke(buyHintIndexBtn, Color3.fromRGB(255, 255, 255), 2.0)
+	addTextSizeConstraint(buyHintIndexBtn, 10, 18)
+	addTextStroke(buyHintIndexBtn, Color3.fromRGB(12, 24, 48), 1.8)
+	bindHoverAndClickTween(buyHintIndexBtn, buyHintIndexSize, Color3.fromRGB(45, 195, 255))
 
 	local indexHintLabel = Instance.new("TextLabel")
 	indexHintLabel.Name = "IndexHintBox"
-	indexHintLabel.Size = UDim2.fromScale(0.80, 0.042)
+	indexHintLabel.Size = UDim2.fromScale(0.55, 0.042)
 	indexHintLabel.Position = UDim2.fromScale(0.095, 0.068)
 	indexHintLabel.BackgroundTransparency = 1
 	indexHintLabel.Font = Enum.Font.GothamBold
 	indexHintLabel.TextXAlignment = Enum.TextXAlignment.Left
 	indexHintLabel.TextColor3 = Color3.fromRGB(165, 235, 255)
-	indexHintLabel.Text = "💡 <b>Hover or tap any 3D Squishy card</b> to spin its 3D model and reveal its secret stage location!"
+	indexHintLabel.Text = "💡 <b>Hover any card</b> for location hints • Complete 100% of any Stage for a <b>Stage Mastery Cash Jackpot!</b>"
 	indexHintLabel.Parent = indexModal
-	addTextSizeConstraint(indexHintLabel, 11, 20)
+	addTextSizeConstraint(indexHintLabel, 10, 18)
 
 	local closeBtnSize = UDim2.fromScale(0.058, 0.082)
 	local indexClose = Instance.new("TextButton")
@@ -1469,7 +1487,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	end
 
 	-- =========================================================================
-	-- TIER 3: 5 TREASURE & INSTANT POWER-UP CARDS (Y = 0.650 .. 0.858)
+	-- TIER 3: 6 TREASURE & INSTANT POWER-UP CARDS (Y = 0.650 .. 0.858)
 	-- =========================================================================
 	local devProducts = {
 		{
@@ -1493,6 +1511,17 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 			ColTop = Color3.fromRGB(45, 185, 255),
 			ColBot = Color3.fromRGB(22, 95, 175),
 			Stroke = Color3.fromRGB(135, 235, 255),
+		},
+		{
+			Key = "LuckyEggRoll",
+			Tag = "🍀 2x LUCK!",
+			Icon = "🍀🥚",
+			Title = "LUCKY EGG BOOST",
+			Sub = "2x Rare+ Brainrots!",
+			Price = "79 R$",
+			ColTop = Color3.fromRGB(45, 215, 115),
+			ColBot = Color3.fromRGB(18, 118, 58),
+			Stroke = Color3.fromRGB(145, 255, 185),
 		},
 		{
 			Key = "CashPack5K",
@@ -1531,8 +1560,8 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 
 	local devProductButtons: { [string]: TextButton } = {}
 	for idx, dp in ipairs(devProducts) do
-		local xCenter = 0.107 + (idx - 1) * 0.1965
-		local dpSize = UDim2.fromScale(0.184, 0.204)
+		local xCenter = 0.092 + (idx - 1) * 0.1632
+		local dpSize = UDim2.fromScale(0.154, 0.204)
 		local dpBtn = Instance.new("TextButton")
 		dpBtn.Name = "DevProduct_" .. dp.Key
 		dpBtn.Size = dpSize
@@ -1582,7 +1611,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		titleLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
 		titleLbl.Text = "<b>" .. dp.Title .. "</b>"
 		titleLbl.Parent = dpBtn
-		addTextSizeConstraint(titleLbl, 10, 18)
+		addTextSizeConstraint(titleLbl, 9, 17)
 		addTextStroke(titleLbl, Color3.fromRGB(14, 16, 32), 2.0)
 
 		local pricePill = Instance.new("TextLabel")
@@ -1595,7 +1624,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		pricePill.Parent = dpBtn
 		addCorner(pricePill, 8)
 		addStroke(pricePill, Color3.fromRGB(255, 255, 255), 1.8)
-		addTextSizeConstraint(pricePill, 10, 18)
+		addTextSizeConstraint(pricePill, 9, 17)
 		addTextStroke(pricePill, Color3.fromRGB(12, 48, 22), 1.8)
 
 		bindHoverAndClickTween(dpBtn, dpSize, Color3.fromRGB(255, 255, 255))
@@ -1603,42 +1632,76 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	end
 
 	-- =========================================================================
-	-- TIER 4: BOTTOM DUAL POWER BAR (TREADMILL UPGRADE + REBIRTH SIDE-BY-SIDE, Y = 0.870 .. 0.982)
+	-- TIER 4: BOTTOM 4-BUTTON CASH SINK & UPGRADE BAR (TREADMILL + FENCE + HINT + REBIRTH, Y = 0.870 .. 0.982)
 	-- =========================================================================
-	local powerBtnSize = UDim2.fromScale(0.479, 0.110)
+	local powerBtnSize = UDim2.fromScale(0.236, 0.110)
 
 	local buySpeedBtn = Instance.new("TextButton")
 	buySpeedBtn.Name = "BuySpeedBtn"
 	buySpeedBtn.Size = powerBtnSize
 	buySpeedBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-	buySpeedBtn.Position = UDim2.fromScale(0.2545, 0.926)
+	buySpeedBtn.Position = UDim2.fromScale(0.133, 0.926)
 	buySpeedBtn.BackgroundColor3 = Color3.fromRGB(45, 195, 255)
 	buySpeedBtn.AutoButtonColor = false
 	buySpeedBtn.Font = Enum.Font.FredokaOne
 	buySpeedBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-	buySpeedBtn.Text = "🦖 <b>Upgrade Treadmill (+Speed) - $50</b>"
+	buySpeedBtn.Text = "🦖 <b>Treadmill [Lv.2] - $650</b>"
 	buySpeedBtn.Parent = shopModal
 	addCorner(buySpeedBtn, 14)
-	addStroke(buySpeedBtn, Color3.fromRGB(255, 255, 255), 2.5)
-	addTextSizeConstraint(buySpeedBtn, 12, 24)
-	addTextStroke(buySpeedBtn, Color3.fromRGB(12, 24, 48), 2.2)
+	addStroke(buySpeedBtn, Color3.fromRGB(255, 255, 255), 2.4)
+	addTextSizeConstraint(buySpeedBtn, 10, 20)
+	addTextStroke(buySpeedBtn, Color3.fromRGB(12, 24, 48), 2.0)
 	bindHoverAndClickTween(buySpeedBtn, powerBtnSize, Color3.fromRGB(45, 195, 255))
+
+	local buyFenceBtn = Instance.new("TextButton")
+	buyFenceBtn.Name = "BuyFenceBtn"
+	buyFenceBtn.Size = powerBtnSize
+	buyFenceBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+	buyFenceBtn.Position = UDim2.fromScale(0.378, 0.926)
+	buyFenceBtn.BackgroundColor3 = Color3.fromRGB(235, 155, 45)
+	buyFenceBtn.AutoButtonColor = false
+	buyFenceBtn.Font = Enum.Font.FredokaOne
+	buyFenceBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	buyFenceBtn.Text = "🧱 <b>Fence Size [Lv.2] - $500</b>"
+	buyFenceBtn.Parent = shopModal
+	addCorner(buyFenceBtn, 14)
+	addStroke(buyFenceBtn, Color3.fromRGB(255, 255, 255), 2.4)
+	addTextSizeConstraint(buyFenceBtn, 10, 20)
+	addTextStroke(buyFenceBtn, Color3.fromRGB(38, 22, 8), 2.0)
+	bindHoverAndClickTween(buyFenceBtn, powerBtnSize, Color3.fromRGB(235, 155, 45))
+
+	local buyHintShopBtn = Instance.new("TextButton")
+	buyHintShopBtn.Name = "BuyHintShopBtn"
+	buyHintShopBtn.Size = powerBtnSize
+	buyHintShopBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+	buyHintShopBtn.Position = UDim2.fromScale(0.622, 0.926)
+	buyHintShopBtn.BackgroundColor3 = Color3.fromRGB(55, 215, 135)
+	buyHintShopBtn.AutoButtonColor = false
+	buyHintShopBtn.Font = Enum.Font.FredokaOne
+	buyHintShopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	buyHintShopBtn.Text = "🔍 <b>Squishy Hint - $500</b>"
+	buyHintShopBtn.Parent = shopModal
+	addCorner(buyHintShopBtn, 14)
+	addStroke(buyHintShopBtn, Color3.fromRGB(255, 255, 255), 2.4)
+	addTextSizeConstraint(buyHintShopBtn, 10, 20)
+	addTextStroke(buyHintShopBtn, Color3.fromRGB(12, 38, 22), 2.0)
+	bindHoverAndClickTween(buyHintShopBtn, powerBtnSize, Color3.fromRGB(55, 215, 135))
 
 	local rebirthBtn = Instance.new("TextButton")
 	rebirthBtn.Name = "RebirthBtn"
 	rebirthBtn.Size = powerBtnSize
 	rebirthBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-	rebirthBtn.Position = UDim2.fromScale(0.7455, 0.926)
+	rebirthBtn.Position = UDim2.fromScale(0.867, 0.926)
 	rebirthBtn.BackgroundColor3 = Color3.fromRGB(255, 95, 195)
 	rebirthBtn.AutoButtonColor = false
 	rebirthBtn.Font = Enum.Font.FredokaOne
 	rebirthBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-	rebirthBtn.Text = "🔥 <b>Rebirth #1 (+50% Cash & Speed) - $5,000</b>"
+	rebirthBtn.Text = "🔥 <b>Rebirth #1 - $5,000</b>"
 	rebirthBtn.Parent = shopModal
 	addCorner(rebirthBtn, 14)
-	addStroke(rebirthBtn, Color3.fromRGB(255, 235, 85), 2.5)
-	addTextSizeConstraint(rebirthBtn, 12, 24)
-	addTextStroke(rebirthBtn, Color3.fromRGB(38, 12, 32), 2.2)
+	addStroke(rebirthBtn, Color3.fromRGB(255, 235, 85), 2.4)
+	addTextSizeConstraint(rebirthBtn, 10, 20)
+	addTextStroke(rebirthBtn, Color3.fromRGB(38, 12, 32), 2.0)
 	bindHoverAndClickTween(rebirthBtn, powerBtnSize, Color3.fromRGB(255, 95, 195))
 
 	-- =========================================================================
@@ -1985,6 +2048,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		IndexFeaturedViewport = indexFeaturedViewport,
 		IndexFeaturedModel = indexFeaturedModel,
 		IndexTitle = indexTitle,
+		BuyHintIndexBtn = buyHintIndexBtn,
 		IndexHintLabel = indexHintLabel,
 		IndexClose = indexClose,
 		IndexCards = indexCards,
@@ -1993,6 +2057,8 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		PassButtonsByKey = passButtonsByKey,
 		DevProductButtons = devProductButtons,
 		BuySpeedBtn = buySpeedBtn,
+		BuyFenceBtn = buyFenceBtn,
+		BuyHintShopBtn = buyHintShopBtn,
 		RebirthBtn = rebirthBtn,
 		SpinModal = spinModal,
 		SpinClose = spinClose,

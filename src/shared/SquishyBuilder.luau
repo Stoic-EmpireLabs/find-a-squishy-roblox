@@ -181,7 +181,421 @@ local function addFaceToBody(body: BasePart, model: Instance, radiusZ: number, e
 	return parts
 end
 
--- Adds Species-Specific 3D Squishy Dumpling / Squishmallow Anatomy (Pleated Dumpling Crest, Cow Ears/Horns, Axolotl Gills, Boba Straw, Cat Ears, Dragon Wings, Stubby Paws)
+-- Attaches a crisp Highlight + PointLight ONLY to Collectibles (Brainrot Eggs, Hatched Brainrots, Squishies & Gold Coins)
+-- so they pop and glow against the matte, non-glowing map!
+local function attachCollectiblePopGlow(
+	model: Model,
+	primaryPart: BasePart,
+	fillColor: Color3,
+	outlineColor: Color3,
+	lightRange: number,
+	lightBrightness: number
+)
+	local hl = model:FindFirstChild("CollectiblePopHighlight") :: Highlight?
+	if not hl then
+		local newHl = Instance.new("Highlight")
+		newHl.Name = "CollectiblePopHighlight"
+		newHl.DepthMode = Enum.HighlightDepthMode.Occluded
+		newHl.FillColor = fillColor
+		newHl.OutlineColor = outlineColor
+		newHl.FillTransparency = 0.68
+		newHl.OutlineTransparency = 0.05
+		newHl.Parent = model
+	end
+
+	local pt = primaryPart:FindFirstChild("CollectiblePopLight") :: PointLight?
+	if not pt then
+		local newPt = Instance.new("PointLight")
+		newPt.Name = "CollectiblePopLight"
+		newPt.Color = outlineColor:Lerp(fillColor, 0.35)
+		newPt.Range = lightRange
+		newPt.Brightness = lightBrightness
+		newPt.Shadows = false
+		newPt.Parent = primaryPart
+	end
+end
+
+-- Builds unmistakable 3D Brainrot Sculptures for all 35 Hatchable Brainrots (#1-#35):
+-- Tralalero Shark in Blue Sneakers, Bombardiro Twin-Propeller Bomber Croc, Tung Tung Wooden Log + Baseball Bat,
+-- Lirili Cactus Elephant in Sandals, Patapim Forest Troll, Cappuccino Katana Cup, Chimpanzini Banana Monkey,
+-- La Vaca Saturno Cow, Ballerina Tutu Cup, Frigo Fridge Camel, Gusini Rocket Goose, Orangutini Pineapple, Boneca Tire Frog, etc.
+local function addBrainrotFeatures(
+	body: BasePart,
+	model: Instance,
+	slimeDef: SlimeData.SlimeDef,
+	radius: number,
+	scale: number,
+	anchored: boolean
+)
+	local center = body.CFrame
+	local numId = tonumber(slimeDef.Id) or 1
+	local nameLower = string.lower(slimeDef.Name or "")
+	local bType = (slimeDef :: any).BrainrotType or ""
+
+	local function attach(p: Part): Part
+		p.Anchored = anchored
+		if not anchored then
+			weldTo(body, p)
+		end
+		return p
+	end
+
+	-- Determine archetype from BrainrotType, Name, or ID (#1-#35)
+	local archetype = bType
+	if archetype == "" then
+		if string.find(nameLower, "tralal") or string.find(nameLower, "trulim") or numId == 1 or numId == 12 or numId == 31 then
+			archetype = "Tralalero"
+		elseif string.find(nameLower, "bombard") or string.find(nameLower, "crocod") or numId == 9 or numId == 27 or numId == 32 then
+			archetype = "Bombardiro"
+		elseif string.find(nameLower, "tung") or string.find(nameLower, "sahur") or numId == 13 or numId == 28 or numId == 34 then
+			archetype = "TungTung"
+		elseif string.find(nameLower, "liril") or string.find(nameLower, "cacto") or numId == 2 or numId == 24 then
+			archetype = "Lirili"
+		elseif string.find(nameLower, "patapim") or string.find(nameLower, "bicus") or numId == 4 or numId == 22 then
+			archetype = "Patapim"
+		elseif string.find(nameLower, "assassin") or string.find(nameLower, "cappuccin") and not string.find(nameLower, "ballerina") or numId == 14 then
+			archetype = "Cappuccino"
+		elseif string.find(nameLower, "chimpanz") or string.find(nameLower, "banan") or numId == 7 then
+			archetype = "Chimpanzini"
+		elseif string.find(nameLower, "saturn") or string.find(nameLower, "vaca") or numId == 21 or numId == 33 then
+			archetype = "Saturno"
+		elseif string.find(nameLower, "ballerina") or numId == 5 then
+			archetype = "Ballerina"
+		elseif string.find(nameLower, "frigo") or string.find(nameLower, "camel") or numId == 8 then
+			archetype = "Frigo"
+		elseif string.find(nameLower, "gusini") or string.find(nameLower, "bombomb") or numId == 10 or numId == 26 then
+			archetype = "Gusini"
+		elseif string.find(nameLower, "orangut") or string.find(nameLower, "ananas") or numId == 16 then
+			archetype = "Orangutini"
+		elseif string.find(nameLower, "boneca") or string.find(nameLower, "ambalabu") or numId == 15 then
+			archetype = "Boneca"
+		elseif string.find(nameLower, "glorbo") or string.find(nameLower, "burbal") or numId == 6 or numId == 11 then
+			archetype = "Glorbo"
+		elseif string.find(nameLower, "trippi") or string.find(nameLower, "crab") or numId == 3 or numId == 25 then
+			archetype = "Trippi"
+		elseif string.find(nameLower, "giraf") or string.find(nameLower, "talpa") or numId == 19 or numId == 23 then
+			archetype = "Girafa"
+		elseif string.find(nameLower, "skibidi") or string.find(nameLower, "garam") or string.find(nameLower, "madu") or numId == 17 or numId == 18 or numId == 29 then
+			archetype = "Skibidi"
+		elseif string.find(nameLower, "maxwell") or numId == 20 then
+			archetype = "Maxwell"
+		else
+			local pool = {
+				"Tralalero", "Lirili", "Trippi", "Patapim", "Ballerina",
+				"Glorbo", "Chimpanzini", "Frigo", "Bombardiro", "Gusini",
+				"TungTung", "Cappuccino", "Boneca", "Orangutini", "Saturno",
+			}
+			archetype = pool[((numId - 1) % #pool) + 1]
+		end
+	end
+
+	if archetype == "Tralalero" then
+		-- Shark Dorsal Fin, Shark Snout + Teeth, Tail Fin, and 3 Iconic Blue Nike Sneakers!
+		attach(makePart({
+			Name = "SharkSnout",
+			Shape = Enum.PartType.Ball,
+			Color = slimeDef.Color,
+			Size = Vector3.new(radius * 1.15, radius * 0.72, radius * 0.95),
+			CFrame = center * CFrame.new(0, -0.05 * scale, -radius * 0.95),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "SharkDorsalFin",
+			Color = slimeDef.Color,
+			Size = Vector3.new(0.38 * scale, radius * 1.15, radius * 0.95),
+			CFrame = center * CFrame.new(0, radius * 1.05, 0.15 * scale) * CFrame.Angles(math.rad(-22), 0, 0),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "SharkTailFin",
+			Color = slimeDef.Color,
+			Size = Vector3.new(0.35 * scale, radius * 1.1, radius * 0.85),
+			CFrame = center * CFrame.new(0, 0.1 * scale, radius * 1.08) * CFrame.Angles(math.rad(18), 0, 0),
+			Parent = model,
+		}))
+		-- 3 Blue Sneakers (Left, Right, Rear Tail Leg)
+		local sneakerOffsets = {
+			Vector3.new(-radius * 0.68, -radius * 0.85, -radius * 0.35),
+			Vector3.new(radius * 0.68, -radius * 0.85, -radius * 0.35),
+			Vector3.new(0, -radius * 0.85, radius * 0.65),
+		}
+		for idx, off in ipairs(sneakerOffsets) do
+			local shoe = attach(makePart({
+				Name = "BlueSneaker_" .. idx,
+				Color = Color3.fromRGB(28, 125, 255),
+				Size = Vector3.new(0.82 * scale, 0.52 * scale, 1.35 * scale),
+				CFrame = center * CFrame.new(off),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "SneakerSole_" .. idx,
+				Color = Color3.fromRGB(255, 255, 255),
+				Material = Enum.Material.Neon,
+				Size = Vector3.new(0.88 * scale, 0.22 * scale, 1.42 * scale),
+				CFrame = shoe.CFrame * CFrame.new(0, -0.24 * scale, 0),
+				Parent = model,
+			}))
+		end
+	elseif archetype == "Bombardiro" then
+		-- Alligator Snout + Twin Bomber Airplane Wings + Twin Propellers + Bomb Belly!
+		attach(makePart({
+			Name = "CrocSnout",
+			Color = slimeDef.Color,
+			Size = Vector3.new(radius * 1.1, radius * 0.58, radius * 1.35),
+			CFrame = center * CFrame.new(0, -0.12 * scale, -radius * 1.05),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "BomberWings",
+			Color = Color3.fromRGB(145, 158, 142),
+			Material = Enum.Material.Metal,
+			Size = Vector3.new(radius * 3.6, 0.28 * scale, radius * 1.05),
+			CFrame = center * CFrame.new(0, 0.18 * scale, 0),
+			Parent = model,
+		}))
+		for _, side in ipairs({ -1, 1 }) do
+			local engine = attach(makePart({
+				Name = "WingEngine_" .. side,
+				Shape = Enum.PartType.Cylinder,
+				Color = Color3.fromRGB(75, 82, 90),
+				Material = Enum.Material.Metal,
+				Size = Vector3.new(1.15 * scale, 0.72 * scale, 0.72 * scale),
+				CFrame = center * CFrame.new(side * radius * 1.25, 0.05 * scale, -0.35 * scale) * CFrame.Angles(0, math.rad(90), 0),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "PropellerBlade_" .. side,
+				Color = Color3.fromRGB(255, 225, 75),
+				Material = Enum.Material.Neon,
+				Size = Vector3.new(1.35 * scale, 0.18 * scale, 0.14 * scale),
+				CFrame = engine.CFrame * CFrame.new(0.62 * scale, 0, 0) * CFrame.Angles(math.rad(35), math.rad(90), 0),
+				Parent = model,
+			}))
+		end
+	elseif archetype == "TungTung" then
+		-- Wooden Log Crown Ring + Held Wooden Baseball Bat!
+		body.Material = Enum.Material.Wood
+		attach(makePart({
+			Name = "LogTopBark",
+			Shape = Enum.PartType.Cylinder,
+			Color = Color3.fromRGB(198, 152, 96),
+			Material = Enum.Material.WoodPlanks,
+			Size = Vector3.new(0.45 * scale, radius * 1.55, radius * 1.55),
+			CFrame = center * CFrame.new(0, radius * 0.84, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "BaseballBat",
+			Shape = Enum.PartType.Cylinder,
+			Color = Color3.fromRGB(168, 108, 52),
+			Material = Enum.Material.Wood,
+			Size = Vector3.new(radius * 2.15, 0.58 * scale, 0.58 * scale),
+			CFrame = center * CFrame.new(radius * 1.12, 0.25 * scale, -0.45 * scale) * CFrame.Angles(math.rad(25), 0, math.rad(72)),
+			Parent = model,
+		}))
+	elseif archetype == "Lirili" then
+		-- Cactus Elephant Ears, Curved Trunk, White Tusks & Desert Sandals!
+		attach(makePart({
+			Name = "ElephantTrunk",
+			Shape = Enum.PartType.Cylinder,
+			Color = slimeDef.Color,
+			Size = Vector3.new(radius * 1.25, 0.58 * scale, 0.58 * scale),
+			CFrame = center * CFrame.new(0, -0.15 * scale, -radius * 1.05) * CFrame.Angles(math.rad(25), math.rad(90), 0),
+			Parent = model,
+		}))
+		for _, side in ipairs({ -1, 1 }) do
+			attach(makePart({
+				Name = "CactusEar_" .. side,
+				Shape = Enum.PartType.Ball,
+				Color = Color3.fromRGB(68, 185, 82),
+				Size = Vector3.new(0.42 * scale, 1.45 * scale, 1.15 * scale),
+				CFrame = center * CFrame.new(side * radius * 1.05, 0.22 * scale, -0.1 * scale),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "IvoryTusk_" .. side,
+				Color = Color3.fromRGB(255, 252, 235),
+				Material = Enum.Material.Neon,
+				Size = Vector3.new(0.28 * scale, 0.28 * scale, 0.92 * scale),
+				CFrame = center * CFrame.new(side * 0.52 * scale, -0.25 * scale, -radius * 1.05),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "DesertSandal_" .. side,
+				Color = Color3.fromRGB(142, 86, 44),
+				Material = Enum.Material.Wood,
+				Size = Vector3.new(0.88 * scale, 0.35 * scale, 1.38 * scale),
+				CFrame = center * CFrame.new(side * radius * 0.58, -radius * 0.88, -0.15 * scale),
+				Parent = model,
+			}))
+		end
+	elseif archetype == "Cappuccino" or archetype == "Ballerina" then
+		-- Porcelain Coffee Cup Rim, Frothy Foam Top, Handle, and Twin Katanas or Pink Tutu!
+		attach(makePart({
+			Name = "CoffeeCupRim",
+			Shape = Enum.PartType.Cylinder,
+			Color = Color3.fromRGB(250, 248, 242),
+			Size = Vector3.new(0.42 * scale, radius * 1.85, radius * 1.85),
+			CFrame = center * CFrame.new(0, radius * 0.78, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "CappuccinoFoam",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(215, 165, 115),
+			Size = Vector3.new(radius * 1.55, 0.65 * scale, radius * 1.55),
+			CFrame = center * CFrame.new(0, radius * 0.92, 0),
+			Parent = model,
+		}))
+		if archetype == "Ballerina" then
+			attach(makePart({
+				Name = "PinkTutuSkirt",
+				Shape = Enum.PartType.Cylinder,
+				Color = Color3.fromRGB(255, 135, 205),
+				Material = Enum.Material.Neon,
+				Size = Vector3.new(0.38 * scale, radius * 2.55, radius * 2.55),
+				CFrame = center * CFrame.new(0, -radius * 0.35, 0) * CFrame.Angles(0, 0, math.rad(90)),
+				Parent = model,
+			}))
+		else
+			for _, side in ipairs({ -1, 1 }) do
+				attach(makePart({
+					Name = "KatanaBlade_" .. side,
+					Color = Color3.fromRGB(210, 235, 255),
+					Material = Enum.Material.Neon,
+					Size = Vector3.new(0.18 * scale, radius * 2.25, 0.28 * scale),
+					CFrame = center * CFrame.new(0, 0.35 * scale, radius * 0.92) * CFrame.Angles(0, 0, math.rad(side * 38)),
+					Parent = model,
+				}))
+			end
+		end
+	elseif archetype == "Chimpanzini" then
+		-- 4 Yellow Banana Peel Petals around waist + Monkey Ears!
+		for p = 0, 3 do
+			local ang = math.rad(p * 90 + 45)
+			attach(makePart({
+				Name = "BananaPeel_" .. p,
+				Color = Color3.fromRGB(255, 225, 55),
+				Material = Enum.Material.Neon,
+				Size = Vector3.new(0.85 * scale, radius * 1.15, 0.32 * scale),
+				CFrame = center * CFrame.Angles(0, ang, 0) * CFrame.new(0, -radius * 0.25, -radius * 0.95) * CFrame.Angles(math.rad(-32), 0, 0),
+				Parent = model,
+			}))
+		end
+		for _, side in ipairs({ -1, 1 }) do
+			attach(makePart({
+				Name = "MonkeyEar_" .. side,
+				Shape = Enum.PartType.Ball,
+				Color = Color3.fromRGB(138, 86, 48),
+				Size = Vector3.new(0.35 * scale, 0.92 * scale, 0.92 * scale),
+				CFrame = center * CFrame.new(side * radius * 0.98, 0.28 * scale, 0),
+				Parent = model,
+			}))
+		end
+	elseif archetype == "Saturno" then
+		-- La Vaca Saturno Saturnita: Cow Horns + Glowing Tilted Planetary Saturn Ring!
+		attach(makePart({
+			Name = "SaturnPlanetaryRing",
+			Shape = Enum.PartType.Cylinder,
+			Color = Color3.fromRGB(255, 215, 85),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(0.28 * scale, radius * 3.1, radius * 3.1),
+			CFrame = center * CFrame.Angles(math.rad(18), 0, math.rad(72)),
+			Parent = model,
+		}))
+		for _, side in ipairs({ -1, 1 }) do
+			attach(makePart({
+				Name = "SaturnHorn_" .. side,
+				Color = Color3.fromRGB(255, 240, 145),
+				Material = Enum.Material.Neon,
+				Size = Vector3.new(0.42 * scale, 1.05 * scale, 0.42 * scale),
+				CFrame = center * CFrame.new(side * radius * 0.58, radius * 0.92, 0) * CFrame.Angles(0, 0, math.rad(-side * 24)),
+				Parent = model,
+			}))
+		end
+	elseif archetype == "Frigo" then
+		-- Fridge Camel: Twin Humps + Metallic Refrigerator Door & Handle!
+		attach(makePart({
+			Name = "FridgeDoorFront",
+			Color = Color3.fromRGB(225, 235, 245),
+			Material = Enum.Material.Metal,
+			Size = Vector3.new(radius * 1.25, radius * 1.35, 0.35 * scale),
+			CFrame = center * CFrame.new(0, -0.1 * scale, -radius * 0.88),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "FridgeHandle",
+			Color = Color3.fromRGB(85, 225, 255),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(0.22 * scale, radius * 0.95, 0.25 * scale),
+			CFrame = center * CFrame.new(radius * 0.45, -0.1 * scale, -radius * 1.05),
+			Parent = model,
+		}))
+	elseif archetype == "Gusini" then
+		-- Bombombini Gusini: Orange Duck/Goose Bill + Jet Wings + Twin Rockets!
+		attach(makePart({
+			Name = "GooseBill",
+			Color = Color3.fromRGB(255, 155, 35),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(0.95 * scale, 0.38 * scale, 1.15 * scale),
+			CFrame = center * CFrame.new(0, -0.05 * scale, -radius * 1.05),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "GooseJetWings",
+			Color = Color3.fromRGB(235, 240, 248),
+			Size = Vector3.new(radius * 3.2, 0.26 * scale, radius * 0.92),
+			CFrame = center * CFrame.new(0, 0.12 * scale, 0),
+			Parent = model,
+		}))
+	elseif archetype == "Boneca" then
+		-- Boneca Ambalabu: Black Rubber Tire Ring around body + Top Frog Eyes!
+		attach(makePart({
+			Name = "RubberTireTread",
+			Shape = Enum.PartType.Cylinder,
+			Color = Color3.fromRGB(32, 34, 38),
+			Material = Enum.Material.Slate,
+			Size = Vector3.new(0.95 * scale, radius * 2.35, radius * 2.35),
+			CFrame = center * CFrame.Angles(0, 0, math.rad(90)),
+			Parent = model,
+		}))
+	elseif archetype == "Orangutini" then
+		-- Orangutini Ananasini: Spiky Green Pineapple Crown + Golden Arms!
+		for leaf = 0, 5 do
+			local ang = math.rad(leaf * 60)
+			attach(makePart({
+				Name = "PineappleLeaf_" .. leaf,
+				Color = Color3.fromRGB(55, 215, 85),
+				Material = Enum.Material.Neon,
+				Size = Vector3.new(0.45 * scale, 1.35 * scale, 0.28 * scale),
+				CFrame = center * CFrame.Angles(0, ang, 0) * CFrame.new(0, radius * 1.05, -0.35 * scale) * CFrame.Angles(math.rad(-28), 0, 0),
+				Parent = model,
+			}))
+		end
+	else
+		-- Patapim / Glorbo / Trippi / Girafa / Maxwell / Skibidi: Bulbous Brainrot Crest + Glowing Halo Horns & Stomping Feet!
+		attach(makePart({
+			Name = "BrainrotCrest",
+			Shape = Enum.PartType.Ball,
+			Color = slimeDef.SecondaryColor,
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(radius * 1.05, 0.75 * scale, radius * 1.05),
+			CFrame = center * CFrame.new(0, radius * 0.92, 0),
+			Parent = model,
+		}))
+		for _, side in ipairs({ -1, 1 }) do
+			attach(makePart({
+				Name = "BrainrotStompFoot_" .. side,
+				Color = slimeDef.SecondaryColor,
+				Size = Vector3.new(0.85 * scale, 0.45 * scale, 1.25 * scale),
+				CFrame = center * CFrame.new(side * radius * 0.62, -radius * 0.86, -0.2 * scale),
+				Parent = model,
+			}))
+		end
+	end
+end
+
+-- Adds Species-Specific 3D Squishy Dumpling / Squishmallow Anatomy (or Brainrot Anatomy for IDs #1-#35!)
 local function addSpeciesFeatures(
 	body: BasePart,
 	model: Instance,
@@ -190,6 +604,12 @@ local function addSpeciesFeatures(
 	scale: number,
 	anchored: boolean
 )
+	local numId = tonumber(slimeDef.Id) or 1
+	if numId <= 35 or (slimeDef :: any).IsBrainrot == true then
+		addBrainrotFeatures(body, model, slimeDef, radius, scale, anchored)
+		return
+	end
+
 	local center = body.CFrame
 	local species = slimeDef.Species or "Cow"
 
@@ -333,9 +753,72 @@ local function addSpeciesFeatures(
 	end
 end
 
+-- Creates a Glowing, Spinning 3D Collectible World Coin that pops against the matte map and disappears on pickup!
+function SquishyBuilder.CreateWorldCoin(coinId: number, stageLevel: number, coinValue: number, position: Vector3): Model
+	local model = Instance.new("Model")
+	model.Name = "WorldCoin_" .. tostring(coinId)
+	model:SetAttribute("CoinId", coinId)
+	model:SetAttribute("StageLevel", stageLevel)
+	model:SetAttribute("CoinValue", coinValue)
+	model:SetAttribute("IsWorldCoin", true)
+
+	local s = 1.0 + math.min(0.45, (stageLevel - 1) * 0.06)
+	local rim = makePart({
+		Name = "CoinRim",
+		Shape = Enum.PartType.Cylinder,
+		Material = Enum.Material.Neon,
+		Color = Color3.fromRGB(255, 205, 35),
+		Size = Vector3.new(0.65 * s, 3.2 * s, 3.2 * s),
+		CFrame = CFrame.new(position + Vector3.new(0, 2.2 * s, 0)),
+		Anchored = true,
+		CanCollide = false,
+		CanTouch = true,
+		CanQuery = true,
+		Parent = model,
+	})
+	rim.PivotOffset = CFrame.new(0, -2.2 * s, 0)
+	model.PrimaryPart = rim
+
+	makePart({
+		Name = "CoinInnerFace",
+		Shape = Enum.PartType.Cylinder,
+		Material = Enum.Material.Neon,
+		Color = Color3.fromRGB(255, 240, 115),
+		Size = Vector3.new(0.76 * s, 2.35 * s, 2.35 * s),
+		CFrame = rim.CFrame,
+		Anchored = true,
+		CanCollide = false,
+		Parent = model,
+	})
+
+	attachCollectiblePopGlow(model, rim, Color3.fromRGB(255, 215, 45), Color3.fromRGB(255, 250, 165), 11, 1.35)
+
+	local bb = Instance.new("BillboardGui")
+	bb.Name = "CoinTag"
+	bb.Size = UDim2.new(3.2, 0, 0.95, 0)
+	bb.StudsOffset = Vector3.new(0, 2.3 * s, 0)
+	bb.AlwaysOnTop = false
+	bb.LightInfluence = 0
+	bb.MaxDistance = 24
+	bb.Parent = rim
+
+	local lbl = Instance.new("TextLabel")
+	lbl.Name = "ValueLabel"
+	lbl.Size = UDim2.new(1, 0, 1, 0)
+	lbl.BackgroundTransparency = 1
+	lbl.Font = Enum.Font.FredokaOne
+	lbl.TextScaled = true
+	lbl.TextColor3 = Color3.fromRGB(255, 235, 75)
+	lbl.TextStrokeTransparency = 0.08
+	lbl.Text = string.format("🪙 +$%s", formatNumber(coinValue))
+	lbl.Parent = bb
+
+	return model
+end
+
 -- Creates either:
---  (A) A Shining Collectible 3D Squishy (for IDs #36-#117 on Rooftops, Rainbow Staircase, Mazes, Castle Walls & Obbies)
---  (B) An Oversized Ornate World Egg (for IDs #1-#35 in the Boss Nests)
+--  (A) A Shining Collectible 3D Squishy (for IDs #36-#117 hidden inside Landmarks, Caves, Attics & Obbies)
+--  (B) A Glowing Mystery Brainrot Egg (for IDs #1-#35 in the Boss Nests, scaling larger per Stage!)
 function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: boolean?): Model
 	local isAnchored = if anchored ~= nil then anchored else true
 	local isShining = (slimeDef :: any).IsShiningSquishy == true
@@ -369,7 +852,7 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 		addFaceToBody(shell, model, radius * 0.95, sScale, true)
 		addSpeciesFeatures(shell, model, slimeDef, radius, sScale, true)
 
-		-- Newer Concentric Glowing Neon Ring Pedestal underneath the Shining Squishy
+		-- Concentric Glowing Neon Ring Pedestal underneath the Shining Squishy
 		makePart({
 			Name = "OuterNeonRing",
 			Shape = Enum.PartType.Cylinder,
@@ -404,7 +887,6 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 			Parent = model,
 		})
 
-		-- Zero-cost Neon Halo Crown on top (eliminates 82 Highlight stencil buffer thrashing & 82 dynamic PointLights!)
 		makePart({
 			Name = "ShiningHalo",
 			Shape = Enum.PartType.Cylinder,
@@ -417,6 +899,9 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 			Parent = model,
 		})
 
+		-- Make the Collectible Squishy pop & glow against the matte map!
+		attachCollectiblePopGlow(model, shell, slimeDef.Color, slimeDef.SecondaryColor, 14, 1.55)
+
 		local promptAtt = Instance.new("Attachment")
 		promptAtt.Name = "PromptAttachment"
 		promptAtt.Position = Vector3.new(0, 1.35 * sScale, 0)
@@ -424,7 +909,7 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 
 		local prompt = Instance.new("ProximityPrompt")
 		prompt.Name = "CapturePrompt"
-		prompt.ActionText = "✨ Grab Shining Squishy!"
+		prompt.ActionText = "✨ Grab Hidden Squishy!"
 		prompt.ObjectText = string.format("%s [%s] (+$%s/s)", slimeDef.Name, slimeDef.Rarity, formatNumber(slimeDef.CoinsPerSec))
 		prompt.HoldDuration = 0
 		prompt.MaxActivationDistance = 15
@@ -438,7 +923,8 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 		bb.StudsOffset = Vector3.new(0, 2.7 * sScale, 0)
 		bb.AlwaysOnTop = false
 		bb.LightInfluence = 0
-		bb.MaxDistance = 36
+		-- Close-range discovery distance (18 studs) so players explore landmarks/obbies or use Squishy Radar!
+		bb.MaxDistance = 18
 		bb.Parent = shell
 
 		local title = Instance.new("TextLabel")
@@ -461,7 +947,7 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 		sub.TextScaled = true
 		sub.TextColor3 = SlimeData.RarityColors[slimeDef.Rarity] or Color3.fromRGB(255, 255, 255)
 		sub.TextStrokeTransparency = 0.1
-		sub.Text = string.format("SHINING %s • +$%s/s", string.upper(slimeDef.Rarity), formatNumber(slimeDef.CoinsPerSec))
+		sub.Text = string.format("SQUISHY %s • +$%s/s", string.upper(slimeDef.Rarity), formatNumber(slimeDef.CoinsPerSec))
 		sub.Parent = bb
 
 		if slimeDef.Position then
@@ -471,10 +957,12 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 		return model
 	end
 
-	local scale = if slimeDef.IsBoss then 1.65 else 1.38
+	-- Per-Stage Egg Scaling: Eggs in higher stages (Stages 1..8) are physically grander!
+	local stageNum = math.clamp(tonumber(slimeDef.Level) or 1, 1, 8)
+	local stageEggFactor = if isAnchored then (1.0 + (stageNum - 1) * 0.12) else 1.0
+	local scale = (if slimeDef.IsBoss then 1.55 else 1.32) * stageEggFactor
 	local numId = tonumber(slimeDef.Id) or 1
 	local origin = Vector3.new(0, 0, 0)
-
 
 	local model = Instance.new("Model")
 	model.Name = "Egg_" .. tostring(slimeDef.Id)
@@ -519,7 +1007,7 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 		})
 	end
 
-	-- Orbiting Planetary Ring of 8 Glowing Star Pearls around the Egg (never obscures the egg silhouette!)
+	-- Orbiting Planetary Ring of 8 Glowing Star Pearls around the Brainrot Egg
 	local ringTilt = CFrame.new(centerPos) * CFrame.Angles(math.rad(20), math.rad(numId * 25), math.rad(-16))
 	for rIdx = 0, 7 do
 		local rAng = math.rad(rIdx * 45)
@@ -536,7 +1024,7 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 		})
 	end
 
-	-- Royal Gold Crown on Top of the Egg
+	-- Royal Gold Crown on Top of the Brainrot Egg
 	makePart({
 		Name = "RoyalCrown",
 		Shape = Enum.PartType.Cylinder,
@@ -548,6 +1036,9 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 		CanCollide = false,
 		Parent = model,
 	})
+
+	-- Make the Brainrot Egg pop & glow against the matte map!
+	attachCollectiblePopGlow(model, shell, slimeDef.Color, slimeDef.SecondaryColor, 16, 1.75)
 
 	if not isAnchored then
 		for _, desc in ipairs(model:GetDescendants()) do
@@ -583,7 +1074,7 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 			Name = "BirdNestStraw",
 			Shape = Enum.PartType.Cylinder,
 			Material = Enum.Material.Grass,
-			Color = Color3.fromRGB(245, 205, 75),
+			Color = Color3.fromRGB(215, 182, 72),
 			Size = Vector3.new(0.98, 3.8 * scale, 3.8 * scale),
 			CFrame = CFrame.new(origin + Vector3.new(0, 0.49, 0)) * CFrame.Angles(0, 0, math.rad(90)),
 			Anchored = true,
@@ -598,8 +1089,8 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 
 		local prompt = Instance.new("ProximityPrompt")
 		prompt.Name = "CapturePrompt"
-		prompt.ActionText = "Egg - Steal (Walk Over!)"
-		prompt.ObjectText = string.format("%s [%s] ($%s/s)", slimeDef.Name, slimeDef.Rarity, formatNumber(slimeDef.CoinsPerSec))
+		prompt.ActionText = string.format("🥚 Grab Stage %d Brainrot Egg!", stageNum)
+		prompt.ObjectText = string.format("Mystery Brainrot Egg [Stage %d] ($%s/s+)", stageNum, formatNumber(slimeDef.CoinsPerSec))
 		prompt.HoldDuration = 0
 		prompt.MaxActivationDistance = 15
 		prompt.RequiresLineOfSight = false
@@ -611,11 +1102,11 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "EggTag"
-	bb.Size = UDim2.new(5.2, 0, 1.35, 0)
+	bb.Size = UDim2.new(5.6, 0, 1.45, 0)
 	bb.StudsOffset = Vector3.new(0, 3.2 * scale, 0)
 	bb.AlwaysOnTop = false
 	bb.LightInfluence = 0
-	bb.MaxDistance = 36
+	bb.MaxDistance = 38
 	bb.Parent = shell
 
 	local title = Instance.new("TextLabel")
@@ -626,7 +1117,7 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 	title.TextScaled = true
 	title.TextColor3 = Color3.fromRGB(255, 255, 255)
 	title.TextStrokeTransparency = 0.05
-	title.Text = "🥚 " .. slimeDef.Name
+	title.Text = string.format("🥚 Stage %d Brainrot Egg (%s)", stageNum, slimeDef.Name)
 	title.Parent = bb
 
 	local sub = Instance.new("TextLabel")
@@ -638,7 +1129,7 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 	sub.TextScaled = true
 	sub.TextColor3 = SlimeData.RarityColors[slimeDef.Rarity] or Color3.fromRGB(255, 255, 255)
 	sub.TextStrokeTransparency = 0.1
-	sub.Text = string.format("%s • +$%s/s", slimeDef.Rarity, formatNumber(slimeDef.CoinsPerSec))
+	sub.Text = string.format("%s BRAINROT • +$%s/s", string.upper(slimeDef.Rarity), formatNumber(slimeDef.CoinsPerSec))
 	sub.Parent = bb
 
 	if slimeDef.Position then
@@ -704,20 +1195,21 @@ function SquishyBuilder.CreatePlantedEgg(slimeDef: SlimeData.SlimeDef, posOrSeco
 	subLabel.TextScaled = true
 	subLabel.TextColor3 = Color3.fromRGB(255, 225, 85)
 	subLabel.TextStrokeTransparency = 0.1
-	subLabel.Text = "🥚 Hatching " .. slimeDef.Name .. "..."
+	subLabel.Text = "🧠🥚 Hatching Brainrot..."
 	subLabel.Parent = timerBB
 
 	eggModel:PivotTo(CFrame.new(targetPos))
 	return eggModel
 end
 
--- Creates a 3D Hatched Squishy Tool for the player's Roblox Backpack (Bottom Hotbar)
+-- Creates a 3D Hatched Brainrot / Squishy Tool for the player's Roblox Backpack (Bottom Hotbar)
 function SquishyBuilder.CreateSquishyBackpackTool(slimeDef: SlimeData.SlimeDef, squishyLevel: number?): Tool
 	local lvl = squishyLevel or 1
 	local cps = SlimeData.GetSquishyCoinsPerSec(slimeDef, lvl)
+	local isBrainrot = (tonumber(slimeDef.Id) or 1) <= 35
 
 	local tool = Instance.new("Tool")
-	tool.Name = string.format("🥟 %s ($%s/s)", slimeDef.Name, formatNumber(cps))
+	tool.Name = string.format("%s %s ($%s/s)", if isBrainrot then "🧠" else "🥟", slimeDef.Name, formatNumber(cps))
 	tool.ToolTip = string.format("Equip & Click in your Pen to place %s (+$%s/sec)!", slimeDef.Name, formatNumber(cps))
 	tool.RequiresHandle = true
 	tool.CanBeDropped = false
@@ -747,7 +1239,8 @@ function SquishyBuilder.CreateSquishyBackpackTool(slimeDef: SlimeData.SlimeDef, 
 	return tool
 end
 
--- Creates a Live Roaming 3D Squishy inside the player's Fenced Hatchery Pen matching the exact 117 Species, growing bigger & gaining Crowns as it levels up!
+-- Creates a Live Roaming 3D Hatched Brainrot / Squishy inside the player's Fenced Pen,
+-- scaling by BOTH its Stage Hatch Size (1.0x in Stage 1 up to 3.2x in Stage 8) AND its Level (Lv.1-Lv.15)!
 function SquishyBuilder.CreateHatchedSquishy(
 	slimeDef: SlimeData.SlimeDef,
 	posOrLevel: any,
@@ -758,9 +1251,13 @@ function SquishyBuilder.CreateHatchedSquishy(
 	local lvl = if typeof(posOrLevel) == "number" then posOrLevel else (maybeLevel or 1)
 	local tier = maybeGelTier or 1
 	local numId = tonumber(slimeDef.Id) or 1
-	local levelScaleBoost = 1 + math.min(0.95, (lvl - 1) * 0.14)
-	local scale = (if slimeDef.IsBoss then 1.38 else 1.2)
-	local radius = 2.25 * scale
+	local stageNum = math.clamp(tonumber(slimeDef.Level) or 1, 1, 8)
+	local stageHatchScale = if SlimeData.GetStageHatchScale
+		then SlimeData.GetStageHatchScale(stageNum)
+		else (1.0 + (stageNum - 1) * 0.22)
+	local levelScaleBoost = (1 + math.min(0.85, (lvl - 1) * 0.11)) * stageHatchScale
+	local scale = (if slimeDef.IsBoss then 1.15 else 1.0)
+	local radius = 2.05 * scale
 
 	local model = Instance.new("Model")
 	model.Name = "Squishy_" .. tostring(slimeDef.Id)
@@ -775,7 +1272,7 @@ function SquishyBuilder.CreateHatchedSquishy(
 		Material = Enum.Material.SmoothPlastic,
 		Reflectance = if tier >= 2 or lvl >= 3 then 0.28 else 0.14,
 		Color = outerColor,
-		Transparency = 0.06,
+		Transparency = 0.04,
 		Size = Vector3.new(radius * 2, radius * 1.82, radius * 2),
 		Position = position + Vector3.new(0, radius * 0.9, 0),
 		Parent = model,
@@ -784,6 +1281,7 @@ function SquishyBuilder.CreateHatchedSquishy(
 	model.PrimaryPart = body
 	addFaceToBody(body, model, radius * 0.96, scale, true)
 	addSpeciesFeatures(body, model, slimeDef, radius, scale, true)
+	attachCollectiblePopGlow(model, body, outerColor, slimeDef.SecondaryColor, 12, 1.35)
 
 	-- Add 3D Golden/Rainbow Evolution Crown & Aura Ring when leveled up (Lv.2+)!
 	if lvl >= 2 then
@@ -799,7 +1297,7 @@ function SquishyBuilder.CreateHatchedSquishy(
 		})
 	end
 
-	-- Physically grow the entire 3D Squishy model larger using ScaleTo as its Level increases!
+	-- Physically scale the 3D Brainrot model by StageHatchScale * LevelScaleBoost!
 	if levelScaleBoost > 1.01 then
 		pcall(function()
 			model:ScaleTo(levelScaleBoost)
@@ -808,6 +1306,7 @@ function SquishyBuilder.CreateHatchedSquishy(
 
 	model:SetAttribute("SlimeId", slimeDef.Id)
 	model:SetAttribute("SquishyLevel", lvl)
+	model:SetAttribute("StageHatchScale", stageHatchScale)
 	model:SetAttribute("ScaleMultiplier", levelScaleBoost)
 
 	local cps = SlimeData.GetSquishyCoinsPerSec(slimeDef, lvl)
@@ -820,8 +1319,8 @@ function SquishyBuilder.CreateHatchedSquishy(
 
 	local upgPrompt = Instance.new("ProximityPrompt")
 	upgPrompt.Name = "PedestalUpgradePrompt"
-	upgPrompt.ActionText = string.format("🌱 Grow & Level Up -> Lv.%d ($%s)", lvl + 1, formatNumber(upgCost))
-	upgPrompt.ObjectText = string.format("%s [Lv.%d • x%.2f Size] (+$%s/s)", slimeDef.Name, lvl, levelScaleBoost, formatNumber(cps))
+	upgPrompt.ActionText = string.format("🌱 Level Up Brainrot -> Lv.%d ($%s)", lvl + 1, formatNumber(upgCost))
+	upgPrompt.ObjectText = string.format("%s [Lv.%d • Stage %d %.1fx Size] (+$%s/s)", slimeDef.Name, lvl, stageNum, levelScaleBoost, formatNumber(cps))
 	upgPrompt.HoldDuration = 0
 	upgPrompt.MaxActivationDistance = 14
 	upgPrompt.RequiresLineOfSight = false
@@ -831,7 +1330,7 @@ function SquishyBuilder.CreateHatchedSquishy(
 
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "SquishyTag"
-	bb.Size = UDim2.new(5.2, 0, 1.75, 0)
+	bb.Size = UDim2.new(5.4, 0, 1.85, 0)
 	bb.StudsOffset = Vector3.new(0, (radius * levelScaleBoost) + 2.2, 0)
 	bb.AlwaysOnTop = false
 	bb.LightInfluence = 0
@@ -846,7 +1345,7 @@ function SquishyBuilder.CreateHatchedSquishy(
 	nameLabel.TextScaled = true
 	nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 	nameLabel.TextStrokeTransparency = 0.08
-	nameLabel.Text = string.format("%s%s [Lv.%d]", if lvl >= 2 then "👑 " else "", slimeDef.Name, lvl)
+	nameLabel.Text = string.format("%s%s [Lv.%d]", if lvl >= 2 then "👑 " else "🧠 ", slimeDef.Name, lvl)
 	nameLabel.Parent = bb
 
 	local rarityLabel = Instance.new("TextLabel")
@@ -858,7 +1357,7 @@ function SquishyBuilder.CreateHatchedSquishy(
 	rarityLabel.TextScaled = true
 	rarityLabel.TextColor3 = SlimeData.RarityColors[slimeDef.Rarity] or Color3.fromRGB(200, 200, 210)
 	rarityLabel.TextStrokeTransparency = 0.15
-	rarityLabel.Text = string.format("%s • %.0f%% Size", slimeDef.Rarity, levelScaleBoost * 100)
+	rarityLabel.Text = string.format("%s • Stage %d (%.1fx Size)", slimeDef.Rarity, stageNum, levelScaleBoost)
 	rarityLabel.Parent = bb
 
 	local rateLabel = Instance.new("TextLabel")

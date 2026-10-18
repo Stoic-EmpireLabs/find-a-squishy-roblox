@@ -10,13 +10,51 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local PrebuiltLoader = {}
 
--- Fast, verified Creator Store 3D Asset IDs (loads in <0.3s total with zero Studio freeze)
+-- Fast, verified Creator Store 3D Asset IDs for Brainrots, Eggs, Gold Coins, Obby Courses & Stage 1-8 Landmarks
 PrebuiltLoader.CREATOR_STORE_ASSETS = {
 	Squishmallows = { 8539945428, 5495888435 },
+	Brainrots = {
+		111854862176457, 83018340261801, -- Tralalero Tralala
+		117924360887083, 91327024837680, -- Bombardiro Crocodilo
+		138151705692565, 137189209569355, -- Tung Tung Tung Sahur
+		100138257253783, 77231614368559, -- Lirili Larila
+		100538198930997, 112709347552350, -- Brr Brr Patapim
+		138416013720223, 139476190777606, -- Cappuccino Assassino
+		134140230073093, 83732984780551, -- Chimpanzini Bananini
+		129565620410132, 128822862184236, -- La Vaca Saturno Saturnita
+		132021456717690, 75983792852042, -- Ballerina Cappuccina
+		132790929973448, 106304037616485, -- Trippi Troppi
+		136392638607318, 106092335355790, -- Frigo Camelo
+		111434069005815, 80500909913897, -- Bombombini Gusini
+		86371208126006, -- Burbaloni Luliloli
+		12370206919, 114171365520457, -- Glorbo Fruttodrillo
+		11390853367, 15765967358, -- Maxwell Cat
+		14819601003, 17759547081, -- Skibidi Titan
+	},
+	BrainrotEggs = { 139663370542966, 154752063, 97487252360689 },
+	GoldCoins = { 25638529, 25718369, 1564608051, 9418153507 },
+	ObbyPieces = {
+		14288014072, 76697739621349, 73062373189329, 14667164618, -- Obby Stage Courses
+		12120501468, 79641631925549, 12120527511, 95225104831884, -- Obby Obstacles & Parkour
+		10202936, 4514115489, 1172079000, 4644268803, -- Obby Spinners / Sweeper Beams
+		14796107102, 8517401506, 134019342626406, -- Jump Pads & Moving Platforms
+		76838144711090, 82837302167177, -- Trampoline Bounce Pads
+		13804790028, 12317896672, -- Ladders & Climb Walls
+	},
+	StageLandmarks = {
+		114591511925320, 7860328354, 9839019518, 18771840070, -- Stage 1: Windmill, Treehouses, Mushroom Cottage
+		4400478930, 137470241818443, 131526002682377, -- Stage 2: Gingerbread Mansion, Candy Canes, Carousel
+		7137210839, 5706899551, 18852029806, 95052703843351, -- Stage 3: Pirate Ship, Water Slide, Sand Castle, Lighthouse
+		123493048047404, 101559450428915, -- Stage 4: Dragon Statue, Bamboo Pagoda Tower
+		3858204539, 116874485094995, 73198167966628, -- Stage 5: Crystal Cave, Cyberpunk Skyscraper, Arcade
+		85537579537253, 2135149422, 154465953, -- Stage 6: Ferris Wheel, Rainbow Bridge, Cloud/Ice Palace
+		256969126, 16437023855, -- Stage 7: Erupting Volcano, Obsidian Skull Fortress
+		50089105, 171327489, 4790754477, -- Stage 8: UFO Mothership, Void Portal, Golden Throne
+	},
 	Trees = { 4893246329 },
-	PalmTrees = { 10562894034 },
+	PalmTrees = { 10562894034, 4586726395 },
 	Crystals = { 4576917611 },
-	Bridges = { 18262413487 },
+	Bridges = { 18262413487, 2135149422 },
 	Bats = { 4494586033, 13233709250 },
 	BearTraps = { 9615431080, 470975521 },
 }
@@ -181,6 +219,16 @@ local function sanitizeCreatorStoreModel(rawInst: Instance, category: string, in
 				desc.CanQuery = false
 				desc.Massless = true
 				desc.CastShadow = false
+				-- Zero Map Glow Rule: environment & landmark models never use Neon; only collectibles (Brainrots, Eggs, Coins, Squishies) may glow!
+				if
+					desc.Material == Enum.Material.Neon
+					and category ~= "Brainrots"
+					and category ~= "BrainrotEggs"
+					and category ~= "GoldCoins"
+					and category ~= "Squishmallows"
+				then
+					desc.Material = Enum.Material.SmoothPlastic
+				end
 				table.insert(validParts, desc)
 			end
 		end
@@ -191,7 +239,7 @@ local function sanitizeCreatorStoreModel(rawInst: Instance, category: string, in
 		return nil
 	end
 
-	-- Properly color Creator Store Houses with vibrant architectural palettes!
+	-- Properly color Creator Store Houses with matte architectural palettes!
 	if category == "Houses" then
 		local pal = HOUSE_PALETTES[((index - 1) % #HOUSE_PALETTES) + 1]
 		local bbCF, bbSize = container:GetBoundingBox()
@@ -201,8 +249,8 @@ local function sanitizeCreatorStoreModel(rawInst: Instance, category: string, in
 			if string.find(nm, "roof") or string.find(nm, "shingle") or p.Position.Y > roofThresholdY or p:IsA("WedgePart") then
 				p.Color = pal.Roof
 			elseif string.find(nm, "window") or string.find(nm, "glass") then
-				p.Color = Color3.fromRGB(255, 242, 155)
-				p.Material = Enum.Material.Neon
+				p.Color = Color3.fromRGB(165, 205, 235)
+				p.Material = Enum.Material.Glass
 			elseif string.find(nm, "door") then
 				p.Color = Color3.fromRGB(128, 74, 38)
 				p.Material = Enum.Material.Wood
@@ -321,8 +369,8 @@ local function buildHouseTemplate(idx: number, wallColor: Color3, roofColor: Col
 			Name = "WindowGlass",
 			Size = Vector3.new(3.4, 3.4, 0.7),
 			Position = Vector3.new(wx, 1.2 + bodyH * 0.58, d * 0.5 + 0.28),
-			Color = Color3.fromRGB(255, 242, 150),
-			Material = Enum.Material.Neon,
+			Color = Color3.fromRGB(175, 210, 238),
+			Material = Enum.Material.Glass,
 			Parent = m,
 		})
 	end
@@ -339,15 +387,15 @@ local function buildTreeTemplate(idx: number): Model
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(10, 2.8, 2.8),
 		CFrame = CFrame.new(0, 5, 0) * CFrame.Angles(0, 0, math.rad(90)),
-		Color = Color3.fromRGB(125, 78, 42),
+		Color = Color3.fromRGB(115, 74, 42),
 		Material = Enum.Material.Wood,
 		Parent = m,
 	})
 
 	local leafColors = {
-		Color3.fromRGB(75, 205, 85),
-		Color3.fromRGB(95, 225, 95),
-		Color3.fromRGB(65, 185, 95),
+		Color3.fromRGB(68, 155, 72),
+		Color3.fromRGB(78, 168, 78),
+		Color3.fromRGB(58, 142, 68),
 	}
 	local baseColor = leafColors[((idx - 1) % #leafColors) + 1]
 
@@ -357,7 +405,7 @@ local function buildTreeTemplate(idx: number): Model
 		Size = Vector3.new(12.5, 10.5, 12.5),
 		Position = Vector3.new(0, 12.5, 0),
 		Color = baseColor,
-		Material = Enum.Material.SmoothPlastic,
+		Material = Enum.Material.Grass,
 		Parent = m,
 	})
 	makePart({
@@ -365,8 +413,8 @@ local function buildTreeTemplate(idx: number): Model
 		Shape = Enum.PartType.Ball,
 		Size = Vector3.new(9.2, 8.2, 9.2),
 		Position = Vector3.new(0, 17.5, 0),
-		Color = baseColor:Lerp(Color3.fromRGB(255, 255, 180), 0.18),
-		Material = Enum.Material.SmoothPlastic,
+		Color = baseColor:Lerp(Color3.fromRGB(195, 215, 140), 0.15),
+		Material = Enum.Material.Grass,
 		Parent = m,
 	})
 	for side = -1, 1, 2 do
@@ -376,7 +424,7 @@ local function buildTreeTemplate(idx: number): Model
 			Size = Vector3.new(8.5, 7.5, 8.5),
 			Position = Vector3.new(side * 3.8, 11.2, side * 1.5),
 			Color = baseColor,
-			Material = Enum.Material.SmoothPlastic,
+			Material = Enum.Material.Grass,
 			Parent = m,
 		})
 	end
@@ -389,11 +437,11 @@ local function buildCandyTemplate(idx: number): Model
 	m.Name = "Candy_" .. tostring(idx)
 
 	local colors = {
-		Color3.fromRGB(255, 90, 175),
-		Color3.fromRGB(85, 220, 255),
-		Color3.fromRGB(255, 210, 75),
-		Color3.fromRGB(185, 105, 255),
-		Color3.fromRGB(95, 245, 155),
+		Color3.fromRGB(215, 85, 145),
+		Color3.fromRGB(85, 175, 205),
+		Color3.fromRGB(215, 175, 75),
+		Color3.fromRGB(155, 95, 205),
+		Color3.fromRGB(85, 185, 130),
 	}
 	local c1 = colors[((idx - 1) % #colors) + 1]
 	local c2 = colors[(idx % #colors) + 1]
@@ -404,7 +452,7 @@ local function buildCandyTemplate(idx: number): Model
 			Shape = Enum.PartType.Cylinder,
 			Size = Vector3.new(12, 1.3, 1.3),
 			CFrame = CFrame.new(0, 6, 0) * CFrame.Angles(0, 0, math.rad(90)),
-			Color = Color3.fromRGB(255, 255, 255),
+			Color = Color3.fromRGB(235, 232, 225),
 			Material = Enum.Material.SmoothPlastic,
 			Parent = m,
 		})
@@ -422,7 +470,7 @@ local function buildCandyTemplate(idx: number): Model
 			Shape = Enum.PartType.Cylinder,
 			Size = Vector3.new(2.4, 7.8, 7.8),
 			CFrame = CFrame.new(0, 15.5, 0),
-			Color = Color3.fromRGB(255, 255, 255),
+			Color = Color3.fromRGB(242, 238, 232),
 			Material = Enum.Material.SmoothPlastic,
 			Parent = m,
 		})
@@ -432,7 +480,7 @@ local function buildCandyTemplate(idx: number): Model
 			Size = Vector3.new(2.6, 4.4, 4.4),
 			CFrame = CFrame.new(0, 15.5, 0),
 			Color = c2,
-			Material = Enum.Material.Neon,
+			Material = Enum.Material.SmoothPlastic,
 			Parent = m,
 		})
 	else
@@ -441,7 +489,7 @@ local function buildCandyTemplate(idx: number): Model
 			Shape = Enum.PartType.Cylinder,
 			Size = Vector3.new(10, 2.4, 2.4),
 			CFrame = CFrame.new(0, 5, 0) * CFrame.Angles(0, 0, math.rad(90)),
-			Color = Color3.fromRGB(235, 185, 120),
+			Color = Color3.fromRGB(205, 162, 108),
 			Material = Enum.Material.SmoothPlastic,
 			Parent = m,
 		})
@@ -478,7 +526,7 @@ local function buildPalmTreeTemplate(idx: number): Model
 			Shape = Enum.PartType.Cylinder,
 			Size = Vector3.new(4.2, 2.6 - seg * 0.25, 2.6 - seg * 0.25),
 			CFrame = CFrame.new((seg - 1) * 0.45, (seg - 0.5) * 3.8, 0) * CFrame.Angles(0, 0, math.rad(84)),
-			Color = Color3.fromRGB(155, 105, 58),
+			Color = Color3.fromRGB(142, 96, 54),
 			Material = Enum.Material.Wood,
 			Parent = m,
 		})
@@ -491,8 +539,8 @@ local function buildPalmTreeTemplate(idx: number): Model
 			Name = "PalmFrond_" .. f,
 			Size = Vector3.new(8.5, 0.8, 2.8),
 			CFrame = CFrame.new(topPos) * CFrame.Angles(0, ang, math.rad(-22)) * CFrame.new(3.8, 0, 0),
-			Color = Color3.fromRGB(68, 205, 82),
-			Material = Enum.Material.SmoothPlastic,
+			Color = Color3.fromRGB(64, 158, 72),
+			Material = Enum.Material.Grass,
 			Parent = m,
 		})
 	end
@@ -517,9 +565,9 @@ local function buildCrystalTemplate(idx: number): Model
 	m.Name = "Crystals_" .. tostring(idx)
 
 	local colors = {
-		Color3.fromRGB(175, 85, 255),
-		Color3.fromRGB(75, 225, 255),
-		Color3.fromRGB(255, 95, 215),
+		Color3.fromRGB(135, 78, 185),
+		Color3.fromRGB(68, 155, 185),
+		Color3.fromRGB(185, 82, 155),
 	}
 	local col = colors[((idx - 1) % #colors) + 1]
 
@@ -528,7 +576,8 @@ local function buildCrystalTemplate(idx: number): Model
 		Size = Vector3.new(3.8, 16, 3.8),
 		CFrame = CFrame.new(0, 8, 0) * CFrame.Angles(math.rad(6), math.rad(25), math.rad(-5)),
 		Color = col,
-		Material = Enum.Material.Neon,
+		Material = Enum.Material.Glass,
+		Reflectance = 0.15,
 		Parent = m,
 	})
 	for s = -1, 1, 2 do
@@ -536,8 +585,9 @@ local function buildCrystalTemplate(idx: number): Model
 			Name = "SideSpire_" .. s,
 			Size = Vector3.new(2.8, 11, 2.8),
 			CFrame = CFrame.new(s * 3.2, 5.2, s * 1.2) * CFrame.Angles(math.rad(-s * 12), 0, math.rad(-s * 24)),
-			Color = col:Lerp(Color3.fromRGB(255, 255, 255), 0.25),
-			Material = Enum.Material.Neon,
+			Color = col:Lerp(Color3.fromRGB(210, 215, 225), 0.2),
+			Material = Enum.Material.Glass,
+			Reflectance = 0.15,
 			Parent = m,
 		})
 	end
@@ -561,8 +611,8 @@ local function buildVolcanoRockTemplate(idx: number): Model
 		Name = "LavaVein1",
 		Size = Vector3.new(9.0, 1.8, 2.2),
 		CFrame = CFrame.new(0, 6.5, 0) * CFrame.Angles(0, math.rad(idx * 40), math.rad(24)),
-		Color = Color3.fromRGB(255, 85, 20),
-		Material = Enum.Material.Neon,
+		Color = Color3.fromRGB(185, 68, 28),
+		Material = Enum.Material.CrackedLava,
 		Parent = m,
 	})
 	makePart({
@@ -570,8 +620,8 @@ local function buildVolcanoRockTemplate(idx: number): Model
 		Shape = Enum.PartType.Ball,
 		Size = Vector3.new(4.5, 3.5, 4.5),
 		Position = Vector3.new(0, 13.5, 0),
-		Color = Color3.fromRGB(255, 115, 25),
-		Material = Enum.Material.Neon,
+		Color = Color3.fromRGB(195, 78, 32),
+		Material = Enum.Material.CrackedLava,
 		Parent = m,
 	})
 
@@ -586,7 +636,7 @@ local function buildBridgeTemplate(idx: number): Model
 		Name = "Deck",
 		Size = Vector3.new(12, 1.2, 18),
 		Position = Vector3.new(0, 1.2, 0),
-		Color = Color3.fromRGB(168, 112, 62),
+		Color = Color3.fromRGB(148, 98, 56),
 		Material = Enum.Material.WoodPlanks,
 		CanCollide = true,
 		Parent = m,
@@ -596,7 +646,7 @@ local function buildBridgeTemplate(idx: number): Model
 			Name = "HandRail",
 			Size = Vector3.new(0.8, 1.0, 18),
 			Position = Vector3.new(sideX, 3.4, 0),
-			Color = Color3.fromRGB(135, 85, 44),
+			Color = Color3.fromRGB(125, 78, 42),
 			Material = Enum.Material.Wood,
 			Parent = m,
 		})
@@ -605,7 +655,7 @@ local function buildBridgeTemplate(idx: number): Model
 				Name = "BridgePost",
 				Size = Vector3.new(1.0, 3.6, 1.0),
 				Position = Vector3.new(sideX, 2.0, zPost),
-				Color = Color3.fromRGB(120, 74, 36),
+				Color = Color3.fromRGB(110, 68, 34),
 				Material = Enum.Material.Wood,
 				Parent = m,
 			})
@@ -620,10 +670,10 @@ local function buildObbyStageTemplate(idx: number): Model
 	m.Name = "Obstacles_" .. tostring(idx)
 
 	local padColors = {
-		Color3.fromRGB(255, 105, 185),
-		Color3.fromRGB(85, 215, 255),
-		Color3.fromRGB(255, 220, 75),
-		Color3.fromRGB(115, 245, 130),
+		Color3.fromRGB(145, 95, 62),
+		Color3.fromRGB(115, 128, 142),
+		Color3.fromRGB(165, 135, 85),
+		Color3.fromRGB(92, 138, 98),
 	}
 	for i = 1, 4 do
 		makePart({
@@ -632,11 +682,120 @@ local function buildObbyStageTemplate(idx: number): Model
 			Size = Vector3.new(1.6, 5.5, 5.5),
 			CFrame = CFrame.new((i - 2.5) * 4.2, i * 2.2, (i % 2) * 2.4) * CFrame.Angles(0, 0, math.rad(90)),
 			Color = padColors[((idx + i - 2) % #padColors) + 1],
-			Material = Enum.Material.SmoothPlastic,
+			Material = Enum.Material.WoodPlanks,
 			CanCollide = true,
 			Parent = m,
 		})
 	end
+
+	return finalizeTemplate(m)
+end
+
+local function buildGoldCoinTemplate(idx: number): Model
+	local m = Instance.new("Model")
+	m.Name = "GoldCoins_" .. tostring(idx)
+
+	makePart({
+		Name = "CoinRim",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(0.75, 3.6, 3.6),
+		CFrame = CFrame.new(0, 2.2, 0),
+		Color = Color3.fromRGB(255, 205, 35),
+		Material = Enum.Material.Neon,
+		Parent = m,
+	})
+	makePart({
+		Name = "CoinFace",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(0.85, 2.7, 2.7),
+		CFrame = CFrame.new(0, 2.2, 0),
+		Color = Color3.fromRGB(255, 238, 110),
+		Material = Enum.Material.Neon,
+		Parent = m,
+	})
+	makePart({
+		Name = "CoinStarEmblem",
+		Size = Vector3.new(0.95, 1.4, 0.55),
+		CFrame = CFrame.new(0, 2.2, 0),
+		Color = Color3.fromRGB(255, 255, 210),
+		Material = Enum.Material.Neon,
+		Parent = m,
+	})
+
+	return finalizeTemplate(m)
+end
+
+local function buildBrainrotEggTemplate(idx: number): Model
+	local m = Instance.new("Model")
+	m.Name = "BrainrotEggs_" .. tostring(idx)
+
+	local eggColors = {
+		Color3.fromRGB(85, 215, 255),
+		Color3.fromRGB(255, 115, 205),
+		Color3.fromRGB(255, 215, 65),
+	}
+	local c = eggColors[((idx - 1) % #eggColors) + 1]
+
+	local shell = makePart({
+		Name = "MysteryShell",
+		Shape = Enum.PartType.Ball,
+		Size = Vector3.new(3.8, 4.8, 3.8),
+		Position = Vector3.new(0, 2.6, 0),
+		Color = c,
+		Material = Enum.Material.SmoothPlastic,
+		Reflectance = 0.25,
+		Parent = m,
+	})
+	local sp = Instance.new("SpecialMesh")
+	sp.MeshType = Enum.MeshType.Sphere
+	sp.Scale = Vector3.new(1, 1.22, 1)
+	sp.Parent = shell
+
+	makePart({
+		Name = "GlowingCrackBand",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(0.55, 4.1, 4.1),
+		CFrame = CFrame.new(0, 2.6, 0) * CFrame.Angles(math.rad(14), 0, math.rad(90)),
+		Color = Color3.fromRGB(255, 245, 120),
+		Material = Enum.Material.Neon,
+		Parent = m,
+	})
+
+	return finalizeTemplate(m)
+end
+
+local function buildStageLandmarkTemplate(idx: number): Model
+	local m = Instance.new("Model")
+	m.Name = "StageLandmarks_" .. tostring(idx)
+
+	-- Architectural non-glowing matte landmark base + tower/feature per stage index (1..8)
+	makePart({
+		Name = "LandmarkBase",
+		Size = Vector3.new(22, 2.0, 22),
+		Position = Vector3.new(0, 1.0, 0),
+		Color = Color3.fromRGB(128, 124, 118),
+		Material = Enum.Material.Cobblestone,
+		CanCollide = true,
+		Parent = m,
+	})
+	makePart({
+		Name = "LandmarkTower",
+		Size = Vector3.new(14, 18, 14),
+		Position = Vector3.new(0, 11.0, 0),
+		Color = Color3.fromRGB(168, 142, 112),
+		Material = Enum.Material.Brick,
+		CanCollide = true,
+		Parent = m,
+	})
+	makePart({
+		Name = "LandmarkRoofDeck",
+		Size = Vector3.new(17, 1.5, 17),
+		Position = Vector3.new(0, 20.75, 0),
+		Color = Color3.fromRGB(115, 72, 48),
+		Material = Enum.Material.WoodPlanks,
+		CanCollide = true,
+		Parent = m,
+	})
 
 	return finalizeTemplate(m)
 end
@@ -650,7 +809,7 @@ local function buildFountainTemplate(): Model
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(2.2, 14, 14),
 		CFrame = CFrame.new(0, 1.1, 0) * CFrame.Angles(0, 0, math.rad(90)),
-		Color = Color3.fromRGB(215, 220, 232),
+		Color = Color3.fromRGB(195, 200, 210),
 		Material = Enum.Material.Marble,
 		Parent = m,
 	})
@@ -659,8 +818,8 @@ local function buildFountainTemplate(): Model
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(2.4, 12.2, 12.2),
 		CFrame = CFrame.new(0, 1.15, 0) * CFrame.Angles(0, 0, math.rad(90)),
-		Color = Color3.fromRGB(65, 210, 255),
-		Material = Enum.Material.Neon,
+		Color = Color3.fromRGB(65, 165, 215),
+		Material = Enum.Material.Glass,
 		Transparency = 0.2,
 		Parent = m,
 	})
@@ -669,7 +828,7 @@ local function buildFountainTemplate(): Model
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(7.5, 3.2, 3.2),
 		CFrame = CFrame.new(0, 4.5, 0) * CFrame.Angles(0, 0, math.rad(90)),
-		Color = Color3.fromRGB(225, 230, 240),
+		Color = Color3.fromRGB(205, 210, 220),
 		Material = Enum.Material.Marble,
 		Parent = m,
 	})
@@ -678,8 +837,8 @@ local function buildFountainTemplate(): Model
 		Shape = Enum.PartType.Ball,
 		Size = Vector3.new(4.2, 4.2, 4.2),
 		Position = Vector3.new(0, 9.2, 0),
-		Color = Color3.fromRGB(95, 230, 255),
-		Material = Enum.Material.Neon,
+		Color = Color3.fromRGB(85, 185, 230),
+		Material = Enum.Material.Glass,
 		Parent = m,
 	})
 
@@ -702,16 +861,18 @@ local function buildChestTemplate(): Model
 		Name = "GoldTrim",
 		Size = Vector3.new(4.4, 0.8, 3.2),
 		Position = Vector3.new(0, 2.5, 0),
-		Color = Color3.fromRGB(255, 215, 55),
-		Material = Enum.Material.Neon,
+		Color = Color3.fromRGB(215, 175, 45),
+		Material = Enum.Material.Metal,
+		Reflectance = 0.25,
 		Parent = m,
 	})
 	makePart({
 		Name = "LockPlate",
 		Size = Vector3.new(1.0, 1.2, 0.4),
 		Position = Vector3.new(0, 2.2, 1.55),
-		Color = Color3.fromRGB(255, 225, 75),
-		Material = Enum.Material.Neon,
+		Color = Color3.fromRGB(225, 185, 55),
+		Material = Enum.Material.Metal,
+		Reflectance = 0.25,
 		Parent = m,
 	})
 
@@ -736,7 +897,7 @@ local function buildBirdNestTemplate(): Model
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(1.25, 5.0, 5.0),
 		CFrame = CFrame.new(0, 0.62, 0) * CFrame.Angles(0, 0, math.rad(90)),
-		Color = Color3.fromRGB(245, 205, 75),
+		Color = Color3.fromRGB(215, 182, 72),
 		Material = Enum.Material.Grass,
 		Parent = m,
 	})
@@ -817,7 +978,7 @@ function PrebuiltLoader.EnsurePrebuiltAssets(customObjectFetcher: ((number) -> {
 		totalLoaded += 1
 	end
 
-	-- 2. Only call customObjectFetcher if explicitly provided and category is empty
+	-- 2. Call customObjectFetcher when provided in Studio to download & bake Creator Store Brainrots, Eggs, Coins, ObbyPieces & StageLandmarks
 	if customObjectFetcher then
 		for category, idList in pairs(PrebuiltLoader.CREATOR_STORE_ASSETS) do
 			local catFolder = ensureCategory(category)
@@ -827,6 +988,7 @@ function PrebuiltLoader.EnsurePrebuiltAssets(customObjectFetcher: ((number) -> {
 					if ok and objs and #objs > 0 then
 						local sanitized = sanitizeCreatorStoreModel(objs[1], category, idx)
 						if sanitized then
+							sanitized:SetAttribute("SourceAssetId", assetId)
 							sanitized.Parent = catFolder
 							totalLoaded += 1
 							storeLoadedCount += 1
@@ -837,6 +999,37 @@ function PrebuiltLoader.EnsurePrebuiltAssets(customObjectFetcher: ((number) -> {
 		end
 	end
 
+	local goldCoinsFolder = ensureCategory("GoldCoins")
+	if #goldCoinsFolder:GetChildren() == 0 then
+		for i = 1, 4 do
+			buildGoldCoinTemplate(i).Parent = goldCoinsFolder
+			totalLoaded += 1
+		end
+	end
+
+	local brainrotEggsFolder = ensureCategory("BrainrotEggs")
+	if #brainrotEggsFolder:GetChildren() == 0 then
+		for i = 1, 3 do
+			buildBrainrotEggTemplate(i).Parent = brainrotEggsFolder
+			totalLoaded += 1
+		end
+	end
+
+	local obbyPiecesFolder = ensureCategory("ObbyPieces")
+	if #obbyPiecesFolder:GetChildren() == 0 then
+		for i = 1, 4 do
+			buildObbyStageTemplate(i).Parent = obbyPiecesFolder
+			totalLoaded += 1
+		end
+	end
+
+	local stageLandmarksFolder = ensureCategory("StageLandmarks")
+	if #stageLandmarksFolder:GetChildren() == 0 then
+		for i = 1, 8 do
+			buildStageLandmarkTemplate(i).Parent = stageLandmarksFolder
+			totalLoaded += 1
+		end
+	end
 
 	local treesFolder = ensureCategory("Trees")
 	if #treesFolder:GetChildren() == 0 then
@@ -921,9 +1114,11 @@ end
 local CATEGORY_ALIASES: { [string]: string } = {
 	HubFountain = "Fountain",
 	CashChest = "Chest",
-	ObbyStages = "Obstacles",
+	ObbyStages = "ObbyPieces",
 	MeadowTrees = "Trees",
 	CandyProps = "Candy",
+	Coins = "GoldCoins",
+	Eggs = "BrainrotEggs",
 }
 
 function PrebuiltLoader.GetCategoryTemplates(categoryName: string): { Model }

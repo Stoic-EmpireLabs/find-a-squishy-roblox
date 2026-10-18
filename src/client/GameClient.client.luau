@@ -30,8 +30,12 @@ local UIBuilder = require(Shared:WaitForChild("UIBuilder"))
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local StateSyncEvent = Remotes:WaitForChild("StateSync") :: RemoteEvent
 local EggCapturedEvent = Remotes:WaitForChild("SquishyCaptured") :: RemoteEvent
+local CoinCollectedEvent = Remotes:WaitForChild("CoinCollected") :: RemoteEvent
 local GuardianAlertEvent = Remotes:WaitForChild("GuardianAlert") :: RemoteEvent
 local BuySpeedUpgradeEvent = Remotes:WaitForChild("BuySpeedUpgrade") :: RemoteEvent
+local BuyFenceUpgradeEvent = Remotes:WaitForChild("BuyFenceUpgrade") :: RemoteEvent
+local BuySquishyHintEvent = Remotes:WaitForChild("BuySquishyHint") :: RemoteEvent
+local UnlockStageGateEvent = Remotes:WaitForChild("UnlockStageGate") :: RemoteEvent
 local TreadmillTapBoostEvent = Remotes:WaitForChild("TreadmillTapBoost") :: RemoteEvent
 local RebirthRequestEvent = Remotes:WaitForChild("RebirthRequest") :: RemoteEvent
 local ClaimDailyRewardEvent = Remotes:WaitForChild("ClaimDailyReward") :: RemoteEvent
@@ -45,6 +49,37 @@ local OpenModalEvent = Remotes:WaitForChild("OpenModal") :: RemoteEvent
 local GetInitialStateFunc = Remotes:WaitForChild("GetInitialState") :: RemoteFunction
 
 local ui = UIBuilder.CreateHUD(playerGui)
+
+local function hideWorldItemForLocalPlayer(target: Instance?)
+	if not target then
+		return
+	end
+	if target:IsA("BasePart") then
+		target.Transparency = 1
+		target.CanTouch = false
+		target.CanQuery = false
+		target.CanCollide = false
+	end
+	for _, d in ipairs(target:GetDescendants()) do
+		if d:IsA("BasePart") then
+			d.Transparency = 1
+			d.CanTouch = false
+			d.CanQuery = false
+			d.CanCollide = false
+		elseif
+			d:IsA("ProximityPrompt")
+			or d:IsA("BillboardGui")
+			or d:IsA("SurfaceGui")
+			or d:IsA("ParticleEmitter")
+			or d:IsA("Highlight")
+			or d:IsA("PointLight")
+		then
+			(d :: any).Enabled = false
+		elseif d:IsA("Decal") or d:IsA("Texture") then
+			d.Transparency = 1
+		end
+	end
+end
 
 local toastToken = 0
 local function showToast(msg: string, bgColor: Color3?)
@@ -168,6 +203,24 @@ end
 ui.BuySpeedBtn.MouseButton1Click:Connect(function()
 	BuySpeedUpgradeEvent:FireServer()
 end)
+
+if ui.BuyFenceBtn then
+	ui.BuyFenceBtn.MouseButton1Click:Connect(function()
+		BuyFenceUpgradeEvent:FireServer()
+	end)
+end
+
+if ui.BuyHintShopBtn then
+	ui.BuyHintShopBtn.MouseButton1Click:Connect(function()
+		BuySquishyHintEvent:FireServer()
+	end)
+end
+
+if ui.BuyHintIndexBtn then
+	ui.BuyHintIndexBtn.MouseButton1Click:Connect(function()
+		BuySquishyHintEvent:FireServer()
+	end)
+end
 
 ui.RebirthBtn.MouseButton1Click:Connect(function()
 	RebirthRequestEvent:FireServer()
@@ -491,20 +544,56 @@ local function applyStateToUI(state: any)
 	end
 
 	local curSpeedLvl = state.SpeedLevel or 1
+	local curFenceLvl = state.FenceLevel or 1
 	local nextTierIdx = math.clamp(curSpeedLvl + 1, 1, #SlimeData.TreadmillTiers)
 	local nextTierData = SlimeData.TreadmillTiers[nextTierIdx] or SlimeData.TreadmillTiers[1]
-	ui.BuySpeedBtn.Text = string.format(
-		"🏃 <b>Upgrade Treadmill -> [%s] [Lv.%d] - $%s</b>",
-		nextTierData.MultiplierLabel,
-		curSpeedLvl + 1,
-		SlimeData.FormatNumber(state.NextSpeedCost or 100)
-	)
+	if curSpeedLvl >= #SlimeData.TreadmillTiers then
+		ui.BuySpeedBtn.Text = "✅ <b>Treadmill MAX [Lv.8]</b>"
+	else
+		ui.BuySpeedBtn.Text = string.format(
+			"🦖 <b>Treadmill [%s] - $%s</b>",
+			nextTierData.MultiplierLabel,
+			SlimeData.FormatNumber(state.NextSpeedCost or 650)
+		)
+	end
+
+	if ui.BuyFenceBtn then
+		if curFenceLvl >= #SlimeData.FenceLevels then
+			ui.BuyFenceBtn.Text = "✅ <b>Fence MAX [Lv.8 • 35 Slots]</b>"
+		else
+			local nextFenceDef = SlimeData.GetFenceLevelDef(curFenceLvl + 1)
+			local nextMax = if nextFenceDef then nextFenceDef.MaxBrainrots else 7
+			ui.BuyFenceBtn.Text = string.format(
+				"🧱 <b>Fence Lv.%d (%d Slots) - $%s</b>",
+				curFenceLvl + 1,
+				nextMax,
+				SlimeData.FormatNumber(state.NextFenceCost or 500)
+			)
+		end
+	end
+
+	local hintStage = 1
+	if state.UnlockedLevels then
+		for sIdx = 1, 8 do
+			if state.UnlockedLevels[tostring(sIdx)] then
+				hintStage = sIdx
+			end
+		end
+	end
+	local hintCost = math.floor(500 * (2.6 ^ math.max(0, hintStage - 1)))
+	if ui.BuyHintShopBtn then
+		ui.BuyHintShopBtn.Text = string.format("🔍 <b>Squishy Hint - $%s</b>", SlimeData.FormatNumber(hintCost))
+	end
+	if ui.BuyHintIndexBtn then
+		ui.BuyHintIndexBtn.Text = string.format("🔍 <b>BUY SQUISHY HINT ($%s)</b>", SlimeData.FormatNumber(hintCost))
+	end
+
 	ui.RebirthBtn.Text = string.format(
-		"✨ <b>Rebirth #%d (+50%% Cash & Speed) - $%s</b>",
+		"🔥 <b>Rebirth #%d - $%s</b>",
 		(state.Rebirths or 0) + 1,
 		SlimeData.FormatNumber(state.NextRebirthCost or 5000)
 	)
-	ui.IndexTitle.Text = string.format("📘 <b>3D SQUISHY & EGG INDEX (%d / %d)</b>", foundCount, totalSquishies)
+	ui.IndexTitle.Text = string.format("📘 <b>3D BRAINROT & SQUISHY INDEX (%d / %d)</b>", foundCount, totalSquishies)
 
 	-- Update Spin Wheel Free Spin (5m) & Bonus Spins Button
 	local freeSpinWait = state.FreeSpinReadyIn or 0
@@ -563,21 +652,21 @@ local function applyStateToUI(state: any)
 					-- Collectible Squishies (#36-#117) permanently disappear on the client once collected!
 					if numId > 35 then
 						local m = worldEggsFolder:FindFirstChild("WorldEgg_" .. tostring(sKey)) or worldEggsFolder:FindFirstChild(tostring(sKey))
-						if m then
-							for _, d in ipairs(m:GetDescendants()) do
-								if d:IsA("BasePart") then
-									d.Transparency = 1
-									d.CanTouch = false
-									d.CanQuery = false
-									d.CanCollide = false
-								elseif d:IsA("ProximityPrompt") or d:IsA("BillboardGui") or d:IsA("SurfaceGui") or d:IsA("ParticleEmitter") then
-									(d :: any).Enabled = false
-								elseif d:IsA("Decal") or d:IsA("Texture") then
-									d.Transparency = 1
-								end
-							end
-						end
+						hideWorldItemForLocalPlayer(m)
 					end
+				end
+			end
+		end
+	end
+
+	if state.CollectedCoins then
+		local sw = Workspace:FindFirstChild("SquishyWorld")
+		local worldCoinsFolder = sw and sw:FindFirstChild("WorldCoins")
+		if worldCoinsFolder then
+			for coinId, isCollected in pairs(state.CollectedCoins) do
+				if isCollected then
+					local coinPart = worldCoinsFolder:FindFirstChild(tostring(coinId))
+					hideWorldItemForLocalPlayer(coinPart)
 				end
 			end
 		end
@@ -594,14 +683,14 @@ local function applyStateToUI(state: any)
 					cardInfo.Status.TextColor3 = Color3.fromRGB(110, 255, 140)
 				else
 					cardInfo.Frame.BackgroundColor3 = Color3.fromRGB(32, 38, 64)
-					cardInfo.Status.Text = string.format("🔒 <b>$%d/s</b>", sData.IncomePerSec)
+					cardInfo.Status.Text = string.format("🔒 <b>$%d/s (+$%s Bonus)</b>", sData.IncomePerSec, SlimeData.FormatNumber(sData.CoinReward or 50))
 					cardInfo.Status.TextColor3 = Color3.fromRGB(170, 180, 205)
 				end
 			end
 		end
 	end
 
-	-- Update cached Biome Gate Barriers & Sector 1 Stage Checklist Boards locally based on player's progress
+	-- Update cached Biome Gate Barriers & Sector 1 Stage Checklist Boards locally based on all 4 Stage Gate Unlock Requirements!
 	if #cachedGateBarriers == 0 or #cachedChecklistBoards == 0 then
 		refreshWorldCaches()
 	end
@@ -614,31 +703,46 @@ local function applyStateToUI(state: any)
 				desc.CanCollide = not unlocked
 				desc.Transparency = if unlocked then 0.88 else 0.32
 				desc.Color = if unlocked then Color3.fromRGB(85, 255, 130) else Color3.fromRGB(255, 65, 85)
+				local gatePrompt = desc:FindFirstChild("UnlockStageGatePrompt", true) :: ProximityPrompt?
+				if gatePrompt then
+					gatePrompt.Enabled = not unlocked
+				end
 				local levelInfo = SlimeData.Levels[lvlNum]
 				if levelInfo and lvlNum > 1 then
-					local prevFound, prevTotal = SlimeData.CountLevelProgress(state.Found or {}, lvlNum - 1)
-					local prevPct = math.floor((prevFound / math.max(1, prevTotal)) * 100)
-					local reqSpd = levelInfo.RequiredSpeed or 0
+					local status = SlimeData.GetStageGateStatus(
+						state.Found or {},
+						spd,
+						curFenceLvl,
+						state.UnlockedGates,
+						lvlNum
+					)
 					local gateText = if unlocked
 						then string.format(
-							"✅ STAGE %d: %s — UNLOCKED!\n🏆 Stage %d 100%% Complete (%d/%d) • ⚡ %s Speed Reached!",
+							"✅ STAGE %d: %s — UNLOCKED!\n🏆 Stage %d 100%% (%d/%d Brainrots • %d/%d Squishies) • 🧱 Fence Lv.%d • ⚡ %s Spd",
 							lvlNum,
 							string.upper(levelInfo.Name),
 							lvlNum - 1,
-							prevFound,
-							prevTotal,
-							SlimeData.FormatNumber(reqSpd)
+							status.FoundBrainrots,
+							status.TotalBrainrots,
+							status.FoundSquishies,
+							status.TotalSquishies,
+							status.CurrentFenceLevel,
+							SlimeData.FormatNumber(status.RequiredSpeed)
 						)
 						else string.format(
-							"🔒 STAGE %d: %s\n🎯 Stage %d Progress: %d/%d (%d%% — Need 100%%!)  •  ⚡ Speed: %s / %s",
+							"🔒 STAGE %d: %s\n🥚 Stage %d Brainrots: %d/%d  •  🧸 Squishies: %d/%d  •  🧱 Fence: Lv.%d/%d  •  ⚡ Spd: %s/%s  •  💰 $%s",
 							lvlNum,
 							string.upper(levelInfo.Name),
 							lvlNum - 1,
-							prevFound,
-							prevTotal,
-							prevPct,
+							status.FoundBrainrots,
+							status.TotalBrainrots,
+							status.FoundSquishies,
+							status.TotalSquishies,
+							status.CurrentFenceLevel,
+							status.RequiredFenceLevel,
 							SlimeData.FormatNumber(spd),
-							SlimeData.FormatNumber(reqSpd)
+							SlimeData.FormatNumber(status.RequiredSpeed),
+							SlimeData.FormatNumber(status.GateCost)
 						)
 					for _, gDesc in ipairs((desc.Parent or desc):GetDescendants()) do
 						if gDesc:IsA("TextLabel") then
@@ -657,47 +761,33 @@ local function applyStateToUI(state: any)
 				local levelInfo = SlimeData.Levels[stageId]
 				local nextLevelInfo = SlimeData.Levels[stageId + 1]
 				if levelInfo then
-					local foundEggs = 0
-					local totalEggs = 0
-					local foundSquishies = 0
-					local totalSquishiesInStage = 0
-					for _, sData in ipairs(SlimeData.Slimes) do
-						if sData.Level == stageId then
-							local sKey = tostring(sData.Id)
-							local numId = tonumber((sData :: any).UnlockOrder or (sData :: any).NumericId or sData.Id) or 1
-							if numId <= 35 then
-								totalEggs += 1
-								if state.Found[sKey] then
-									foundEggs += 1
-								end
-							else
-								totalSquishiesInStage += 1
-								if state.Found[sKey] then
-									foundSquishies += 1
-								end
-							end
-						end
-					end
+					local foundEggs, totalEggs, foundSquishies, totalSquishiesInStage = SlimeData.GetStageBreakdown(state.Found, stageId)
 					local totalItems = math.max(1, totalEggs + totalSquishiesInStage)
 					local pct = math.floor(((foundEggs + foundSquishies) / totalItems) * 100)
+					local jackpot = SlimeData.GetStageMasteryJackpot(stageId)
 					local nextReqSpeed = if nextLevelInfo then (nextLevelInfo.RequiredSpeed or 0) else 0
+					local nextGateCost = if nextLevelInfo then SlimeData.GetStageGateUnlockCost(stageId + 1) else 0
 					local nextReqText = if nextLevelInfo
 						then string.format(
-							"⚡ Next Gate (Stage %d): %s / %s Speed",
+							"🔓 Stage %d Gate Req: 🧱 Fence Lv.%d/%d  |  ⚡ %s/%s Spd  |  💰 $%s",
+							stageId + 1,
+							curFenceLvl,
 							stageId + 1,
 							SlimeData.FormatNumber(spd),
-							SlimeData.FormatNumber(nextReqSpeed)
+							SlimeData.FormatNumber(nextReqSpeed),
+							SlimeData.FormatNumber(nextGateCost)
 						)
 						else "👑 Final Stage: Complete 100% for Cosmic Mastery!"
-					local statusPrefix = if pct >= 100 then "✅" else "🔓"
+					local statusPrefix = if pct >= 100 then "✅" else "🎯"
 					local newText = string.format(
-						"📋 STAGE %d: %s\n🥚 Boss Eggs: %d/%d  |  🧸 Squishies: %d/%d\n%s\n%s STAGE %d COMPLETION: %d%%",
+						"📋 STAGE %d: %s\n🥚 Brainrots: %d/%d  |  🧸 Squishies: %d/%d  |  🏆 100%% Jackpot: +$%s\n%s\n%s STAGE %d COMPLETION: %d%%",
 						stageId,
 						string.upper(levelInfo.Name),
 						foundEggs,
 						totalEggs,
 						foundSquishies,
 						totalSquishiesInStage,
+						SlimeData.FormatNumber(jackpot),
 						nextReqText,
 						statusPrefix,
 						stageId,
@@ -1023,6 +1113,14 @@ EggCapturedEvent.OnClientEvent:Connect(function(info: any)
 			spawn3DDopaminePickupBurst(sData, info)
 			showYouFoundPopup(sData, comboCount, comboMult)
 
+			-- Immediately hide picked-up Egg (#1-#35) or collected Squishy (#36-#117) on the client so it vanishes on contact!
+			local sw = Workspace:FindFirstChild("SquishyWorld")
+			local worldEggsFolder = sw and sw:FindFirstChild("WorldEggs")
+			if worldEggsFolder then
+				local m = worldEggsFolder:FindFirstChild("WorldEgg_" .. tostring(info.SquishyId)) or worldEggsFolder:FindFirstChild(tostring(info.SquishyId))
+				hideWorldItemForLocalPlayer(m)
+			end
+
 			if info.ActionType == "EggStolen" then
 				showToast(
 					string.format(
@@ -1033,27 +1131,6 @@ EggCapturedEvent.OnClientEvent:Connect(function(info: any)
 					Color3.fromRGB(255, 165, 45)
 				)
 			else
-				-- Immediately hide collected Squishy (#36-#117) on the client so it vanishes on contact!
-				local sw = Workspace:FindFirstChild("SquishyWorld")
-				local worldEggsFolder = sw and sw:FindFirstChild("WorldEggs")
-				if worldEggsFolder then
-					local m = worldEggsFolder:FindFirstChild("WorldEgg_" .. tostring(info.SquishyId)) or worldEggsFolder:FindFirstChild(tostring(info.SquishyId))
-					if m then
-						for _, d in ipairs(m:GetDescendants()) do
-							if d:IsA("BasePart") then
-								d.Transparency = 1
-								d.CanTouch = false
-								d.CanQuery = false
-								d.CanCollide = false
-							elseif d:IsA("ProximityPrompt") or d:IsA("BillboardGui") or d:IsA("SurfaceGui") or d:IsA("ParticleEmitter") then
-								(d :: any).Enabled = false
-							elseif d:IsA("Decal") or d:IsA("Texture") then
-								d.Transparency = 1
-							end
-						end
-					end
-				end
-
 				showToast(
 					string.format(
 						"✨ COLLECTED [%s] %s! Added to your 117 Squishy Index (+$%s Cash)!",
@@ -1065,6 +1142,19 @@ EggCapturedEvent.OnClientEvent:Connect(function(info: any)
 				)
 			end
 		end
+	end
+end)
+
+CoinCollectedEvent.OnClientEvent:Connect(function(info: any)
+	if type(info) == "table" and info.CoinId then
+		local sw = Workspace:FindFirstChild("SquishyWorld")
+		local worldCoinsFolder = sw and sw:FindFirstChild("WorldCoins")
+		if worldCoinsFolder then
+			local coinPart = worldCoinsFolder:FindFirstChild(tostring(info.CoinId))
+			hideWorldItemForLocalPlayer(coinPart)
+		end
+		local earned = tonumber(info.CoinsEarned) or 45
+		showToast(string.format("🪙 GRABBED GOLD COIN! +$%s BONUS CASH!", SlimeData.FormatNumber(earned)), Color3.fromRGB(245, 185, 35))
 	end
 end)
 
@@ -1345,15 +1435,18 @@ local function computeCurrent6StepTarget(hrpPos: Vector3): (Vector3, string, str
 			Color3.fromRGB(85, 235, 255)
 	end
 
-	-- Find nearest uncollected Collectible Squishy (#36-#117) and nearest available Boss Egg (#1-#35) in activeStage
+	-- Find nearest uncollected Collectible Squishy (#36-#117, only if SquishyRadar or Hint unlocked!) and nearest available Boss Egg (#1-#35) in activeStage
 	local sw = Workspace:FindFirstChild("SquishyWorld")
 	local worldEggsFolder = sw and sw:FindFirstChild("WorldEggs")
 	local nearestSquishyPos: Vector3? = nil
 	local nearestSquishyDist = math.huge
 	local nearestSquishyName = ""
+	local hasUnfoundHiddenSquishy = false
 	local nearestEggPos: Vector3? = nil
 	local nearestEggDist = math.huge
 	local nearestEggName = ""
+	local hasRadar = latestState.OwnedPasses and latestState.OwnedPasses["SquishyRadar"] == true
+	local unlockedHints = latestState.UnlockedHints or {}
 
 	for _, sData in ipairs(SlimeData.Slimes) do
 		if sData.Level == activeStage then
@@ -1369,10 +1462,13 @@ local function computeCurrent6StepTarget(hrpPos: Vector3): (Vector3, string, str
 				local d = (hrpPos - itemPos).Magnitude
 				local numId = tonumber((sData :: any).UnlockOrder or (sData :: any).NumericId or sData.Id) or 1
 				if numId > 35 then
-					if d < nearestSquishyDist then
-						nearestSquishyDist = d
-						nearestSquishyPos = itemPos
-						nearestSquishyName = sData.Name
+					hasUnfoundHiddenSquishy = true
+					if hasRadar or unlockedHints[sKey] then
+						if d < nearestSquishyDist then
+							nearestSquishyDist = d
+							nearestSquishyPos = itemPos
+							nearestSquishyName = sData.Name
+						end
 					end
 				else
 					if d < nearestEggDist then
@@ -1385,20 +1481,27 @@ local function computeCurrent6StepTarget(hrpPos: Vector3): (Vector3, string, str
 		end
 	end
 
-	-- [STEP 2] Collect Stage N Collectible Squishies (Walk-Over Auto-Pickup!)
-	if nearestSquishyPos then
-		return nearestSquishyPos,
-			string.format("🧸 STEP 2: WALK OVER %s (%d/%d)!", string.upper(nearestSquishyName), foundInStage, totalInStage),
-			string.format("🧭 <b>FOLLOW 3D ARROW:</b> [Step 2/6] 🧸 Walk over <b>%s</b> in Stage %d (%d/%d Found for 100%%)!", nearestSquishyName, activeStage, foundInStage, totalInStage),
-			Color3.fromRGB(255, 145, 235)
-	end
-
-	-- [STEP 3] Steal Stage N Boss Egg from Sector 3 Sleeping Boss Arena!
+	-- [STEP 2] Steal Stage N Boss Egg from Sector 3 Sleeping Boss Arena!
 	if nearestEggPos then
 		return nearestEggPos,
-			string.format("🥚 STEP 3: STEAL %s (%d/%d)!", string.upper(nearestEggName), foundInStage, totalInStage),
-			string.format("🧭 <b>FOLLOW 3D ARROW:</b> [Step 3/6] 🥚 Sneak into Stage %d Boss Nest & walk over <b>%s</b> (%d/%d Found)!", activeStage, nearestEggName, foundInStage, totalInStage),
+			string.format("🥚 STEP 2: STEAL %s (%d/%d)!", string.upper(nearestEggName), foundInStage, totalInStage),
+			string.format("🧭 <b>FOLLOW 3D ARROW:</b> [Step 2/6] 🥚 Sneak into Stage %d Boss Nest & walk over <b>%s</b> (%d/%d Found)!", activeStage, nearestEggName, foundInStage, totalInStage),
 			Color3.fromRGB(255, 195, 65)
+	end
+
+	-- [STEP 3] Collect Stage N Hidden Squishies (Direct X-Ray Beam when Radar or Hint unlocked, otherwise points to Stage Center!)
+	if nearestSquishyPos then
+		return nearestSquishyPos,
+			string.format("🧸 RADAR LOCK: %s (%d/%d)!", string.upper(nearestSquishyName), foundInStage, totalInStage),
+			string.format("🧭 <b>SQUISHY RADAR ACTIVE:</b> [Step 3/6] 🧸 Walk over <b>%s</b> in Stage %d (%d/%d Found for 100%%)!", nearestSquishyName, activeStage, foundInStage, totalInStage),
+			Color3.fromRGB(255, 145, 235)
+	elseif hasUnfoundHiddenSquishy then
+		local stageInfo = SlimeData.Levels[activeStage]
+		local stageMidZ = if stageInfo then (stageInfo.ZStart + stageInfo.ZEnd) * 0.5 else -80
+		return Vector3.new(0, 3.5, stageMidZ),
+			string.format("🔍 SEARCH STAGE %d LANDMARKS & OBBIES (%d/%d)!", activeStage, foundInStage, totalInStage),
+			string.format("🧭 <b>EXPLORE STAGE %d:</b> Search Landmarks & Obby courses for glowing Squishies (%d/%d Found) — or buy a 🔍 Hint in Shop!", activeStage, foundInStage, totalInStage),
+			Color3.fromRGB(255, 145, 235)
 	end
 
 	-- Fallback: Stage 8 100% Complete!

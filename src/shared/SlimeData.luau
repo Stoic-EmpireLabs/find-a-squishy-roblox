@@ -54,6 +54,28 @@ function SlimeData.FormatNumber(speed: number): string
 	end
 end
 
+SlimeData.StageHatchScales = {
+	[1] = 1.00, -- Stage 1: Normal size
+	[2] = 1.25, -- Stage 2: Chubby size
+	[3] = 1.50, -- Stage 3: Large size
+	[4] = 1.80, -- Stage 4: Jumbo size
+	[5] = 2.10, -- Stage 5: Giant size
+	[6] = 2.45, -- Stage 6: Mega size
+	[7] = 2.80, -- Stage 7: Titan size
+	[8] = 3.20, -- Stage 8: Colossal Boss-Sized Brainrot!
+}
+
+SlimeData.FenceLevels = {
+	[1] = { Level = 1, Width = 24, Depth = 18, MaxBrainrots = 4, MaxStageSizeAllowed = 1, UpgradeCost = 0, Label = "Starter Wood Fence" },
+	[2] = { Level = 2, Width = 28, Depth = 21, MaxBrainrots = 7, MaxStageSizeAllowed = 2, UpgradeCost = 500, Label = "Candy Wood Fence" },
+	[3] = { Level = 3, Width = 32, Depth = 24, MaxBrainrots = 10, MaxStageSizeAllowed = 3, UpgradeCost = 2_500, Label = "Lagoon Timber Fence" },
+	[4] = { Level = 4, Width = 36, Depth = 27, MaxBrainrots = 14, MaxStageSizeAllowed = 4, UpgradeCost = 15_000, Label = "Jade Bamboo Fence" },
+	[5] = { Level = 5, Width = 40, Depth = 30, MaxBrainrots = 18, MaxStageSizeAllowed = 5, UpgradeCost = 85_000, Label = "Reinforced Iron Fence" },
+	[6] = { Level = 6, Width = 44, Depth = 33, MaxBrainrots = 23, MaxStageSizeAllowed = 6, UpgradeCost = 450_000, Label = "Gilded Iron Sanctuary Fence" },
+	[7] = { Level = 7, Width = 48, Depth = 36, MaxBrainrots = 29, MaxStageSizeAllowed = 7, UpgradeCost = 2_500_000, Label = "Obsidian Iron Fortress Pen" },
+	[8] = { Level = 8, Width = 56, Depth = 42, MaxBrainrots = 35, MaxStageSizeAllowed = 8, UpgradeCost = 15_000_000, Label = "Colossal Cosmic Iron Enclosure" },
+}
+
 SlimeData.TreadmillTiers = {
 	[1] = {
 		Tier = 1,
@@ -61,8 +83,10 @@ SlimeData.TreadmillTiers = {
 		Badge = "x1 SPEED",
 		MultiplierText = "x1 SPEED",
 		MultiplierLabel = "x1 SPEED",
-		SpeedPerSec = 25,
+		SpeedPerSec = 4,
 		RequiredSpeed = 0,
+		RequiredStage = 1,
+		UpgradeCost = 0,
 		Color = Color3.fromRGB(85, 225, 115),
 		BeltColor = Color3.fromRGB(255, 65, 150),
 		PrimaryColor = Color3.fromRGB(85, 225, 115),
@@ -76,11 +100,13 @@ SlimeData.TreadmillTiers = {
 	[2] = {
 		Tier = 2,
 		Name = "Candy Treadmill",
-		Badge = "x3 SPEED",
-		MultiplierText = "x3 SPEED",
-		MultiplierLabel = "x3 SPEED",
-		SpeedPerSec = 250,
+		Badge = "x7 SPEED",
+		MultiplierText = "x7 SPEED",
+		MultiplierLabel = "x7 SPEED",
+		SpeedPerSec = 28,
 		RequiredSpeed = 250,
+		RequiredStage = 2,
+		UpgradeCost = 650,
 		Color = Color3.fromRGB(255, 105, 195),
 		BeltColor = Color3.fromRGB(255, 115, 210),
 		PrimaryColor = Color3.fromRGB(255, 105, 195),
@@ -94,11 +120,13 @@ SlimeData.TreadmillTiers = {
 	[3] = {
 		Tier = 3,
 		Name = "Gold Treadmill",
-		Badge = "x25 SPEED",
-		MultiplierText = "x25 SPEED",
-		MultiplierLabel = "x25 SPEED",
-		SpeedPerSec = 2_500,
+		Badge = "x55 SPEED",
+		MultiplierText = "x55 SPEED",
+		MultiplierLabel = "x55 SPEED",
+		SpeedPerSec = 220,
 		RequiredSpeed = 2_500,
+		RequiredStage = 3,
+		UpgradeCost = 3_800,
 		Color = Color3.fromRGB(255, 205, 55),
 		BeltColor = Color3.fromRGB(255, 185, 45),
 		PrimaryColor = Color3.fromRGB(255, 205, 55),
@@ -112,11 +140,13 @@ SlimeData.TreadmillTiers = {
 	[4] = {
 		Tier = 4,
 		Name = "Jade Bamboo Treadmill",
-		Badge = "x250 SPEED",
-		MultiplierText = "x250 SPEED",
-		MultiplierLabel = "x250 SPEED",
-		SpeedPerSec = 25_000,
+		Badge = "x500 SPEED",
+		MultiplierText = "x500 SPEED",
+		MultiplierLabel = "x500 SPEED",
+		SpeedPerSec = 2_000,
 		RequiredSpeed = 25_000,
+		RequiredStage = 4,
+		UpgradeCost = 22_000,
 		Color = Color3.fromRGB(65, 235, 145),
 		BeltColor = Color3.fromRGB(45, 215, 130),
 		PrimaryColor = Color3.fromRGB(65, 235, 145),
@@ -130,11 +160,13 @@ SlimeData.TreadmillTiers = {
 	[5] = {
 		Tier = 5,
 		Name = "Diamond Treadmill",
-		Badge = "x2.5k SPEED",
-		MultiplierText = "x2.5k SPEED",
-		MultiplierLabel = "x2.5k SPEED",
-		SpeedPerSec = 250_000,
+		Badge = "x4.6k SPEED",
+		MultiplierText = "x4.6k SPEED",
+		MultiplierLabel = "x4.6k SPEED",
+		SpeedPerSec = 18_500,
 		RequiredSpeed = 250_000,
+		RequiredStage = 5,
+		UpgradeCost = 125_000,
 		Color = Color3.fromRGB(65, 225, 255),
 		BeltColor = Color3.fromRGB(0, 195, 255),
 		PrimaryColor = Color3.fromRGB(65, 225, 255),
@@ -148,11 +180,13 @@ SlimeData.TreadmillTiers = {
 	[6] = {
 		Tier = 6,
 		Name = "Cloud Sky Treadmill",
-		Badge = "x25k SPEED",
-		MultiplierText = "x25k SPEED",
-		MultiplierLabel = "x25k SPEED",
-		SpeedPerSec = 2_500_000,
+		Badge = "x44k SPEED",
+		MultiplierText = "x44k SPEED",
+		MultiplierLabel = "x44k SPEED",
+		SpeedPerSec = 175_000,
 		RequiredSpeed = 2_500_000,
+		RequiredStage = 6,
+		UpgradeCost = 680_000,
 		Color = Color3.fromRGB(145, 215, 255),
 		BeltColor = Color3.fromRGB(115, 185, 255),
 		PrimaryColor = Color3.fromRGB(145, 215, 255),
@@ -166,11 +200,13 @@ SlimeData.TreadmillTiers = {
 	[7] = {
 		Tier = 7,
 		Name = "Magma Inferno Treadmill",
-		Badge = "x1M SPEED",
-		MultiplierText = "x1M SPEED",
-		MultiplierLabel = "x1M SPEED",
-		SpeedPerSec = 25_000_000,
+		Badge = "x412k SPEED",
+		MultiplierText = "x412k SPEED",
+		MultiplierLabel = "x412k SPEED",
+		SpeedPerSec = 1_650_000,
 		RequiredSpeed = 25_000_000,
+		RequiredStage = 7,
+		UpgradeCost = 3_800_000,
 		Color = Color3.fromRGB(255, 85, 35),
 		BeltColor = Color3.fromRGB(255, 65, 25),
 		PrimaryColor = Color3.fromRGB(255, 85, 35),
@@ -184,11 +220,13 @@ SlimeData.TreadmillTiers = {
 	[8] = {
 		Tier = 8,
 		Name = "Cosmic Admin Treadmill",
-		Badge = "x50M SPEED",
-		MultiplierText = "x50M SPEED",
-		MultiplierLabel = "x50M SPEED",
-		SpeedPerSec = 250_000_000,
+		Badge = "x4M SPEED",
+		MultiplierText = "x4M SPEED",
+		MultiplierLabel = "x4M SPEED",
+		SpeedPerSec = 16_000_000,
 		RequiredSpeed = 250_000_000,
+		RequiredStage = 8,
+		UpgradeCost = 22_000_000,
 		Color = Color3.fromRGB(195, 75, 255),
 		BeltColor = Color3.fromRGB(175, 55, 255),
 		PrimaryColor = Color3.fromRGB(195, 75, 255),
@@ -1112,6 +1150,28 @@ local requiredSpeeds = {
 	[8] = 250_000_000,
 }
 
+local gateUnlockCosts = {
+	[1] = 0,
+	[2] = 750,
+	[3] = 3_500,
+	[4] = 18_000,
+	[5] = 95_000,
+	[6] = 500_000,
+	[7] = 3_000_000,
+	[8] = 18_000_000,
+}
+
+local stageMasteryJackpots = {
+	[1] = 2_500,
+	[2] = 8_000,
+	[3] = 25_000,
+	[4] = 85_000,
+	[5] = 300_000,
+	[6] = 1_200_000,
+	[7] = 5_000_000,
+	[8] = 25_000_000,
+}
+
 for _, levelDef in ipairs(SlimeData.Levels) do
 	local lvl = levelDef.Level
 	local anyLvl = levelDef :: any
@@ -1120,7 +1180,10 @@ for _, levelDef in ipairs(SlimeData.Levels) do
 	anyLvl.GateColor = levelDef.ThemeColor
 	anyLvl.FloorMaterial = floorMaterials[lvl] or Enum.Material.SmoothPlastic
 	anyLvl.RequiredSpeed = requiredSpeeds[lvl] or 0
-	anyLvl.RequiredCoins = (lvl - 1) * 500
+	anyLvl.RequiredFenceLevel = lvl
+	anyLvl.GateUnlockCost = gateUnlockCosts[lvl] or 0
+	anyLvl.StageMasteryJackpot = stageMasteryJackpots[lvl] or 2_500
+	anyLvl.RequiredCoins = gateUnlockCosts[lvl] or ((lvl - 1) * 500)
 	anyLvl.Guardians = {}
 	SlimeData.ByLevel[lvl] = {}
 end
@@ -1136,11 +1199,58 @@ for _, g in ipairs(SlimeData.Guardians) do
 	end
 end
 
--- Position the 35 Boss Nest Eggs (#1 to #35) across all 8 Stages (4, 4, 4, 4, 4, 5, 5, 5 per Stage) in Sector 3 (zStart - 116)
+-- 35 Hatchable Brainrots (#1 to #35) across all 8 Stages (4, 4, 4, 4, 4, 5, 5, 5 per Stage) in Sector 3 (zStart - 116)
+local brainrotDefinitions = {
+	-- Stage 1 (Scale 1.00x)
+	[1] = { Name = "Tralalero Tralala", Rarity = "Common", ModelIdx = 1, CPS = 10, Reward = 50 },
+	[2] = { Name = "Lirili Larila", Rarity = "Common", ModelIdx = 4, CPS = 14, Reward = 70 },
+	[3] = { Name = "Trippi Troppi", Rarity = "Rare", ModelIdx = 10, CPS = 22, Reward = 110 },
+	[4] = { Name = "Burbaloni Luliloli", Rarity = "Epic", ModelIdx = 13, CPS = 35, Reward = 180 },
+	-- Stage 2 (Scale 1.25x)
+	[5] = { Name = "Cappuccino Assassino", Rarity = "Common", ModelIdx = 6, CPS = 45, Reward = 220 },
+	[6] = { Name = "Ballerina Cappuccina", Rarity = "Rare", ModelIdx = 9, CPS = 65, Reward = 320 },
+	[7] = { Name = "Chimpanzini Bananini", Rarity = "Epic", ModelIdx = 7, CPS = 95, Reward = 480 },
+	[8] = { Name = "Frigo Camelo", Rarity = "Legendary", ModelIdx = 11, CPS = 140, Reward = 700 },
+	-- Stage 3 (Scale 1.50x)
+	[9] = { Name = "Tung Tung Tung Sahur", Rarity = "Rare", ModelIdx = 3, CPS = 180, Reward = 900 },
+	[10] = { Name = "Bombardiro Crocodilo", Rarity = "Epic", ModelIdx = 2, CPS = 260, Reward = 1_300 },
+	[11] = { Name = "Bombombini Gusini", Rarity = "Epic", ModelIdx = 12, CPS = 380, Reward = 1_900 },
+	[12] = { Name = "Glorbo Fruttodrillo", Rarity = "Legendary", ModelIdx = 14, CPS = 550, Reward = 2_800 },
+	-- Stage 4 (Scale 1.80x)
+	[13] = { Name = "Brr Brr Patapim", Rarity = "Rare", ModelIdx = 5, CPS = 750, Reward = 3_800 },
+	[14] = { Name = "Orangutini Ananasini", Rarity = "Epic", ModelIdx = 7, CPS = 1_100, Reward = 5_500 },
+	[15] = { Name = "Boneca Ambalabu", Rarity = "Legendary", ModelIdx = 4, CPS = 1_650, Reward = 8_200 },
+	[16] = { Name = "Trulimero Trulicina", Rarity = "Legendary", ModelIdx = 10, CPS = 2_400, Reward = 12_000 },
+	-- Stage 5 (Scale 2.10x)
+	[17] = { Name = "Girafa Celestre", Rarity = "Epic", ModelIdx = 11, CPS = 3_500, Reward = 17_500 },
+	[18] = { Name = "Bri Bri Bicus Dicus", Rarity = "Epic", ModelIdx = 6, CPS = 5_200, Reward = 26_000 },
+	[19] = { Name = "Garamaraman", Rarity = "Legendary", ModelIdx = 3, CPS = 7_800, Reward = 39_000 },
+	[20] = { Name = "Maxwell The Spinning Cat", Rarity = "Mythic", ModelIdx = 15, CPS = 12_000, Reward = 60_000 },
+	-- Stage 6 (Scale 2.45x)
+	[21] = { Name = "La Vaca Saturno Saturnita", Rarity = "Epic", ModelIdx = 8, CPS = 16_000, Reward = 80_000 },
+	[22] = { Name = "Il Cacto Hipopotamo", Rarity = "Legendary", ModelIdx = 13, CPS = 24_000, Reward = 120_000 },
+	[23] = { Name = "Blueberrinni Octopussini", Rarity = "Legendary", ModelIdx = 10, CPS = 36_000, Reward = 180_000 },
+	[24] = { Name = "Chef Crabracadabra", Rarity = "Mythic", ModelIdx = 6, CPS = 52_000, Reward = 260_000 },
+	[25] = { Name = "Chicleteira Bicicleteira", Rarity = "Mythic", ModelIdx = 9, CPS = 75_000, Reward = 375_000 },
+	-- Stage 7 (Scale 2.80x)
+	[26] = { Name = "Spijuniro Golubiro", Rarity = "Legendary", ModelIdx = 12, CPS = 105_000, Reward = 525_000 },
+	[27] = { Name = "Tigrrullini Watermellini", Rarity = "Legendary", ModelIdx = 14, CPS = 155_000, Reward = 775_000 },
+	[28] = { Name = "Zibra Zubra Zibralini", Rarity = "Mythic", ModelIdx = 11, CPS = 230_000, Reward = 1_150_000 },
+	[29] = { Name = "Graipussi Medussi", Rarity = "Mythic", ModelIdx = 8, CPS = 340_000, Reward = 1_700_000 },
+	[30] = { Name = "Inferno Bombardiro Rex", Rarity = "Mythic", ModelIdx = 2, CPS = 500_000, Reward = 2_500_000 },
+	-- Stage 8 (Scale 3.20x Colossal)
+	[31] = { Name = "Gattatino Neonino", Rarity = "Legendary", ModelIdx = 15, CPS = 720_000, Reward = 3_600_000 },
+	[32] = { Name = "Matteo The Wise", Rarity = "Mythic", ModelIdx = 5, CPS = 1_050_000, Reward = 5_250_000 },
+	[33] = { Name = "Udin Din Din Dun", Rarity = "Mythic", ModelIdx = 3, CPS = 1_550_000, Reward = 7_750_000 },
+	[34] = { Name = "Skibidi Cyber Titan", Rarity = "Mythic", ModelIdx = 16, CPS = 2_300_000, Reward = 11_500_000 },
+	[35] = { Name = "Cosmic Tralalero God", Rarity = "Mythic", ModelIdx = 1, CPS = 3_500_000, Reward = 17_500_000 },
+}
+
 local levelEggIndices: { [number]: number } = {}
 for idx, slime in ipairs(SlimeData.Slimes) do
 	local anySlime = slime :: any
 	anySlime.IsShiningSquishy = false
+	anySlime.IsBrainrot = true
 	anySlime.ZoneTag = "BossNest"
 
 	local assignedLvl = if idx <= 4 then 1
@@ -1153,6 +1263,16 @@ for idx, slime in ipairs(SlimeData.Slimes) do
 		else 8
 
 	slime.Level = assignedLvl
+	local bDef = brainrotDefinitions[idx]
+	if bDef then
+		slime.Name = bDef.Name
+		slime.Rarity = bDef.Rarity
+		slime.CoinsPerSec = bDef.CPS
+		anySlime.BrainrotModelIndex = bDef.ModelIdx
+		anySlime.CustomCoinReward = bDef.Reward
+	end
+	anySlime.StageHatchScale = SlimeData.StageHatchScales[assignedLvl] or 1.0
+
 	local lvlDef = SlimeData.Levels[assignedLvl]
 	levelEggIndices[assignedLvl] = (levelEggIndices[assignedLvl] or 0) + 1
 	local idxInLvl = levelEggIndices[assignedLvl]
@@ -1162,15 +1282,14 @@ for idx, slime in ipairs(SlimeData.Slimes) do
 	local xPos = -68 + frac * 136
 	local zOffset = if idxInLvl % 2 == 0 then -14 else 14
 	slime.Position = Vector3.new(xPos, 3.8, zCenter + zOffset)
-	slime.CoinsPerSec = math.max(slime.CoinsPerSec, math.floor(10 * (2.6 ^ (assignedLvl - 1)) * idxInLvl))
-	slime.Hint = string.format("Guarded by the Sleeping Boss in Stage %d (%s)! Walk over to Steal!", assignedLvl, if lvlDef then lvlDef.Name else ("Stage " .. assignedLvl))
+	slime.Hint = string.format("Hatchable Brainrot #%d (%s)! Steal a Stage %d Brainrot Egg from the Sleeping Boss Nest and hatch it at your Fence!", idx, slime.Name, assignedLvl)
 end
 
 -- ============================================================================
 -- GENERATE 82 SHINING COLLECTIBLE SQUISHIES (#36 to #117) -> MAX = 117 TOTAL!
 -- Distributed across all 8 Stages (Z < 0 — ZERO wild Squishies in the Safe Zone!)
--- on Biome House Rooftops, Giant Rainbow Staircase, Outer Side Mazes,
--- Castle Wall Battlements, and Themed Level Obby Obstacles!
+-- inside Unique Stage Landmarks, Secret Caves, Attics, Giant Rainbow Staircase,
+-- Outer Side Mazes, Castle Wall Battlements, and Custom Stage Obby Courses!
 -- ============================================================================
 local shiningPalette = {
 	{ Color3.fromRGB(255, 95, 165), Color3.fromRGB(255, 235, 95) },
@@ -1213,24 +1332,24 @@ local function appendShiningSquishy(
 	table.insert(SlimeData.Slimes, entry)
 end
 
--- 1. BIOME HOUSE ROOFTOP SHINING SQUISHIES (16 Squishies: #36 to #51)
--- All 16 are inside Stages 1..8 (2 per Stage at X = ±114, Z = zStart - 56 & zStart - 94 — ZERO in Safe Zone!)
+-- 1. UNIQUE LANDMARK & ROOFTOP SHINING SQUISHIES (16 Squishies: #36 to #51)
+-- Hidden inside Secret Caves, Attics, Ship Holds, and atop Stage 1..8 Landmarks & Houses!
 local rooftopPlacements = {
-	-- Right-Side Biome Village Houses across Stages 1..8 (X = +114, Z = zStart - 94)
-	{ Name = "Sunny Roof Mallow", Lvl = 1, Rarity = "Common", CPS = 18, Pos = Vector3.new(114, 22.5, -94), Hint = "Jump onto the Pink Meadow Cottage Roof on the right side of Stage 1!" },
-	{ Name = "Sky Gables Kitty", Lvl = 2, Rarity = "Rare", CPS = 65, Pos = Vector3.new(114, 22.5, -254), Hint = "Bounce up the crates onto the Candy Villa Roof on the right side of Stage 2!" },
-	{ Name = "Mint Chimney Puff", Lvl = 3, Rarity = "Rare", CPS = 190, Pos = Vector3.new(114, 22.5, -414), Hint = "Parkour onto the Coral Lagoon House Roof on the right side of Stage 3!" },
-	{ Name = "Cobalt Shingle Pup", Lvl = 4, Rarity = "Epic", CPS = 520, Pos = Vector3.new(114, 22.5, -574), Hint = "Climb the crates onto the Jade Pavilion Roof on the right side of Stage 4!" },
-	{ Name = "Ranch Gables Cow", Lvl = 5, Rarity = "Epic", CPS = 1_450, Pos = Vector3.new(114, 22.5, -734), Hint = "Perched atop the Violet Crystal Manor Roof on the right side of Stage 5!" },
-	{ Name = "Blossom Attic Axolotl", Lvl = 6, Rarity = "Legendary", CPS = 4_200, Pos = Vector3.new(114, 22.5, -894), Hint = "Perched atop the Cloud Spire Villa Roof on the right side of Stage 6!" },
-	{ Name = "Clover Ridge Frog", Lvl = 7, Rarity = "Legendary", CPS = 11_500, Pos = Vector3.new(114, 22.5, -1054), Hint = "Perched atop the Magma Bastion House Roof on the right side of Stage 7!" },
-	{ Name = "Honeycomb Loft Bear", Lvl = 8, Rarity = "Mythic", CPS = 32_000, Pos = Vector3.new(114, 22.5, -1214), Hint = "Perched atop the Astral Void Sanctuary Roof on the right side of Stage 8!" },
-	-- Left-Side & North Biome Village Parkour Houses across Stages 1..8 (X = ±114, Z = zStart - 56)
-	{ Name = "Meadow Barn Loft", Lvl = 1, Rarity = "Rare", CPS = 45, Pos = Vector3.new(-114, 22.5, -56), Hint = "Jump onto the Red Meadow Barn Roof on the left of Stage 1!" },
-	{ Name = "Gingerbread Roof Mallow", Lvl = 2, Rarity = "Epic", CPS = 120, Pos = Vector3.new(-114, 22.5, -216), Hint = "Bounce onto the Pink Candy Bakery Roof in Stage 2!" },
-	{ Name = "Cabana Thatch Gecko", Lvl = 3, Rarity = "Epic", CPS = 380, Pos = Vector3.new(-114, 22.5, -376), Hint = "Jump onto the Coral Beach Cabana Roof in Stage 3!" },
+	-- Stage 1..8 Right-Side Landmarks & Secret Interiors
+	{ Name = "Sunny Cave Mallow", Lvl = 1, Rarity = "Common", CPS = 18, Pos = Vector3.new(26, 4.5, -72), Hint = "Hidden inside the dark Meadow Waterfall Secret Cave at (26, 4, -72) in Stage 1!" },
+	{ Name = "Carousel Ride Kitty", Lvl = 2, Rarity = "Rare", CPS = 65, Pos = Vector3.new(80, 14.5, -215), Hint = "Hidden inside the Spinning Candy Carousel Ride at (80, 14, -215) in Stage 2!" },
+	{ Name = "Water Slide Splash Puff", Lvl = 3, Rarity = "Rare", CPS = 190, Pos = Vector3.new(82, 22.5, -375), Hint = "Climb the Giant Water Slide Tower on the right side of Stage 3!" },
+	{ Name = "Dragon Shrine Pup", Lvl = 4, Rarity = "Epic", CPS = 520, Pos = Vector3.new(68, 16.5, -525), Hint = "Perched atop the East Twin Stone Dragon Statue in Stage 4!" },
+	{ Name = "Retro Arcade Cow", Lvl = 5, Rarity = "Epic", CPS = 1_450, Pos = Vector3.new(-74, 16.5, -765), Hint = "Hidden atop the Retro Arcade Hall in Stage 5!" },
+	{ Name = "Ice Palace Axolotl", Lvl = 6, Rarity = "Legendary", CPS = 4_200, Pos = Vector3.new(85, 24.5, -885), Hint = "Hidden inside the upper Marble Cloud & Ice Palace Spire in Stage 6!" },
+	{ Name = "Magma Bastion Frog", Lvl = 7, Rarity = "Legendary", CPS = 11_500, Pos = Vector3.new(114, 22.5, -1054), Hint = "Perched atop the Magma Bastion House Roof on the right side of Stage 7!" },
+	{ Name = "Portal Pedestal Bear", Lvl = 8, Rarity = "Mythic", CPS = 32_000, Pos = Vector3.new(84, 18.5, -1185), Hint = "Hovering above the Glowing Magical Portal Pedestal on the right side of Stage 8!" },
+	-- Stage 1..8 Left-Side Village & Landmark Interiors
+	{ Name = "Mushroom Cottage Loft", Lvl = 1, Rarity = "Rare", CPS = 45, Pos = Vector3.new(-72, 14.5, -118), Hint = "Tucked atop the Spotted Mushroom Cottage cap on the left of Stage 1!" },
+	{ Name = "Gingerbread Attic Mallow", Lvl = 2, Rarity = "Epic", CPS = 120, Pos = Vector3.new(-114, 22.5, -216), Hint = "Tucked behind the Pink Candy Bakery chimney on the left of Stage 2!" },
+	{ Name = "Captain's Hold Gecko", Lvl = 3, Rarity = "Epic", CPS = 380, Pos = Vector3.new(-114, 22.5, -376), Hint = "Hidden on the Coral Beach Cabana Roof near the Pirate Ship in Stage 3!" },
 	{ Name = "Bamboo Dojo Crane", Lvl = 4, Rarity = "Epic", CPS = 980, Pos = Vector3.new(114, 22.5, -536), Hint = "Jump onto the Jade Bamboo Dojo Roof in Stage 4!" },
-	{ Name = "Crystal Observatory Owl", Lvl = 5, Rarity = "Legendary", CPS = 2_400, Pos = Vector3.new(-114, 22.5, -696), Hint = "Perched on the Amethyst Lodge Roof in Stage 5!" },
+	{ Name = "Crystal Labyrinth Owl", Lvl = 5, Rarity = "Legendary", CPS = 2_400, Pos = Vector3.new(-92, 4.5, -710), Hint = "Deep inside the dark Amethyst Crystal Cave Labyrinth on the left of Stage 5!" },
 	{ Name = "Sky Sanctum Pegasus", Lvl = 6, Rarity = "Legendary", CPS = 6_200, Pos = Vector3.new(114, 22.5, -856), Hint = "Perched on the Cloud Temple Villa Roof in Stage 6!" },
 	{ Name = "Magma Forge Wyvern", Lvl = 7, Rarity = "Mythic", CPS = 16_500, Pos = Vector3.new(-114, 22.5, -1016), Hint = "Perched on the Obsidian Forge House Roof in Stage 7!" },
 	{ Name = "Cosmic Citadel Astral Cat", Lvl = 8, Rarity = "Mythic", CPS = 45_000, Pos = Vector3.new(114, 22.5, -1176), Hint = "Perched on the Nebula Spire Manor Roof in Stage 8!" },
@@ -1343,45 +1462,45 @@ for i = 1, 19 do
 	)
 end
 
--- 5. THEMED LEVEL OBBY OBSTACLE SHINING SQUISHIES (15 Squishies: #103 to #117)
--- Distributed across all 8 Stages perched on the Widened Left-Side Elevated Obby platforms (X = -83, -72)!
-local obbyNames = {
-	"Lilypad Hopper Squishy", "Log Beam Balancer",
-	"Wafer Bridge Sprinter", "Peppermint Spinner Ace",
-	"Surfboard Balance Puff", "Coral Archway Diver",
-	"Bamboo Pole Vault Frog", "Jade Canopy Glider",
-	"Laser Grid Dodger", "Floating Geode Hopper",
-	"Cumulus Halo Jumper", "Thunder Ring Sprite",
-	"Lava Geyser Leaper", "Obsidian Pendulum Pro",
-	"Cosmic Singularity Grandmaster",
+-- 5. CUSTOM STAGE 1-8 OBBY & HIGH LANDMARK SHINING SQUISHIES (15 Squishies: #103 to #117)
+-- Placed directly at the high summit destinations of the Phase 2.3 Stage 1-8 Custom Obby Courses!
+local obbyPlacements = {
+	-- Stage 1 Obbies: Treehouse Roof & Dutch Windmill Balcony
+	{ Name = "Oak Treehouse Hopper", Lvl = 1, Rarity = "Rare", CPS = 28, Pos = Vector3.new(78, 26.8, -65), Hint = "Bounce up the Stage 1 Trampoline & Sweeper Obby to the Giant Oak Treehouse Roof!" },
+	{ Name = "Dutch Windmill Balancer", Lvl = 1, Rarity = "Epic", CPS = 56, Pos = Vector3.new(-78, 28.8, -55), Hint = "Cross the high rope bridge from the Treehouse to the Spinning Dutch Windmill Balcony in Stage 1!" },
+	-- Stage 2 Obbies: Gingerbread Attic Chimney & High Cocoa Platform
+	{ Name = "Gingerbread Chimney Sprinter", Lvl = 2, Rarity = "Rare", CPS = 125, Pos = Vector3.new(-82, 30.8, -210), Hint = "Complete the Peppermint Knockback Spinner Obby to reach the Gingerbread Mansion Chimney in Stage 2!" },
+	{ Name = "High Cocoa Spinner Ace", Lvl = 2, Rarity = "Epic", CPS = 250, Pos = Vector3.new(-75, 36.8, -255), Hint = "Cross the Wafer Bridge to the High Cocoa Platform at (-75, 36, -255) in Stage 2!" },
+	-- Stage 3 Obbies: Pirate Ship Crow's Nest & Lighthouse Lantern Room
+	{ Name = "Pirate Crow's Nest Puff", Lvl = 3, Rarity = "Epic", CPS = 540, Pos = Vector3.new(-84, 38.8, -390), Hint = "Climb the Moving Surfboard & Rigging Ladder Obby to the Pirate Ship Crow's Nest in Stage 3!" },
+	{ Name = "Lighthouse Lantern Diver", Lvl = 3, Rarity = "Legendary", CPS = 1_080, Pos = Vector3.new(76, 42.8, -445), Hint = "Scale the Coastal Lighthouse spiral to the top Lantern Room at (76, 42, -445) in Stage 3!" },
+	-- Stage 4 Obbies: Canopy Suspension Treehouse & 3rd-Floor Pagoda Bell Chamber
+	{ Name = "Bamboo Canopy Vault Frog", Lvl = 4, Rarity = "Epic", CPS = 2_400, Pos = Vector3.new(82, 34.8, -575), Hint = "Jump the Bamboo Poles & Truss Wall to the Canopy Suspension Treehouse in Stage 4!" },
+	{ Name = "Pagoda Bell Chamber Glider", Lvl = 4, Rarity = "Legendary", CPS = 4_800, Pos = Vector3.new(-82, 36.8, -585), Hint = "Balance across the narrow bamboo beam to the 3rd-Floor Pagoda Bell Chamber in Stage 4!" },
+	-- Stage 5 Obbies: Cyber Tower Penthouse & Floating Geode Summit
+	{ Name = "Cyber Penthouse Dodger", Lvl = 5, Rarity = "Legendary", CPS = 10_500, Pos = Vector3.new(84, 44.8, -715), Hint = "Beat the Disappearing Tiles & Sweeper Spinner Tower to reach the Cyber Tower Penthouse in Stage 5!" },
+	{ Name = "Amethyst Spire Hopper", Lvl = 5, Rarity = "Legendary", CPS = 21_000, Pos = Vector3.new(-84, 28.8, -700), Hint = "Climb the outer crystal ledges to the top of the Amethyst Crystal Cave Spire in Stage 5!" },
+	-- Stage 6 Obbies: Ferris Wheel Top Cabin & High Arching Sky Bridge
+	{ Name = "Ferris Wheel Summit Jumper", Lvl = 6, Rarity = "Legendary", CPS = 46_000, Pos = Vector3.new(-85, 48.8, -865), Hint = "Bounce up the Cloud Trampoline Chain onto the Giant Sky Ferris Wheel Top Cabin in Stage 6!" },
+	{ Name = "Rainbow Sky Bridge Sprite", Lvl = 6, Rarity = "Mythic", CPS = 92_000, Pos = Vector3.new(0, 29.2, -915), Hint = "Cross the High Arching Sky Bridge over the highway at (0, 29, -915) in Stage 6!" },
+	-- Stage 7 Obbies: Volcano Crater Rim & Obsidian Fortress Roof
+	{ Name = "Volcano Crater Leaper", Lvl = 7, Rarity = "Mythic", CPS = 200_000, Pos = Vector3.new(-86, 46.8, -1035), Hint = "Survive the Spinning Fire-Bar & Crumbling Basalt Obby to the Erupting Volcano Crater Rim in Stage 7!" },
+	{ Name = "Obsidian Fortress Pro", Lvl = 7, Rarity = "Mythic", CPS = 400_000, Pos = Vector3.new(86, 42.8, -1045), Hint = "Leap across the magma vents to the Obsidian Fortress Roof at (86, 42, -1045) in Stage 7!" },
+	-- Stage 8 Obby: UFO Mothership & Golden Throne Summit
+	{ Name = "UFO Mothership Grandmaster", Lvl = 8, Rarity = "Mythic", CPS = 950_000, Pos = Vector3.new(-84, 36.8, -1185), Hint = "Conquer the Anti-Gravity Bounce Pad & Disappearing Cosmic Tile Gauntlet into the UFO Mothership in Stage 8!" },
 }
-for i = 1, 15 do
-	local lvl = math.clamp(math.ceil(i / 2), 1, 8)
-	local subIdx = ((i - 1) % 2) + 1
-	local zStart = SlimeData.Levels[lvl].ZStart
-	local xPos = -94 + subIdx * 11 -- X = -83, -72 (matches widened ObbyGoalPlatform_1 and ObbyGoalPlatform_2)
-	local yPos = 9.5 + subIdx * 2.8
-	local zPos = zStart - 26 - subIdx * 22 -- Z = zStart - 48, -70
-	local rarity = if lvl >= 7 then "Mythic" elseif lvl >= 5 then "Legendary" elseif lvl >= 3 then "Epic" else "Rare"
-	local cps = math.floor(28 * (2.2 ^ (lvl - 1)) * subIdx)
-	appendShiningSquishy(
-		102 + i,
-		obbyNames[i],
-		lvl,
-		rarity,
-		cps,
-		Vector3.new(xPos, yPos, zPos),
-		string.format("Complete the Stage %d Left-Side Elevated Obby Gauntlet to grab this Shining Squishy!", lvl),
-		"BiomeObby"
-	)
+for i, o in ipairs(obbyPlacements) do
+	appendShiningSquishy(102 + i, o.Name, o.Lvl, o.Rarity, o.CPS, o.Pos, o.Hint, "BiomeObby")
 end
 
--- Finalize metadata and lookup tables for all 117 Squishies & Eggs
+-- Finalize metadata and lookup tables for all 117 Squishies & Brainrot Eggs
 for _, slime in ipairs(SlimeData.Slimes) do
 	local anySlime = slime :: any
 	local numId = tonumber(slime.Id) or 1
 	anySlime.NumericId = numId
 	anySlime.UnlockOrder = numId
+	anySlime.IsBrainrotEgg = (numId <= 35)
+	anySlime.Type = if numId <= 35 then "Egg" else "Squishy"
 
 	-- Strictly align every Squishy/Egg's Level (1..8) with its actual physical Stage Z-coordinate
 	-- so completing 100% of a Stage never requires entering a locked future Stage!
@@ -1433,7 +1552,7 @@ for _, slime in ipairs(SlimeData.Slimes) do
 	anySlime.BodyColor = slime.Color
 	anySlime.AccentColor = slime.SecondaryColor
 	anySlime.IncomePerSec = slime.CoinsPerSec
-	anySlime.CoinReward = math.max(25, slime.CoinsPerSec * 4)
+	anySlime.CoinReward = anySlime.CustomCoinReward or math.max(25, slime.CoinsPerSec * 4)
 	anySlime.SpawnOffset = slime.Position
 
 	SlimeData.ById[numId] = slime
@@ -1476,23 +1595,114 @@ end
 
 SlimeData.CountLevelProgress = SlimeData.GetLevelProgress
 
-function SlimeData.IsLevelUnlocked(foundMap: { [any]: boolean }?, speedStat: number, targetLevel: number): boolean
+function SlimeData.GetStageBreakdown(foundMap: { [any]: boolean }?, levelNum: number): (number, number, number, number)
+	local list = SlimeData.ByLevel[levelNum] or {}
+	local foundBrainrots = 0
+	local totalBrainrots = 0
+	local foundSquishies = 0
+	local totalSquishies = 0
+	for _, slime in ipairs(list) do
+		local anySlime = slime :: any
+		local sId = tostring(anySlime.Id)
+		local numId = tonumber(anySlime.UnlockOrder or anySlime.NumericId or anySlime.Id) or 1
+		local isFound = foundMap ~= nil and (foundMap[sId] == true or foundMap[numId] == true)
+		if numId <= 35 then
+			totalBrainrots += 1
+			if isFound then
+				foundBrainrots += 1
+			end
+		else
+			totalSquishies += 1
+			if isFound then
+				foundSquishies += 1
+			end
+		end
+	end
+	return foundBrainrots, totalBrainrots, foundSquishies, totalSquishies
+end
+
+function SlimeData.GetStageMasteryJackpot(levelNum: number): number
+	local lvlDef = SlimeData.Levels[levelNum] :: any
+	return if lvlDef and lvlDef.StageMasteryJackpot then lvlDef.StageMasteryJackpot else math.floor(2_500 * (3.2 ^ math.max(0, levelNum - 1)))
+end
+
+function SlimeData.GetStageGateUnlockCost(targetLevel: number): number
+	local lvlDef = SlimeData.Levels[targetLevel] :: any
+	return if lvlDef and lvlDef.GateUnlockCost then lvlDef.GateUnlockCost else 0
+end
+
+function SlimeData.GetStageGateStatus(
+	foundMap: { [any]: boolean }?,
+	speedStat: number?,
+	fenceLevel: number?,
+	unlockedGates: { [string]: boolean }?,
+	targetLevel: number
+)
+	if targetLevel <= 1 then
+		return {
+			Unlocked = true,
+			RequirementsMet = true,
+			FoundBrainrots = 0,
+			TotalBrainrots = 0,
+			FoundSquishies = 0,
+			TotalSquishies = 0,
+			RequiredFenceLevel = 1,
+			CurrentFenceLevel = fenceLevel or 1,
+			RequiredSpeed = 0,
+			CurrentSpeed = speedStat or 18,
+			GateCost = 0,
+		}
+	end
+
+	local prevStage = targetLevel - 1
+	local fBrainrots, tBrainrots, fSquishies, tSquishies = SlimeData.GetStageBreakdown(foundMap, prevStage)
+	local lvlDef = SlimeData.Levels[targetLevel] :: any
+	local reqSpd = if lvlDef then (lvlDef.RequiredSpeed or 16) else 16
+	local reqFence = if lvlDef then (lvlDef.RequiredFenceLevel or targetLevel) else targetLevel
+	local gateCost = SlimeData.GetStageGateUnlockCost(targetLevel)
+	local curFence = if fenceLevel ~= nil then fenceLevel else targetLevel
+	local curSpd = speedStat or 16
+
+	local allPrevDone = true
+	for prev = 1, prevStage do
+		local fb, tb, fs, ts = SlimeData.GetStageBreakdown(foundMap, prev)
+		if (tb > 0 and fb < tb) or (ts > 0 and fs < ts) then
+			allPrevDone = false
+			break
+		end
+	end
+
+	local reqsMet = allPrevDone and (curFence >= reqFence) and (curSpd >= reqSpd)
+	local gatePaid = if unlockedGates ~= nil then (unlockedGates[tostring(targetLevel)] == true) else true
+
+	return {
+		Unlocked = reqsMet and gatePaid,
+		RequirementsMet = reqsMet,
+		GatePaid = gatePaid,
+		FoundBrainrots = fBrainrots,
+		TotalBrainrots = tBrainrots,
+		FoundSquishies = fSquishies,
+		TotalSquishies = tSquishies,
+		RequiredFenceLevel = reqFence,
+		CurrentFenceLevel = curFence,
+		RequiredSpeed = reqSpd,
+		CurrentSpeed = curSpd,
+		GateCost = gateCost,
+	}
+end
+
+function SlimeData.IsLevelUnlocked(
+	foundMap: { [any]: boolean }?,
+	speedStat: number,
+	targetLevel: number,
+	fenceLevel: number?,
+	unlockedGates: { [string]: boolean }?
+): boolean
 	if targetLevel <= 1 then
 		return true
 	end
-	-- Every previous level (1 .. targetLevel - 1) must have 100% of its Eggs & Squishies completed AND meet RequiredSpeed!
-	for prev = 1, targetLevel - 1 do
-		local foundInPrev, totalInPrev = SlimeData.GetLevelProgress(foundMap, prev)
-		if totalInPrev > 0 and foundInPrev < totalInPrev then
-			return false
-		end
-	end
-	local lvlDef = SlimeData.Levels[targetLevel] :: any
-	local reqSpd = if lvlDef then (lvlDef.RequiredSpeed or 16) else 16
-	if (speedStat or 16) < reqSpd then
-		return false
-	end
-	return true
+	local status = SlimeData.GetStageGateStatus(foundMap, speedStat, fenceLevel, unlockedGates, targetLevel)
+	return status.Unlocked
 end
 
 function SlimeData.GetHatchTimeSeconds(slimeDef: SlimeDef): number
@@ -1507,6 +1717,87 @@ end
 function SlimeData.GetSquishyUpgradeCost(slimeDef: SlimeDef, currentLvl: number): number
 	local lvl = math.clamp(currentLvl or 1, 1, 15)
 	return math.max(25, math.floor(slimeDef.CoinsPerSec * 10 * (1.75 ^ (lvl - 1))))
+end
+
+function SlimeData.GetFenceLevelDef(fenceLevel: number)
+	local lvl = math.clamp(math.floor(fenceLevel or 1), 1, #SlimeData.FenceLevels)
+	return SlimeData.FenceLevels[lvl]
+end
+
+function SlimeData.GetMaxBrainrotsForFenceLevel(fenceLevel: number): number
+	local def = SlimeData.GetFenceLevelDef(fenceLevel)
+	return if def then def.MaxBrainrots else 4
+end
+
+function SlimeData.GetFenceUpgradeCost(currentFenceLevel: number): number?
+	local nextLvl = math.floor(currentFenceLevel or 1) + 1
+	local nextDef = SlimeData.FenceLevels[nextLvl]
+	if not nextDef then
+		return nil
+	end
+	return nextDef.UpgradeCost
+end
+
+function SlimeData.GetHintCostForStage(stageNum: number): number
+	local lvl = math.clamp(math.floor(stageNum or 1), 1, 8)
+	local costs = {
+		[1] = 150,
+		[2] = 600,
+		[3] = 2_400,
+		[4] = 10_000,
+		[5] = 45_000,
+		[6] = 200_000,
+		[7] = 950_000,
+		[8] = 4_500_000,
+	}
+	return costs[lvl] or 150
+end
+
+-- Weighted Random Brainrot Egg Roll for a Stage (prioritizes uncollected Brainrots when Lucky Roll is active or on pity!)
+function SlimeData.RollStageBrainrotId(stageLevel: number, hasLuckyRoll: boolean?, foundMap: { [any]: boolean }?): string
+	local lvl = math.clamp(math.floor(stageLevel or 1), 1, 8)
+	local stageBrainrots = {}
+	for idx = 1, 35 do
+		local s = SlimeData.ById[idx]
+		if s and s.Level == lvl then
+			table.insert(stageBrainrots, s)
+		end
+	end
+	if #stageBrainrots == 0 then
+		return "1"
+	end
+
+	local rarityWeights = {
+		Common = if hasLuckyRoll then 15 else 48,
+		Rare = if hasLuckyRoll then 25 else 30,
+		Epic = if hasLuckyRoll then 32 else 15,
+		Legendary = if hasLuckyRoll then 20 else 6,
+		Mythic = if hasLuckyRoll then 8 else 1,
+	}
+
+	local totalWeight = 0
+	local weightedList = {}
+	for _, b in ipairs(stageBrainrots) do
+		local w = rarityWeights[b.Rarity] or 20
+		local sId = tostring((b :: any).Id)
+		local alreadyFound = foundMap and (foundMap[sId] or foundMap[tonumber(sId) :: any])
+		if not alreadyFound then
+			-- Boost uncollected Brainrots so players can complete their Stage Brainrot Index!
+			w = math.floor(w * (if hasLuckyRoll then 3.5 else 1.8))
+		end
+		totalWeight += w
+		table.insert(weightedList, { Id = sId, Weight = w })
+	end
+
+	local roll = math.random() * totalWeight
+	local accum = 0
+	for _, item in ipairs(weightedList) do
+		accum += item.Weight
+		if roll <= accum then
+			return item.Id
+		end
+	end
+	return weightedList[#weightedList].Id
 end
 
 return SlimeData

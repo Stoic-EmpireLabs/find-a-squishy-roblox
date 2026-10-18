@@ -58,9 +58,13 @@ end
 
 local StateSyncEvent = ensureRemoteEvent("StateSync")
 local EggCapturedEvent = ensureRemoteEvent("SquishyCaptured")
+local CoinCollectedEvent = ensureRemoteEvent("CoinCollected")
 local GuardianAlertEvent = ensureRemoteEvent("GuardianAlert")
 local EquipSquishyEvent = ensureRemoteEvent("EquipSquishy")
 local BuySpeedUpgradeEvent = ensureRemoteEvent("BuySpeedUpgrade")
+local BuyFenceUpgradeEvent = ensureRemoteEvent("BuyFenceUpgrade")
+local BuySquishyHintEvent = ensureRemoteEvent("BuySquishyHint")
+local UnlockStageGateEvent = ensureRemoteEvent("UnlockStageGate")
 local RebirthRequestEvent = ensureRemoteEvent("RebirthRequest")
 local ClaimDailyRewardEvent = ensureRemoteEvent("ClaimDailyReward")
 local ClaimPlaytimeRewardEvent = ensureRemoteEvent("ClaimPlaytimeReward")
@@ -101,6 +105,7 @@ export type PlayerSession = {
 	LifetimeCoins: number,
 	SpeedStat: number,
 	SpeedLevel: number,
+	FenceLevel: number,
 	SpeedThrottleRatio: number,
 	Rebirths: number,
 	DailyStreak: number,
@@ -110,6 +115,10 @@ export type PlayerSession = {
 	BonusSpins: number,
 	SessionStartTime: number,
 	ClaimedPlaytime: { [string]: boolean },
+	UnlockedHints: { [string]: boolean },
+	CollectedCoins: { [string]: boolean },
+	UnlockedGates: { [string]: boolean },
+	ClaimedStageJackpots: { [string]: boolean },
 	BossShieldUntil: number,
 	MythicCashBoostUntil: number,
 	SloMoActive: boolean,
@@ -176,6 +185,9 @@ local function serializeSession(player: Player)
 	if not session then
 		return nil
 	end
+	session.UnlockedGates = session.UnlockedGates or { ["1"] = true }
+	session.UnlockedGates["1"] = true
+	session.ClaimedStageJackpots = session.ClaimedStageJackpots or {}
 
 	local unlockedLevels = {}
 	local nextStageSpeedGoal = 250
@@ -183,17 +195,33 @@ local function serializeSession(player: Player)
 	for _, lvl in ipairs(SlimeData.Levels) do
 		local lvlId = (lvl :: any).Id or lvl.Level
 		local reqSpd = (lvl :: any).RequiredSpeed or 0
-		local isUnlocked = SlimeData.IsLevelUnlocked(session.FoundEggs, session.SpeedStat, lvlId)
+		if lvlId > 1 and not session.UnlockedGates[tostring(lvlId)] then
+			local status = SlimeData.GetStageGateStatus(session.FoundEggs, session.SpeedStat, session.FenceLevel or 1, session.UnlockedGates, lvlId)
+			if status.RequirementsMet and session.Coins >= status.GateCost then
+				session.Coins -= status.GateCost
+				session.UnlockedGates[tostring(lvlId)] = true
+				GuardianAlertEvent:FireClient(
+					player,
+					string.format("🔓 STAGE %d: %s UNLOCKED! (-$%s Gate Cost)", lvlId, string.upper(lvl.Name), SlimeData.FormatNumber(status.GateCost))
+				)
+			end
+		end
+		local isUnlocked = SlimeData.IsLevelUnlocked(session.FoundEggs, session.SpeedStat, lvlId, session.FenceLevel or 1, session.UnlockedGates)
 		unlockedLevels[tostring(lvlId)] = isUnlocked
 		if not isUnlocked and nextStageName == "MAX STAGE" then
 			nextStageSpeedGoal = reqSpd
 			local prevLvl = math.max(1, lvlId - 1)
 			local foundPrev, totalPrev = SlimeData.GetLevelProgress(session.FoundEggs, prevLvl)
-			nextStageName = string.format("Stage %d (%d/%d Done) -> Stage %d", prevLvl, foundPrev, totalPrev, lvlId)
+			nextStageName = string.format("Stage %d (%d/%d • Fence Lv.%d/%d) -> Stage %d", prevLvl, foundPrev, totalPrev, session.FenceLevel or 1, lvlId, lvlId)
 		end
 	end
 
-	local nextSpeedCost = math.floor(100 * math.pow(2.2, session.SpeedLevel - 1))
+	local nextTierDef = SlimeData.TreadmillTiers[session.SpeedLevel + 1]
+	local nextSpeedCost = if nextTierDef and nextTierDef.UpgradeCost
+		then nextTierDef.UpgradeCost
+		else math.floor(650 * math.pow(3.5, math.max(0, session.SpeedLevel - 1)))
+	local nextFenceCost = SlimeData.GetFenceUpgradeCost(session.FenceLevel or 1) or 0
+	local maxBrainrots = SlimeData.GetMaxBrainrotsForFenceLevel(session.FenceLevel or 1)
 	local nextRebirthCost = math.floor(5000 * math.pow(3.0, session.Rebirths))
 	local now = os.clock()
 
@@ -221,6 +249,9 @@ local function serializeSession(player: Player)
 		LifetimeCoins = session.LifetimeCoins,
 		SpeedStat = math.floor(session.SpeedStat),
 		SpeedLevel = session.SpeedLevel,
+		FenceLevel = session.FenceLevel or 1,
+		MaxBrainrots = maxBrainrots,
+		NextFenceCost = nextFenceCost,
 		SpeedThrottleRatio = session.SpeedThrottleRatio or 1.0,
 		NextSpeedCost = nextSpeedCost,
 		NextStageSpeedGoal = nextStageSpeedGoal,
@@ -232,6 +263,10 @@ local function serializeSession(player: Player)
 		BonusSpins = session.BonusSpins or 0,
 		PlaytimeSeconds = math.floor(now - (session.SessionStartTime or now)),
 		ClaimedPlaytime = session.ClaimedPlaytime,
+		UnlockedHints = session.UnlockedHints or {},
+		CollectedCoins = session.CollectedCoins or {},
+		UnlockedGates = session.UnlockedGates,
+		ClaimedStageJackpots = session.ClaimedStageJackpots,
 		BossShieldRemaining = math.max(0, math.ceil((session.BossShieldUntil or 0) - now)),
 		SpinCashBoostRemaining = math.max(0, math.ceil((session.MythicCashBoostUntil or 0) - now)),
 		SpinCashMultiplier = 2,
@@ -330,7 +365,7 @@ local function applyPlayerSpeed(player: Player, inPrecisionZone: boolean?)
 	hum.WalkSpeed = calibratedSpeed
 end
 
--- Controls visibility & prompt of a World Egg
+-- Controls visibility & prompt of a World Egg (instant disappearance when picked up!)
 local function setWorldEggTaken(eggId: string, isTaken: boolean, isDroppedInPlace: boolean?)
 	local eggModel = world.WorldEggs[eggId]
 	if not eggModel then
@@ -339,6 +374,8 @@ local function setWorldEggTaken(eggId: string, isTaken: boolean, isDroppedInPlac
 	local sData = SlimeData.ById[eggId]
 	for _, desc in ipairs(eggModel:GetDescendants()) do
 		if desc:IsA("BasePart") then
+			desc.CanTouch = not isTaken
+			desc.CanQuery = not isTaken
 			if desc.Name == "EggShell" then
 				desc.Transparency = if isTaken then 1 else 0.04
 			elseif string.find(desc.Name, "^BirdNest") ~= nil or desc.Name == "NestRim" then
@@ -358,7 +395,7 @@ local function setWorldEggTaken(eggId: string, isTaken: boolean, isDroppedInPlac
 					desc.ObjectText = string.format("%s [%s] ($%d/s)", sData.Name, sData.Rarity, sData.IncomePerSec)
 				end
 			end
-		elseif desc:IsA("BillboardGui") then
+		elseif desc:IsA("BillboardGui") or desc:IsA("SurfaceGui") or desc:IsA("ParticleEmitter") or desc:IsA("Highlight") or desc:IsA("PointLight") then
 			desc.Enabled = not isTaken
 		end
 	end
@@ -833,7 +870,7 @@ local function updateSpeedUpgradePrompt(player: Player)
 	local nextTierIdx = math.clamp(session.SpeedLevel + 1, 1, #SlimeData.TreadmillTiers)
 	local nextTierData = SlimeData.TreadmillTiers[nextTierIdx] or tierData
 
-	-- Sync Plot Treadmill belt attributes, overhead [x1 SPEED] -> [x50M SPEED] banner & scrolling Beam color!
+	-- Sync Plot Treadmill belt attributes, overhead [x1 SPEED] -> [x4M SPEED] banner & scrolling Beam color!
 	local belt = plotModel:FindFirstChild("TreadmillBelt_" .. tostring(session.PlotIndex)) :: BasePart?
 	if belt then
 		belt:SetAttribute("TreadmillTier", tierIdx)
@@ -875,13 +912,15 @@ local function updateSpeedUpgradePrompt(player: Player)
 	local stand = plotModel:FindFirstChild("SpeedUpgradeStand")
 	local prompt = stand and stand:FindFirstChild("UpgradeSpeedPrompt", true) :: ProximityPrompt?
 	if prompt then
-		local cost = math.floor(100 * math.pow(2.2, session.SpeedLevel - 1))
-		prompt.ActionText = string.format("Upgrade Treadmill -> [%s] (Lv.%d)", nextTierData.MultiplierLabel, session.SpeedLevel + 1)
+		local cost = if nextTierData.UpgradeCost and nextTierData.UpgradeCost > 0
+			then nextTierData.UpgradeCost
+			else math.floor(650 * math.pow(3.5, math.max(0, session.SpeedLevel - 1)))
+		prompt.ActionText = string.format("Upgrade Treadmill -> [%s] (Tier %d)", nextTierData.MultiplierLabel, session.SpeedLevel + 1)
 		prompt.ObjectText = string.format(
-			"🏃 Cost: $%s (Now: +%s/s | Speed: %s)",
+			"🏃 Cost: $%s | Needs Stage %d (Now: +%s/s)",
 			SlimeData.FormatNumber(cost),
-			SlimeData.FormatNumber(tierData.SpeedPerSec),
-			SlimeData.FormatNumber(session.SpeedStat)
+			nextTierIdx,
+			SlimeData.FormatNumber(tierData.SpeedPerSec)
 		)
 	end
 end
@@ -891,11 +930,38 @@ local function upgradePlayerTreadmill(player: Player)
 	if not session then
 		return
 	end
-	local cost = math.floor(100 * math.pow(2.2, session.SpeedLevel - 1))
+	if session.SpeedLevel >= #SlimeData.TreadmillTiers then
+		GuardianAlertEvent:FireClient(player, "⚡ Your Treadmill is already at MAX Cosmic Tier 8!")
+		return
+	end
+	local nextTierIdx = session.SpeedLevel + 1
+	local nextTierData = SlimeData.TreadmillTiers[nextTierIdx] or SlimeData.TreadmillTiers[#SlimeData.TreadmillTiers]
+	local reqStage = (nextTierData :: any).RequiredStage or nextTierIdx
+	if reqStage > 1 and not SlimeData.IsLevelUnlocked(session.FoundEggs, session.SpeedStat, reqStage) then
+		local prevStage = reqStage - 1
+		local foundPrev, totalPrev = SlimeData.GetLevelProgress(session.FoundEggs, prevStage)
+		local reqSpd = (SlimeData.Levels[reqStage] :: any).RequiredSpeed or 250
+		GuardianAlertEvent:FireClient(
+			player,
+			string.format(
+				"🔒 Unlock Stage %d first (%d/%d Stage %d + %s Speed) before buying Treadmill Tier %d!",
+				reqStage,
+				foundPrev,
+				totalPrev,
+				prevStage,
+				SlimeData.FormatNumber(reqSpd),
+				nextTierIdx
+			)
+		)
+		return
+	end
+	local cost = if nextTierData and nextTierData.UpgradeCost and nextTierData.UpgradeCost > 0
+		then nextTierData.UpgradeCost
+		else math.floor(650 * math.pow(3.5, math.max(0, session.SpeedLevel - 1)))
 	if session.Coins < cost then
 		GuardianAlertEvent:FireClient(
 			player,
-			string.format("Need $%s Cash to upgrade your Treadmill to Lv.%d!", SlimeData.FormatNumber(cost), session.SpeedLevel + 1)
+			string.format("Need $%s Cash to purchase Treadmill Tier %d [%s]!", SlimeData.FormatNumber(cost), nextTierIdx, nextTierData.MultiplierLabel)
 		)
 		return
 	end
@@ -911,9 +977,9 @@ local function upgradePlayerTreadmill(player: Player)
 	GuardianAlertEvent:FireClient(
 		player,
 		string.format(
-			"⚡ TREADMILL UPGRADED TO [%s] (Lv.%d)! +%s Instant Speed & +%s/sec on Belt!",
-			tierData.MultiplierLabel,
+			"⚡ PURCHASED TREADMILL TIER %d [%s]! +%s Instant Speed & +%s/sec on Belt!",
 			session.SpeedLevel,
+			tierData.MultiplierLabel,
 			SlimeData.FormatNumber(instantBoost),
 			SlimeData.FormatNumber(tierData.SpeedPerSec * mult)
 		)
@@ -921,7 +987,193 @@ local function upgradePlayerTreadmill(player: Player)
 	syncPlayer(player)
 end
 
--- Spawns or updates a Live Roaming Hatched Squishy inside a Player's Fenced Hatchery Pen (growing bigger via ScaleTo & gaining Crowns as it levels up!)
+-- 5.1 Updates the 🌱 Grow / Level-Up Brainrot Stand (Lv. 1 -> Lv. 15) on the left of the fence entrance!
+local function updateGrowStandPrompt(player: Player)
+	local session = sessions[player]
+	if not session then
+		return
+	end
+	local plotModel = getPlotModel(session.PlotIndex)
+	local hatcheryPen = plotModel and plotModel:FindFirstChild("HatcheryPen")
+	local growStand = hatcheryPen and hatcheryPen:FindFirstChild("GrowSquishyStand")
+	if not growStand then
+		return
+	end
+
+	local chosenSlot: number? = nil
+	local lowestCost = math.huge
+	local totalCount = 0
+	for slotIdx, pedState in pairs(session.Pedestals) do
+		totalCount += 1
+		if pedState.Level < 15 then
+			local sData = SlimeData.ById[pedState.SquishyId]
+			if sData then
+				local c = SlimeData.GetSquishyUpgradeCost(sData, pedState.Level)
+				if c < lowestCost then
+					lowestCost = c
+					chosenSlot = slotIdx
+				end
+			end
+		end
+	end
+
+	local prompt = growStand:FindFirstChild("UpgradeSquishyPenPrompt", true) :: ProximityPrompt?
+	local bb = growStand:FindFirstChildOfClass("BillboardGui")
+	local bbLbl = bb and bb:FindFirstChildOfClass("TextLabel")
+
+	if chosenSlot and session.Pedestals[chosenSlot] then
+		local pedState = session.Pedestals[chosenSlot]
+		local sData = SlimeData.ById[pedState.SquishyId]
+		if sData then
+			local nextLvl = math.min(15, pedState.Level + 1)
+			local nextCps = SlimeData.GetSquishyCoinsPerSec(sData, nextLvl)
+			if prompt then
+				prompt.ActionText = string.format("🌱 Grow %s -> Lv.%d ($%s)", sData.Name, nextLvl, SlimeData.FormatNumber(lowestCost))
+				prompt.ObjectText = string.format("Boosts Income to $%s/s (Lv.%d/15)", SlimeData.FormatNumber(nextCps), pedState.Level)
+				prompt.Enabled = true
+			end
+			if bbLbl then
+				bbLbl.Text = string.format(
+					"🌱 GROW %s (Lv.%d -> Lv.%d)\nCost: $%s -> $%s/s!",
+					string.upper(sData.Name),
+					pedState.Level,
+					nextLvl,
+					SlimeData.FormatNumber(lowestCost),
+					SlimeData.FormatNumber(nextCps)
+				)
+			end
+			return
+		end
+	end
+
+	if prompt then
+		if totalCount == 0 then
+			prompt.ActionText = "🌱 Grow & Level Up Brainrot (Lv.1 -> Lv.15)"
+			prompt.ObjectText = "Hatch a Brainrot Egg inside your Fence first!"
+		else
+			prompt.ActionText = "🌱 All Active Brainrots at MAX Lv.15!"
+			prompt.ObjectText = "Hatch more Brainrots to level them up!"
+		end
+		prompt.Enabled = true
+	end
+	if bbLbl then
+		if totalCount == 0 then
+			bbLbl.Text = "🌱 GROW / LEVEL UP BRAINROT (Lv.1 -> Lv.15)\nHatch Eggs in Fence to Grow!"
+		else
+			bbLbl.Text = "🌱 ALL ACTIVE BRAINROTS MAX LV.15!\nHatch More Brainrots to Level Up!"
+		end
+	end
+end
+
+-- 5.3 Physical 3D Fence Expansion (`resizePlayerFencePen`):
+-- Expands the matte wooden/iron fence from 24x18 (4 Brainrots at Lv.1) -> 28x21 (7) -> 32x24 (10) -> 36x27 (14)
+-- -> 40x30 (18) -> 44x33 (23) -> 48x36 (29) -> 56x42 studs (all 35 Brainrots at Lv.8!).
+local function resizePlayerFencePen(player: Player)
+	local session = sessions[player]
+	if not session then
+		return
+	end
+	local plotModel = getPlotModel(session.PlotIndex)
+	if not plotModel then
+		return
+	end
+	local fenceLvl = math.clamp(session.FenceLevel or 1, 1, #SlimeData.FenceLevels)
+	WorldBuilder.ResizePlayerFencePen(plotModel, fenceLvl)
+
+	-- Update HomePos of any active roaming Brainrots to match the repositioned pasture slots!
+	local pedestalsFolder = plotModel:FindFirstChild("Pedestals")
+	if pedestalsFolder then
+		for slotIdx, pedState in pairs(session.Pedestals) do
+			local pedPart = pedestalsFolder:FindFirstChild("Pedestal_" .. tostring(slotIdx)) :: BasePart?
+			if pedPart then
+				pedState.HomePos = pedPart.Position + Vector3.new(0, 1.8, 0)
+			end
+		end
+	end
+end
+
+-- 5.2 Updates the 🧱 Upgrade Fence Size Stand (Lv. 1 -> Lv. 8) on the right of the fence entrance and calls `resizePlayerFencePen`!
+local function updateFenceUpgradePrompt(player: Player)
+	local session = sessions[player]
+	if not session then
+		return
+	end
+	local plotModel = getPlotModel(session.PlotIndex)
+	if not plotModel then
+		return
+	end
+	local fenceLvl = math.clamp(session.FenceLevel or 1, 1, #SlimeData.FenceLevels)
+	local curDef = SlimeData.GetFenceLevelDef(fenceLvl)
+	local nextCost = SlimeData.GetFenceUpgradeCost(fenceLvl)
+	local nextDef = SlimeData.FenceLevels[fenceLvl + 1]
+
+	resizePlayerFencePen(player)
+
+	local hatcheryPen = plotModel:FindFirstChild("HatcheryPen")
+	if hatcheryPen and curDef then
+		local fenceStand = hatcheryPen:FindFirstChild("UpgradeFenceStand")
+		local prompt = fenceStand and (fenceStand:FindFirstChild("UpgradeFencePrompt", true) or fenceStand:FindFirstChild("UpgradeFenceSizePrompt", true)) :: ProximityPrompt?
+		local bb = fenceStand and fenceStand:FindFirstChildOfClass("BillboardGui")
+		local bbLbl = bb and bb:FindFirstChildOfClass("TextLabel")
+		if prompt then
+			if nextDef and nextCost then
+				prompt.ActionText = string.format("🧱 Upgrade Fence -> Lv.%d (%d Max Brainrots)", fenceLvl + 1, nextDef.MaxBrainrots)
+				prompt.ObjectText = string.format("Cost: $%s | Fits Stage %d Size (%dx%d)", SlimeData.FormatNumber(nextCost), nextDef.MaxStageSizeAllowed, nextDef.Width, nextDef.Depth)
+				prompt.Enabled = true
+			else
+				prompt.ActionText = "🧱 MAX FENCE LEVEL (Lv.8 - 35 Brainrots)"
+				prompt.ObjectText = "Colossal Cosmic Enclosure Unlocked!"
+				prompt.Enabled = false
+			end
+		end
+		if bbLbl then
+			if nextDef and nextCost then
+				bbLbl.Text = string.format("🧱 UPGRADE FENCE SIZE (Lv.%d -> Lv.%d)\nFits %d Brainrots (%dx%d) • $%s", fenceLvl, fenceLvl + 1, nextDef.MaxBrainrots, nextDef.Width, nextDef.Depth, SlimeData.FormatNumber(nextCost))
+			else
+				bbLbl.Text = string.format("🧱 FENCE LEVEL %d (MAX 56x42)\nFits All 35 Colossal Brainrots!", fenceLvl)
+			end
+		end
+	end
+end
+
+local function upgradePlayerFence(player: Player)
+	local session = sessions[player]
+	if not session then
+		return
+	end
+	local fenceLvl = math.clamp(session.FenceLevel or 1, 1, #SlimeData.FenceLevels)
+	local nextCost = SlimeData.GetFenceUpgradeCost(fenceLvl)
+	local nextDef = SlimeData.FenceLevels[fenceLvl + 1]
+	if not nextDef or not nextCost then
+		GuardianAlertEvent:FireClient(player, "🧱 Your Brainrot Fence is already at MAX Level 8 (Fits all 35 Colossal Brainrots)!")
+		return
+	end
+	if session.Coins < nextCost then
+		GuardianAlertEvent:FireClient(
+			player,
+			string.format("Need $%s Cash to upgrade your Brainrot Fence to Lv.%d (%d Max Brainrots)!", SlimeData.FormatNumber(nextCost), fenceLvl + 1, nextDef.MaxBrainrots)
+		)
+		return
+	end
+	session.Coins -= nextCost
+	session.FenceLevel = fenceLvl + 1
+	updateFenceUpgradePrompt(player)
+	GuardianAlertEvent:FireClient(
+		player,
+		string.format(
+			"🧱 FENCE EXPANDED TO LV.%d (%s - %dx%d Studs)! Now holds %d Brainrots & Stage %d Giant Sizes!",
+			session.FenceLevel,
+			nextDef.Label,
+			nextDef.Width,
+			nextDef.Depth,
+			nextDef.MaxBrainrots,
+			nextDef.MaxStageSizeAllowed
+		)
+	)
+	syncPlayer(player)
+end
+
+-- Spawns or updates a Live Roaming Hatched Brainrot inside a Player's Fenced Hatchery Pen (growing bigger via ScaleTo & gaining Crowns as it levels up!)
 local function refreshPedestalVisual(player: Player, slotIdx: number)
 	local session = sessions[player]
 	if not session then
@@ -932,9 +1184,24 @@ local function refreshPedestalVisual(player: Player, slotIdx: number)
 		return
 	end
 	local pedestalsFolder = plotModel:FindFirstChild("Pedestals")
-	local pedPart = pedestalsFolder and pedestalsFolder:FindFirstChild("Pedestal_" .. tostring(slotIdx)) :: BasePart?
-	if not pedPart then
+	if not pedestalsFolder then
 		return
+	end
+	local pedPart = pedestalsFolder:FindFirstChild("Pedestal_" .. tostring(slotIdx)) :: BasePart?
+	if not pedPart then
+		local hatcheryPen = plotModel:FindFirstChild("HatcheryPen")
+		local penFloor = hatcheryPen and hatcheryPen:FindFirstChild("HatcheryPenFloor") :: BasePart?
+		local baseCenter = if penFloor then penFloor.Position else plotModel:GetPivot().Position
+		local newPart = Instance.new("Part")
+		newPart.Name = "Pedestal_" .. tostring(slotIdx)
+		newPart.Size = Vector3.new(2, 0.2, 2)
+		newPart.Transparency = 1
+		newPart.Anchored = true
+		newPart.CanCollide = false
+		local angle = (slotIdx / 35) * math.pi * 2
+		newPart.Position = baseCenter + Vector3.new(math.cos(angle) * 7, 0.3, math.sin(angle) * 5)
+		newPart.Parent = pedestalsFolder
+		pedPart = newPart
 	end
 
 	local pedState = session.Pedestals[slotIdx]
@@ -963,14 +1230,16 @@ local function refreshPedestalVisual(player: Player, slotIdx: number)
 	model:PivotTo(CFrame.new(pedState.RoamPos or homePos))
 	model.Parent = pedPart
 	pedState.VisualModel = model
+	updateGrowStandPrompt(player)
 
 	local upgradeCost = SlimeData.GetSquishyUpgradeCost(sData, pedState.Level)
 	local newCps = SlimeData.GetSquishyCoinsPerSec(sData, pedState.Level + 1)
-	local scaleMult = 1 + math.min(0.95, pedState.Level * 0.14)
+	local stageScale = (sData :: any).StageHatchScale or 1.0
+	local scaleMult = stageScale * (1 + math.min(0.95, pedState.Level * 0.14))
 	local prompt = model.PrimaryPart and model.PrimaryPart:FindFirstChild("PedestalUpgradePrompt", true) :: ProximityPrompt?
 	if prompt then
 		prompt.ActionText = string.format("🌱 Grow & Level Up -> Lv.%d ($%s)", pedState.Level + 1, SlimeData.FormatNumber(upgradeCost))
-		prompt.ObjectText = string.format("%s [Lv.%d -> %.0f%% Size] ($%s/s)", sData.Name, pedState.Level, scaleMult * 100, SlimeData.FormatNumber(newCps))
+		prompt.ObjectText = string.format("%s [Lv.%d • %.2fx Size] ($%s/s)", sData.Name, pedState.Level, scaleMult, SlimeData.FormatNumber(newCps))
 		prompt.Triggered:Connect(function(triggerPlayer: Player)
 			if triggerPlayer ~= player then
 				return
@@ -983,20 +1252,20 @@ local function refreshPedestalVisual(player: Player, slotIdx: number)
 				return
 			end
 			session.Coins -= upgradeCost
-			pedState.Level += 1
+			pedState.Level = math.min(15, pedState.Level + 1)
 			recalculateIncome(session)
 			refreshPedestalVisual(player, slotIdx)
 			updatePlotOwnerSign(session.PlotIndex, player.DisplayName, session.PassiveIncomeRate, session.UncollectedPlotCash)
 			GuardianAlertEvent:FireClient(
 				player,
-				string.format("🌱 GREW %s TO LV.%d (%.0f%% Size)! Now generating $%s/sec!", string.upper(sData.Name), pedState.Level, scaleMult * 100, SlimeData.FormatNumber(newCps))
+				string.format("🌱 GREW %s TO LV.%d (%.2fx Size)! Now generating $%s/sec!", string.upper(sData.Name), pedState.Level, scaleMult, SlimeData.FormatNumber(newCps))
 			)
 			syncPlayer(player)
 		end)
 	end
 end
 
--- Automatically releases a newly hatched (or collected) Squishy into an open slot inside the player's Fenced Hatchery Pen so it roams & earns $/sec immediately!
+-- Automatically releases a newly hatched Brainrot into an open slot inside the player's Fenced Hatchery Pen (respecting FenceLevel capacity 4..35)!
 local function autoReleaseSquishyIntoPen(player: Player, squishyId: string): boolean
 	local session = sessions[player]
 	if not session then
@@ -1004,9 +1273,23 @@ local function autoReleaseSquishyIntoPen(player: Player, squishyId: string): boo
 	end
 	local plotModel = getPlotModel(session.PlotIndex)
 	local pedestalsFolder = plotModel and plotModel:FindFirstChild("Pedestals")
+	local fenceDef = SlimeData.GetFenceLevelDef(session.FenceLevel or 1)
+	local maxSlots = if fenceDef then fenceDef.MaxBrainrots else 4
 
-	-- First look for an open slot (1..12) inside the Fenced Hatchery Pen
-	for slotIdx = 1, 12 do
+	-- If this identical Brainrot is already in the pen, level it up (up to Lv. 15) automatically!
+	for slotIdx = 1, maxSlots do
+		local pedState = session.Pedestals[slotIdx]
+		if pedState and pedState.SquishyId == squishyId and pedState.Level < 15 then
+			pedState.Level += 1
+			refreshPedestalVisual(player, slotIdx)
+			recalculateIncome(session)
+			updatePlotOwnerSign(session.PlotIndex, player.DisplayName, session.PassiveIncomeRate, session.UncollectedPlotCash)
+			return true
+		end
+	end
+
+	-- Look for an open slot (1..maxSlots) inside the Fenced Hatchery Pen
+	for slotIdx = 1, maxSlots do
 		if session.Pedestals[slotIdx] == nil then
 			local pedPart = pedestalsFolder and pedestalsFolder:FindFirstChild("Pedestal_" .. tostring(slotIdx)) :: BasePart?
 			local placePr = pedPart and pedPart:FindFirstChild("PlaceSquishyPrompt", true) :: ProximityPrompt?
@@ -1030,18 +1313,6 @@ local function autoReleaseSquishyIntoPen(player: Player, squishyId: string): boo
 		end
 	end
 
-	-- If all 12 slots in the pen are full, check if this species is already in the pen and automatically grow/level it up!
-	for slotIdx = 1, 12 do
-		local pedState = session.Pedestals[slotIdx]
-		if pedState and pedState.SquishyId == squishyId then
-			pedState.Level += 1
-			refreshPedestalVisual(player, slotIdx)
-			recalculateIncome(session)
-			updatePlotOwnerSign(session.PlotIndex, player.DisplayName, session.PassiveIncomeRate, session.UncollectedPlotCash)
-			return true
-		end
-	end
-
 	return false
 end
 
@@ -1055,7 +1326,7 @@ local function ensurePlacePromptOnPedestal(pedPart: BasePart, plotIdx: number, s
 
 		prompt = Instance.new("ProximityPrompt")
 		prompt.Name = "PlaceSquishyPrompt"
-		prompt.ActionText = "Release Squishy in Ranch Pen"
+		prompt.ActionText = "Release Brainrot in Ranch Pen"
 		prompt.ObjectText = "Ranch Pen Slot #" .. tostring(slotIdx)
 		prompt.HoldDuration = 0
 		prompt.MaxActivationDistance = 13
@@ -1073,6 +1344,14 @@ local function ensurePlacePromptOnPedestal(pedPart: BasePart, plotIdx: number, s
 		local session = sessions[player]
 		if not session or session.PlotIndex ~= plotIdx then
 			GuardianAlertEvent:FireClient(player, "This is not your Base Plot!")
+			return
+		end
+		local maxSlots = SlimeData.GetMaxBrainrotsForFenceLevel(session.FenceLevel or 1)
+		if slotIdx > maxSlots then
+			GuardianAlertEvent:FireClient(
+				player,
+				string.format("🧱 Upgrade your Brainrot Fence (currently Lv.%d, max %d slots) to unlock Slot #%d!", session.FenceLevel or 1, maxSlots, slotIdx)
+			)
 			return
 		end
 		if session.Pedestals[slotIdx] ~= nil then
@@ -1097,7 +1376,7 @@ local function ensurePlacePromptOnPedestal(pedPart: BasePart, plotIdx: number, s
 		end
 
 		if not chosenId or (session.BackpackCounts[chosenId] or 0) <= 0 then
-			GuardianAlertEvent:FireClient(player, "Walk into your Fenced Hatchery Pen carrying a Boss Egg to hatch roaming Squishies!")
+			GuardianAlertEvent:FireClient(player, "Walk into your Fenced Hatchery Pen carrying a Brainrot Egg to hatch roaming Brainrots!")
 			return
 		end
 
@@ -1125,8 +1404,8 @@ local function ensurePlacePromptOnPedestal(pedPart: BasePart, plotIdx: number, s
 	end)
 end
 
--- Drops a carried Boss Egg into an open Hatchery Nest inside the Fenced Hatchery Pen, wobbles during countdown (00:05 -> HATCH!),
--- and at 00:00 cracks open and hatches directly into a live roaming 3D Squishy inside the fence!
+-- Drops a carried Mystery Brainrot Egg into an open Hatchery Nest inside the Fenced Hatchery Pen, wobbles during countdown (00:05 -> HATCH!),
+-- and at 00:00 cracks open and rolls a weighted Stage Brainrot (#1-#35) directly into the player's Fenced Pen!
 local function plantCarriedEggIntoHatcheryNest(player: Player, preferredIncIdx: number?): boolean
 	local session = sessions[player]
 	if not session or #session.CarriedEggIds == 0 then
@@ -1198,15 +1477,15 @@ local function plantCarriedEggIntoHatcheryNest(player: Player, preferredIncIdx: 
 		prompt.Enabled = false
 	end
 	if bbLabel then
-		bbLabel.Text = string.format("⏳ HATCHING %s...", string.upper(eggData.Name))
+		bbLabel.Text = string.format("⏳ HATCHING STAGE %d BRAINROT EGG...", eggData.Level)
 	end
 	GuardianAlertEvent:FireClient(
 		player,
-		string.format("🥚 Dropped %s in your Fenced Hatchery Pen! Hatching in %ds...", eggData.Name, hatchDuration)
+		string.format("🥚 Planted Stage %d Mystery Brainrot Egg! Hatching in %ds...", eggData.Level, hatchDuration)
 	)
 	syncPlayer(player)
 
-	-- Wobbling Hatch Timer Loop ("00:05" -> "✨ HATCH!" -> Live Roaming 3D Squishy inside the Fence!)
+	-- Wobbling Hatch Timer Loop ("00:05" -> "✨ HATCH!" -> Rolls a Stage Brainrot #1-#35 inside the Fence!)
 	task.spawn(function()
 		local wobbleStep = 0
 		while incState.EggId == plantedEggId and sessions[player] == session do
@@ -1228,7 +1507,6 @@ local function plantCarriedEggIntoHatcheryNest(player: Player, preferredIncIdx: 
 				end
 				task.wait(0.25)
 
-				-- Automatically crack open & hatch directly into a Live Roaming 3D Squishy inside the Fenced Hatchery Pen!
 				if incState.VisualModel then
 					incState.VisualModel:Destroy()
 					incState.VisualModel = nil
@@ -1238,7 +1516,7 @@ local function plantCarriedEggIntoHatcheryNest(player: Player, preferredIncIdx: 
 				incState.IsReady = false
 
 				if prompt then
-					prompt.ActionText = "Drop Egg in Hatchery Nest"
+					prompt.ActionText = "Drop Brainrot Egg in Nest"
 					prompt.ObjectText = "Hatchery Nest #" .. tostring(targetIncIdx)
 					prompt.Enabled = true
 				end
@@ -1246,31 +1524,72 @@ local function plantCarriedEggIntoHatcheryNest(player: Player, preferredIncIdx: 
 					bbLabel.Text = "🥚 HATCHERY NEST #" .. tostring(targetIncIdx) .. "\n[READY]"
 				end
 
-				local isFirst = not session.FoundEggs[plantedEggId]
+				-- Roll which Brainrot (#1-#35) hatches from this Stage Egg (also marks the stolen nest slot as discovered for Stage completion!)
 				session.FoundEggs[plantedEggId] = true
-				session.Coins += eggData.CoinReward
-				session.LifetimeCoins += eggData.CoinReward
+				local hasLucky = session.OwnedPasses and (session.OwnedPasses["LuckyEggRoll"] or session.OwnedPasses["VIP"])
+				local rolledBrainrotId = SlimeData.RollStageBrainrotId(eggData.Level, hasLucky, session.FoundEggs)
+				local hatchedData = SlimeData.ById[rolledBrainrotId] or eggData
 
-				-- Spawn directly into the Fenced Hatchery Pen as a live roaming 3D Squishy!
-				local placedInPen = autoReleaseSquishyIntoPen(player, plantedEggId)
+				local isFirst = not session.FoundEggs[rolledBrainrotId]
+				session.FoundEggs[rolledBrainrotId] = true
+				local passMult = if session.OwnedPasses and session.OwnedPasses["2xCash"] then 2.0 else 1.0
+				local baseReward = (hatchedData :: any).CoinReward or eggData.CoinReward or 50
+				local rewardCash = math.floor(baseReward * (if isFirst then 1.5 else 1.0) * passMult)
+				session.Coins += rewardCash
+				session.LifetimeCoins += rewardCash
+
+				-- Spawn directly into the Fenced Hatchery Pen as a live roaming 3D Brainrot!
+				local placedInPen = autoReleaseSquishyIntoPen(player, rolledBrainrotId)
 				if not placedInPen then
-					session.BackpackCounts[plantedEggId] = (session.BackpackCounts[plantedEggId] or 0) + 1
+					session.BackpackCounts[rolledBrainrotId] = (session.BackpackCounts[rolledBrainrotId] or 0) + 1
 					refreshBackpackTools(player)
 				end
 
 				EggCapturedEvent:FireClient(player, {
-					SquishyId = plantedEggId,
+					SquishyId = rolledBrainrotId,
 					IsFirstDiscovery = isFirst,
-					CoinsEarned = eggData.CoinReward,
+					CoinsEarned = rewardCash,
 				})
+				local stageScale = (hatchedData :: any).StageHatchScale or 1.0
+				local firstTag = if isFirst then " ✨ NEW INDEX DISCOVERY BONUS!" else ""
 				GuardianAlertEvent:FireClient(
 					player,
 					string.format(
-						"🐣 %s HATCHED INSIDE YOUR FENCED PEN! Now roaming & earning +$%s/sec!",
-						string.upper(eggData.Name),
-						SlimeData.FormatNumber(eggData.IncomePerSec)
+						"🐣 HATCHED %s [%s • %.2fx Size]! (+$%s Cash%s • +$%s/sec in Fence!)",
+						string.upper(hatchedData.Name),
+						hatchedData.Rarity,
+						stageScale,
+						SlimeData.FormatNumber(rewardCash),
+						firstTag,
+						SlimeData.FormatNumber(hatchedData.IncomePerSec)
 					)
 				)
+				-- Check 100% Stage Index Mastery Jackpot!
+				session.ClaimedStageJackpots = session.ClaimedStageJackpots or {}
+				local fB, tB, fS, tS = SlimeData.GetStageBreakdown(session.FoundEggs, eggData.Level)
+				if (tB + tS) > 0 and fB >= tB and fS >= tS and not session.ClaimedStageJackpots[tostring(eggData.Level)] then
+					session.ClaimedStageJackpots[tostring(eggData.Level)] = true
+					local jackpot = math.floor(SlimeData.GetStageMasteryJackpot(eggData.Level) * passMult)
+					session.Coins += jackpot
+					session.LifetimeCoins += jackpot
+					task.delay(0.6, function()
+						if sessions[player] then
+							GuardianAlertEvent:FireClient(
+								player,
+								string.format(
+									"🏆 STAGE %d 100%% INDEX MASTERY JACKPOT! +$%s BONUS CASH! (%d/%d Brainrots & %d/%d Squishies!)",
+									eggData.Level,
+									SlimeData.FormatNumber(jackpot),
+									fB,
+									tB,
+									fS,
+									tS
+								)
+							)
+							syncPlayer(player)
+						end
+					end)
+				end
 				syncPlayer(player)
 				break
 			else
@@ -1285,7 +1604,136 @@ local function plantCarriedEggIntoHatcheryNest(player: Player, preferredIncIdx: 
 	return true
 end
 
--- Connects all 4 Base Plots (Fenced Hatchery Pen, Walk-In Auto-Drop, Grow & Level Up Kiosk, Roaming Slots, Cash Collector, Treadmill Upgrade)
+-- Phase 6.1: Enforce All 4 Stage Gate Unlock Requirements:
+-- 1. Hatch 100% of Stage (S-1) Brainrots (#1-#35)
+-- 2. Find 100% of Stage (S-1) Hidden Squishies (#36-#117)
+-- 3. Upgrade Fence to Level S (Lv. 1 -> Lv. 8)
+-- 4. Reach Required Speed on the Treadmill + Pay Stage Gate Cash Cost
+local function tryUnlockStageGate(player: Player, targetLevel: number)
+	local session = sessions[player]
+	if not session or targetLevel <= 1 or targetLevel > #SlimeData.Levels then
+		return
+	end
+	session.UnlockedGates = session.UnlockedGates or { ["1"] = true }
+	if session.UnlockedGates[tostring(targetLevel)] then
+		return
+	end
+
+	local status = SlimeData.GetStageGateStatus(
+		session.FoundEggs,
+		session.SpeedStat,
+		session.FenceLevel or 1,
+		session.UnlockedGates,
+		targetLevel
+	)
+	local prevStage = targetLevel - 1
+	local lvlInfo = SlimeData.Levels[targetLevel]
+	local stageName = if lvlInfo then string.upper(lvlInfo.Name) else ("STAGE " .. tostring(targetLevel))
+
+	if not status.RequirementsMet then
+		GuardianAlertEvent:FireClient(
+			player,
+			string.format(
+				"🔒 %s GATE LOCKED! Need: 🥚 Stage %d Brainrots (%d/%d) • 🧸 Squishies (%d/%d) • 🧱 Fence Lv.%d/%d • ⚡ Speed %s/%s • 💰 $%s",
+				stageName,
+				prevStage,
+				status.FoundBrainrots,
+				status.TotalBrainrots,
+				status.FoundSquishies,
+				status.TotalSquishies,
+				status.CurrentFenceLevel,
+				status.RequiredFenceLevel,
+				SlimeData.FormatNumber(status.CurrentSpeed),
+				SlimeData.FormatNumber(status.RequiredSpeed),
+				SlimeData.FormatNumber(status.GateCost)
+			)
+		)
+		return
+	end
+
+	if session.Coins < status.GateCost then
+		GuardianAlertEvent:FireClient(
+			player,
+			string.format(
+				"💰 All 4 Stage %d Requirements Met! Need $%s Cash to open the %s Gate!",
+				prevStage,
+				SlimeData.FormatNumber(status.GateCost),
+				stageName
+			)
+		)
+		return
+	end
+
+	session.Coins -= status.GateCost
+	session.UnlockedGates[tostring(targetLevel)] = true
+	GuardianAlertEvent:FireClient(
+		player,
+		string.format(
+			"🔓 %s GATE UNLOCKED! (-$%s Cash) • All 4 Stage %d Requirements Complete!",
+			stageName,
+			SlimeData.FormatNumber(status.GateCost),
+			prevStage
+		)
+	)
+	syncPlayer(player)
+end
+
+UnlockStageGateEvent.OnServerEvent:Connect(function(player: Player, targetLevel: any)
+	local lvl = tonumber(targetLevel)
+	if not lvl then
+		local session = sessions[player]
+		if session then
+			for i = 2, #SlimeData.Levels do
+				if not (session.UnlockedGates and session.UnlockedGates[tostring(i)]) then
+					lvl = i
+					break
+				end
+			end
+		end
+	end
+	if lvl then
+		tryUnlockStageGate(player, lvl)
+	end
+end)
+
+for lvlId, gateBarrier in pairs(world.GateBarriers) do
+	if lvlId > 1 and gateBarrier then
+		local gatePrompt = gateBarrier:FindFirstChild("UnlockStageGatePrompt", true) :: ProximityPrompt?
+		if gatePrompt then
+			gatePrompt.Triggered:Connect(function(player: Player)
+				tryUnlockStageGate(player, lvlId)
+			end)
+		end
+		local gateTouchCooldowns: { [number]: number } = {}
+		gateBarrier.Touched:Connect(function(hit: BasePart)
+			local char = hit.Parent
+			local player = if char then Players:GetPlayerFromCharacter(char) else nil
+			local session = if player then sessions[player] else nil
+			if not player or not session then
+				return
+			end
+			if session.UnlockedGates and session.UnlockedGates[tostring(lvlId)] then
+				return
+			end
+			local now = os.clock()
+			if gateTouchCooldowns[player.UserId] and (now - gateTouchCooldowns[player.UserId]) < 2.2 then
+				return
+			end
+			gateTouchCooldowns[player.UserId] = now
+			tryUnlockStageGate(player, lvlId)
+		end)
+	end
+end
+
+BuySpeedUpgradeEvent.OnServerEvent:Connect(function(player: Player)
+	upgradePlayerTreadmill(player)
+end)
+
+BuyFenceUpgradeEvent.OnServerEvent:Connect(function(player: Player)
+	upgradePlayerFence(player)
+end)
+
+-- Connects all 4 Base Plots (Fenced Hatchery Pen, Walk-In Auto-Drop, Grow & Level Up Kiosk, Upgrade Fence Kiosk, Roaming Slots, Cash Collector, Treadmill Upgrade)
 for plotIdx = 1, 4 do
 	local plotModel = getPlotModel(plotIdx)
 	if plotModel then
@@ -1302,31 +1750,47 @@ for plotIdx = 1, 4 do
 			end)
 		end
 
-		-- Connect 🌱 Grow & Level Up Squishy Station Kiosk at the Hatchery Pen Entrance!
 		local hatcheryPen = plotModel:FindFirstChild("HatcheryPen")
+
+		-- Connect 🧱 Upgrade Fence Size Stand (Lv. 1 -> Lv. 8) on the right side of the Hatchery Pen Entrance!
+		local fencePrompt = hatcheryPen and (hatcheryPen:FindFirstChild("UpgradeFencePrompt", true) or hatcheryPen:FindFirstChild("UpgradeFenceSizePrompt", true)) :: ProximityPrompt?
+		if fencePrompt then
+			fencePrompt.Triggered:Connect(function(player: Player)
+				local session = sessions[player]
+				if not session or session.PlotIndex ~= plotIdx then
+					GuardianAlertEvent:FireClient(player, "Go to your own Fenced Hatchery Pen to upgrade your Fence Size!")
+					return
+				end
+				upgradePlayerFence(player)
+			end)
+		end
+
+		-- Connect 🌱 Grow & Level Up Brainrot Station Kiosk (Lv. 1 -> Lv. 15) on the left side of the Hatchery Pen Entrance!
 		local growPrompt = hatcheryPen and hatcheryPen:FindFirstChild("UpgradeSquishyPenPrompt", true) :: ProximityPrompt?
 		if growPrompt then
 			growPrompt.Triggered:Connect(function(player: Player)
 				local session = sessions[player]
 				if not session or session.PlotIndex ~= plotIdx then
-					GuardianAlertEvent:FireClient(player, "Go to your own Fenced Hatchery Pen to grow & level up your Squishies!")
+					GuardianAlertEvent:FireClient(player, "Go to your own Fenced Hatchery Pen to grow & level up your Brainrots!")
 					return
 				end
-				-- Find the most affordable roaming Squishy in the pen to grow & level up
+				-- Find the most affordable roaming Brainrot in the pen (below Lv. 15) to grow & level up
 				local chosenSlot: number? = nil
 				local lowestCost = math.huge
 				for slotIdx, pedState in pairs(session.Pedestals) do
-					local sData = SlimeData.ById[pedState.SquishyId]
-					if sData then
-						local c = SlimeData.GetSquishyUpgradeCost(sData, pedState.Level)
-						if c < lowestCost then
-							lowestCost = c
-							chosenSlot = slotIdx
+					if pedState.Level < 15 then
+						local sData = SlimeData.ById[pedState.SquishyId]
+						if sData then
+							local c = SlimeData.GetSquishyUpgradeCost(sData, pedState.Level)
+							if c < lowestCost then
+								lowestCost = c
+								chosenSlot = slotIdx
+							end
 						end
 					end
 				end
 				if not chosenSlot then
-					GuardianAlertEvent:FireClient(player, "Hatch a Boss Egg in your Fenced Pen first so you have roaming Squishies to grow!")
+					GuardianAlertEvent:FireClient(player, "Hatch a Brainrot Egg in your Fenced Pen first so you have roaming Brainrots to level up!")
 					return
 				end
 				local pedState = session.Pedestals[chosenSlot]
@@ -1342,15 +1806,16 @@ for plotIdx = 1, 4 do
 					return
 				end
 				session.Coins -= lowestCost
-				pedState.Level += 1
+				pedState.Level = math.min(15, pedState.Level + 1)
 				recalculateIncome(session)
 				refreshPedestalVisual(player, chosenSlot)
 				updatePlotOwnerSign(session.PlotIndex, player.DisplayName, session.PassiveIncomeRate, session.UncollectedPlotCash)
-				local scaleMult = 1 + math.min(0.95, (pedState.Level - 1) * 0.14)
+				local stageScale = (sData :: any).StageHatchScale or 1.0
+				local scaleMult = stageScale * (1 + math.min(0.95, (pedState.Level - 1) * 0.14))
 				local newCps = SlimeData.GetSquishyCoinsPerSec(sData, pedState.Level)
 				GuardianAlertEvent:FireClient(
 					player,
-					string.format("🌱 GREW %s TO LV.%d (%.0f%% Size)! Now earning $%s/sec!", string.upper(sData.Name), pedState.Level, scaleMult * 100, SlimeData.FormatNumber(newCps))
+					string.format("🌱 GREW %s TO LV.%d (%.2fx Size)! Now earning $%s/sec!", string.upper(sData.Name), pedState.Level, scaleMult, SlimeData.FormatNumber(newCps))
 				)
 				syncPlayer(player)
 			end)
@@ -1389,7 +1854,7 @@ for plotIdx = 1, 4 do
 							return
 						end
 						if #session.CarriedEggIds == 0 then
-							GuardianAlertEvent:FireClient(player, "Steal a Boss Egg from a Biome first, then walk into your Fenced Hatchery Pen!")
+							GuardianAlertEvent:FireClient(player, "Steal a Brainrot Egg from a Stage Boss Nest first, then walk into your Fenced Hatchery Pen!")
 							return
 						end
 						plantCarriedEggIntoHatcheryNest(player, incIdx)
@@ -1400,7 +1865,7 @@ for plotIdx = 1, 4 do
 
 		local pedestalsFolder = plotModel:FindFirstChild("Pedestals")
 		if pedestalsFolder then
-			for slotIdx = 1, 12 do
+			for slotIdx = 1, 35 do
 				local pedPart = pedestalsFolder:FindFirstChild("Pedestal_" .. tostring(slotIdx)) :: BasePart?
 				if pedPart then
 					ensurePlacePromptOnPedestal(pedPart, plotIdx, slotIdx)
@@ -1438,27 +1903,13 @@ local function tryCollectOrStealWorldItem(player: Player, eggId: string)
 		return
 	end
 
-	-- Strict 100% Previous-Stage Completion + Speed Power Gate Check (All 8 Stages)
+	-- Strict 4-Requirement Stage Gate Check (All 8 Stages: 100% Brainrots + 100% Squishies + Fence Lv.S + Speed + Gate Cash Cost)
 	local lvl = slimeData.Level
-	if lvl > 1 and not SlimeData.IsLevelUnlocked(session.FoundEggs, session.SpeedStat, lvl) then
+	if lvl > 1 and not SlimeData.IsLevelUnlocked(session.FoundEggs, session.SpeedStat, lvl, session.FenceLevel or 1, session.UnlockedGates) then
 		local now = os.clock()
 		if not stageLockAlertCooldowns[player.UserId] or (now - stageLockAlertCooldowns[player.UserId]) >= 2.2 then
 			stageLockAlertCooldowns[player.UserId] = now
-			local prevLvl = lvl - 1
-			local foundPrev, totalPrev = SlimeData.CountLevelProgress(session.FoundEggs, prevLvl)
-			local levelInfo = SlimeData.Levels[lvl]
-			local reqSpd = if levelInfo then (levelInfo.RequiredSpeed or 0) else 0
-			GuardianAlertEvent:FireClient(
-				player,
-				string.format(
-					"🔒 Stage %d Locked! Need 100%% of Stage %d (%d/%d Found) + %s Speed Power!",
-					lvl,
-					prevLvl,
-					foundPrev,
-					totalPrev,
-					SlimeData.FormatNumber(reqSpd)
-				)
-			)
+			tryUnlockStageGate(player, lvl)
 		end
 		return
 	end
@@ -1512,6 +1963,32 @@ local function tryCollectOrStealWorldItem(player: Player, eggId: string)
 				SlimeData.CountFound(session.FoundEggs)
 			)
 		)
+		-- Check 100% Stage Index Mastery Jackpot!
+		session.ClaimedStageJackpots = session.ClaimedStageJackpots or {}
+		local fB, tB, fS, tS = SlimeData.GetStageBreakdown(session.FoundEggs, lvl)
+		if (tB + tS) > 0 and fB >= tB and fS >= tS and not session.ClaimedStageJackpots[tostring(lvl)] then
+			session.ClaimedStageJackpots[tostring(lvl)] = true
+			local jackpot = math.floor(SlimeData.GetStageMasteryJackpot(lvl) * passMult)
+			session.Coins += jackpot
+			session.LifetimeCoins += jackpot
+			task.delay(0.6, function()
+				if sessions[player] then
+					GuardianAlertEvent:FireClient(
+						player,
+						string.format(
+							"🏆 STAGE %d 100%% INDEX MASTERY JACKPOT! +$%s BONUS CASH! (%d/%d Brainrots & %d/%d Squishies!)",
+							lvl,
+							SlimeData.FormatNumber(jackpot),
+							fB,
+							tB,
+							fS,
+							tS
+						)
+					)
+					syncPlayer(player)
+				end
+			end)
+		end
 		syncPlayer(player)
 		return
 	end
@@ -1622,9 +2099,8 @@ local function bindBiomeObstacles()
 					end)
 				end)
 			elseif desc:GetAttribute("WorldCoinPickup") == true then
-				-- Per-player simultaneous touch debounce for Respawning Golden Squishy Coins so all players running together can collect them!
+				-- Per-player one-time collection for all 120 Glowing 3D Gold Coins so they disappear immediately when picked up and can never be farmed!
 				desc.CanTouch = true
-				local coinPlayerDebounce: { [Player]: number } = {}
 				desc.Touched:Connect(function(hit: BasePart)
 					local char = hit.Parent
 					local player = if char then Players:GetPlayerFromCharacter(char) else nil
@@ -1632,23 +2108,33 @@ local function bindBiomeObstacles()
 					if not player or not session then
 						return
 					end
-					local now = os.clock()
-					if coinPlayerDebounce[player] and (now - coinPlayerDebounce[player]) < 10.0 then
+					local coinId = (desc:GetAttribute("CoinId") :: string?) or desc.Name
+					if session.CollectedCoins[coinId] then
 						return
 					end
-					coinPlayerDebounce[player] = now
+					local stageId = (desc:GetAttribute("StageId") :: number?) or 1
+					if stageId > 1 and not SlimeData.IsLevelUnlocked(session.FoundEggs, session.SpeedStat, stageId) then
+						return
+					end
+					session.CollectedCoins[coinId] = true
 					local sound = desc:FindFirstChild("CoinChime") :: Sound?
 					if sound then
 						sound:Play()
 					end
 					local minVal = (desc:GetAttribute("MinCoinValue") :: number?) or (desc:GetAttribute("CoinValue") :: number?) or 80
-					local maxVal = (desc:GetAttribute("MaxCoinValue") :: number?) or (minVal * 2)
+					local maxVal = (desc:GetAttribute("MaxCoinValue") :: number?) or minVal
 					local baseVal = math.random(minVal, math.max(minVal, maxVal))
-					local mult = if session.OwnedPasses and session.OwnedPasses["2xCash"] then 2 else 1
-					local earned = baseVal * mult
+					local rebirthMult = 1 + ((session.Rebirths or 0) * 0.5)
+					local passMult = if session.OwnedPasses and session.OwnedPasses["2xCash"] then 2.0 else 1.0
+					local vipMult = if session.OwnedPasses and session.OwnedPasses["VIP"] then 1.5 else 1.0
+					local earned = math.max(10, math.floor(baseVal * rebirthMult * passMult * vipMult))
 					session.Coins += earned
 					session.LifetimeCoins += earned
-					GuardianAlertEvent:FireClient(player, string.format("🪙 Grabbed Golden Squishy Coin! +$%d Bonus Cash!", earned))
+					CoinCollectedEvent:FireClient(player, {
+						CoinId = coinId,
+						CoinsEarned = earned,
+						WorldPos = desc.Position,
+					})
 					syncPlayer(player)
 				end)
 			elseif desc:GetAttribute("ShortcutButtonLevel") ~= nil then
@@ -1979,6 +2465,40 @@ RunService.Heartbeat:Connect(function(rawDt: number)
 			end
 		end
 
+		-- Automatic Walk-Over Pickup Proximity Sweep for all 120 Glowing 3D Gold Coins (6.5 studs — Instant Disappearance per player!)
+		if world.WorldCoins then
+			for coinId, coinPart in pairs(world.WorldCoins) do
+				if not session.CollectedCoins[coinId] and coinPart and coinPart.Parent then
+					local d = (hrp.Position - coinPart.Position).Magnitude
+					if d <= 6.5 then
+						local stageId = (coinPart:GetAttribute("StageId") :: number?) or 1
+						if stageId <= 1 or SlimeData.IsLevelUnlocked(session.FoundEggs, session.SpeedStat, stageId) then
+							session.CollectedCoins[coinId] = true
+							local sound = coinPart:FindFirstChild("CoinChime") :: Sound?
+							if sound then
+								sound:Play()
+							end
+							local minVal = (coinPart:GetAttribute("MinCoinValue") :: number?) or (coinPart:GetAttribute("CoinValue") :: number?) or 45
+							local maxVal = (coinPart:GetAttribute("MaxCoinValue") :: number?) or minVal
+							local baseVal = math.random(minVal, math.max(minVal, maxVal))
+							local rebirthMult = 1 + ((session.Rebirths or 0) * 0.5)
+							local passMult = if session.OwnedPasses and session.OwnedPasses["2xCash"] then 2.0 else 1.0
+							local vipMult = if session.OwnedPasses and session.OwnedPasses["VIP"] then 1.5 else 1.0
+							local earned = math.max(10, math.floor(baseVal * rebirthMult * passMult * vipMult))
+							session.Coins += earned
+							session.LifetimeCoins += earned
+							CoinCollectedEvent:FireClient(player, {
+								CoinId = coinId,
+								CoinsEarned = earned,
+								WorldPos = coinPart.Position,
+							})
+							syncPlayer(player)
+						end
+					end
+				end
+			end
+		end
+
 		local plotModel = getPlotModel(session.PlotIndex)
 		local inPlotArea = false
 		if plotModel then
@@ -2023,7 +2543,8 @@ RunService.Heartbeat:Connect(function(rawDt: number)
 		if activeBelt then
 			char:SetAttribute("OnTreadmillBelt", true)
 			local beltTier = (activeBelt:GetAttribute("TreadmillTier") :: number?) or 1
-			char:SetAttribute("TreadmillAnimSpeed", 1.3 + (beltTier * 0.12))
+			local effectiveTier = math.clamp(math.min(beltTier, session.SpeedLevel or 1), 1, #SlimeData.TreadmillTiers)
+			char:SetAttribute("TreadmillAnimSpeed", 1.3 + (effectiveTier * 0.12))
 
 			-- Hybrid AFK Mode: If player is standing hands-free on the treadmill (not pressing movement keys), gently keep them centered on the belt!
 			local hum = char:FindFirstChildOfClass("Humanoid")
@@ -2036,12 +2557,31 @@ RunService.Heartbeat:Connect(function(rawDt: number)
 
 			if now - session.LastTreadmillStep >= 0.50 then
 				session.LastTreadmillStep = now
-				local tierData = SlimeData.TreadmillTiers[math.clamp(beltTier, 1, #SlimeData.TreadmillTiers)] or SlimeData.TreadmillTiers[1]
-				local basePerSec = (activeBelt:GetAttribute("SpeedGainPerSec") :: number?) or tierData.SpeedPerSec
+				if beltTier > (session.SpeedLevel or 1) then
+					if not stageLockAlertCooldowns[player.UserId] or (now - stageLockAlertCooldowns[player.UserId]) >= 3.5 then
+						stageLockAlertCooldowns[player.UserId] = now
+						local reqTierDef = SlimeData.TreadmillTiers[math.clamp((session.SpeedLevel or 1) + 1, 1, #SlimeData.TreadmillTiers)]
+						local reqCost = if reqTierDef and reqTierDef.UpgradeCost then reqTierDef.UpgradeCost else 650
+						GuardianAlertEvent:FireClient(
+							player,
+							string.format(
+								"🔒 Treadmill Tier %d Locked! Purchase Treadmill Tier %d ($%s) to unlock [%s] belt speed! (Training at Tier %d speed)",
+								beltTier,
+								(session.SpeedLevel or 1) + 1,
+								SlimeData.FormatNumber(reqCost),
+								if SlimeData.TreadmillTiers[beltTier] then SlimeData.TreadmillTiers[beltTier].MultiplierLabel else "MAX",
+								effectiveTier
+							)
+						)
+					end
+				end
+				local tierData = SlimeData.TreadmillTiers[effectiveTier] or SlimeData.TreadmillTiers[1]
+				local basePerSec = tierData.SpeedPerSec
 				local passMult = if session.OwnedPasses and session.OwnedPasses["2xSpeed"] then 2 else 1
+				local vipMult = if session.OwnedPasses and session.OwnedPasses["VIP"] then 1.25 else 1
 				local rebirthMult = 1 + (session.Rebirths * 0.5)
 				-- Tick every 0.5s = 50% of per-second Speed gain
-				local gain = math.max(1, math.floor(basePerSec * 0.5 * rebirthMult * passMult))
+				local gain = math.max(1, math.floor(basePerSec * 0.5 * rebirthMult * passMult * vipMult))
 				session.SpeedStat += gain
 				applyPlayerSpeed(player, true)
 				updateSpeedUpgradePrompt(player)
@@ -2483,6 +3023,7 @@ local GAMEPASS_IDS: { [string]: number } = {
 	["AutoHatch"] = 0,
 	["VIP"] = 0,
 	["Carry2Eggs"] = 0,
+	["SquishyRadar"] = 0,
 }
 
 local DEVPRODUCT_IDS: { [string]: number } = {
@@ -2492,6 +3033,7 @@ local DEVPRODUCT_IDS: { [string]: number } = {
 	["CashPack25K"] = 0,
 	["CashPack100K"] = 0,
 	["BuySpinRobux"] = 0,
+	["LuckyEggRoll"] = 0,
 }
 
 local function grantGamePassReward(player: Player, passKey: string)
@@ -2503,14 +3045,14 @@ local function grantGamePassReward(player: Player, passKey: string)
 	if passKey == "2xCash" then
 		recalculateIncome(session)
 		updatePlotOwnerSign(session.PlotIndex, player.DisplayName, session.PassiveIncomeRate, session.UncollectedPlotCash)
-		GuardianAlertEvent:FireClient(player, "💰 Unlocked 2x CASH FOREVER Gamepass! All Cash & Pedestal Income Doubled!")
+		GuardianAlertEvent:FireClient(player, "💰 Unlocked 2x CASH FOREVER Gamepass! All Cash & Brainrot Income Doubled!")
 	elseif passKey == "2xSpeed" then
 		session.SpeedStat += 16
 		applyPlayerSpeed(player)
 		updateSpeedUpgradePrompt(player)
 		GuardianAlertEvent:FireClient(player, "⚡ Unlocked 2x TREADMILL SPEED FOREVER! +16 Speed & 2x Treadmill Gains!")
 	elseif passKey == "AutoHatch" then
-		GuardianAlertEvent:FireClient(player, "🥚 Unlocked FAST HATCH (1s Incubators)! All Eggs Hatch in 1 Second!")
+		GuardianAlertEvent:FireClient(player, "🥚 Unlocked FAST HATCH (1s Incubators)! All Brainrot Eggs Hatch in 1 Second!")
 	elseif passKey == "VIP" then
 		session.Coins += 10000
 		session.LifetimeCoins += 10000
@@ -2520,7 +3062,9 @@ local function grantGamePassReward(player: Player, passKey: string)
 		attachVIPRainbowTrail(player)
 		GuardianAlertEvent:FireClient(player, "👑 Unlocked VIP CROWN + GOLDEN TRAIL + +50% CASH (+10K Cash & +25 Speed)!")
 	elseif passKey == "Carry2Eggs" then
-		GuardianAlertEvent:FireClient(player, "🎒 Unlocked +2 CARRY CAPACITY! You can now steal & carry 2 Boss Eggs at once!")
+		GuardianAlertEvent:FireClient(player, "🎒 Unlocked +2 CARRY CAPACITY! You can now steal & carry 2 Brainrot Eggs at once!")
+	elseif passKey == "SquishyRadar" then
+		GuardianAlertEvent:FireClient(player, "🧸 Unlocked SQUISHY RADAR FOREVER! Your Guiding Arrow can now track any hidden Squishy for free!")
 	end
 	syncPlayer(player)
 end
@@ -2536,7 +3080,7 @@ local function grantDeveloperProductReward(player: Player, productKey: string): 
 				incState.ReadyAt = os.clock()
 			end
 		end
-		GuardianAlertEvent:FireClient(player, "⚡ HATCH ALL INCUBATORS NOW: All planted eggs hatched instantly!")
+		GuardianAlertEvent:FireClient(player, "⚡ HATCH ALL INCUBATORS NOW: All planted Brainrot Eggs hatched instantly!")
 	elseif productKey == "BossShield60s" then
 		activateBossShield(player, 60)
 		GuardianAlertEvent:FireClient(player, "🛡️ BOSS SHIELD ACTIVATED! 60 Seconds of complete Boss & Hazard Immunity!")
@@ -2555,12 +3099,62 @@ local function grantDeveloperProductReward(player: Player, productKey: string): 
 	elseif productKey == "BuySpinRobux" then
 		session.BonusSpins = (session.BonusSpins or 0) + 3
 		GuardianAlertEvent:FireClient(player, "🎡 Purchased +3 Lucky Squishy Wheel Spins!")
+	elseif productKey == "LuckyEggRoll" then
+		session.OwnedPasses["LuckyEggRoll"] = true
+		GuardianAlertEvent:FireClient(player, "🎲 LUCKY EGG ROLL ACTIVATED! 3.5x Higher Epic, Legendary & Mythic Brainrot Hatch Odds!")
 	else
 		return false
 	end
 	syncPlayer(player)
 	return true
 end
+
+BuySquishyHintEvent.OnServerEvent:Connect(function(player: Player, targetIdArg: any)
+	local session = sessions[player]
+	if not session then
+		return
+	end
+	local targetId = tostring(targetIdArg or "")
+	local slimeDef = SlimeData.ById[targetId]
+	if not slimeDef then
+		-- Find the first uncollected Squishy in the player's current unlocked stages
+		for _, s in ipairs(SlimeData.Slimes) do
+			local sId = tostring((s :: any).Id)
+			if not session.FoundEggs[sId] and not session.UnlockedHints[sId] then
+				if SlimeData.IsLevelUnlocked(session.FoundEggs, session.SpeedStat, s.Level) then
+					slimeDef = s
+					targetId = sId
+					break
+				end
+			end
+		end
+	end
+	if not slimeDef then
+		GuardianAlertEvent:FireClient(player, "🔍 You have already unlocked hints for all available Squishies in your unlocked Stages!")
+		return
+	end
+	if session.OwnedPasses["SquishyRadar"] or session.UnlockedHints[targetId] then
+		session.UnlockedHints[targetId] = true
+		GuardianAlertEvent:FireClient(player, string.format("🔍 Radar locked onto %s (Stage %d)!", slimeDef.Name, slimeDef.Level))
+		syncPlayer(player)
+		return
+	end
+	local cost = SlimeData.GetHintCostForStage(slimeDef.Level)
+	if session.Coins < cost then
+		GuardianAlertEvent:FireClient(
+			player,
+			string.format("Need $%s Cash to buy a 🔍 Squishy Finder Hint for Stage %d (%s)!", SlimeData.FormatNumber(cost), slimeDef.Level, slimeDef.Name)
+		)
+		return
+	end
+	session.Coins -= cost
+	session.UnlockedHints[targetId] = true
+	GuardianAlertEvent:FireClient(
+		player,
+		string.format("🔍 Unlocked Hint & X-Ray Guiding Beam for %s (Stage %d): %s", slimeDef.Name, slimeDef.Level, slimeDef.Hint)
+	)
+	syncPlayer(player)
+end)
 
 MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player: Player, gamePassId: number, wasPurchased: boolean)
 	if not wasPurchased then
@@ -2695,9 +3289,14 @@ function savePlayerData(player: Player)
 			LifetimeCoins = session.LifetimeCoins,
 			SpeedStat = session.SpeedStat,
 			SpeedLevel = session.SpeedLevel,
+			FenceLevel = session.FenceLevel or 1,
 			Rebirths = session.Rebirths,
 			DailyStreak = session.DailyStreak,
 			OwnedPasses = session.OwnedPasses,
+			UnlockedHints = session.UnlockedHints,
+			CollectedCoins = session.CollectedCoins,
+			UnlockedGates = session.UnlockedGates,
+			ClaimedStageJackpots = session.ClaimedStageJackpots,
 			FoundEggs = session.FoundEggs,
 			BackpackCounts = session.BackpackCounts,
 			SavedPedestals = savedPedestals,
@@ -2857,11 +3456,15 @@ local function setupPlayer(player: Player)
 		end)
 	end
 
+	local savedGates = if loadedData and type(loadedData.UnlockedGates) == "table" then loadedData.UnlockedGates else { ["1"] = true }
+	savedGates["1"] = true
+
 	sessions[player] = {
 		Coins = if loadedData and type(loadedData.Coins) == "number" then loadedData.Coins else 100,
 		LifetimeCoins = if loadedData and type(loadedData.LifetimeCoins) == "number" then loadedData.LifetimeCoins else 100,
 		SpeedStat = if loadedData and type(loadedData.SpeedStat) == "number" then loadedData.SpeedStat else 16,
 		SpeedLevel = if loadedData and type(loadedData.SpeedLevel) == "number" then loadedData.SpeedLevel else 1,
+		FenceLevel = if loadedData and type(loadedData.FenceLevel) == "number" then math.clamp(loadedData.FenceLevel, 1, 8) else 1,
 		SpeedThrottleRatio = 1.0,
 		Rebirths = if loadedData and type(loadedData.Rebirths) == "number" then loadedData.Rebirths else 0,
 		DailyStreak = if loadedData and type(loadedData.DailyStreak) == "number" then loadedData.DailyStreak else 0,
@@ -2871,6 +3474,10 @@ local function setupPlayer(player: Player)
 		BonusSpins = 1,
 		SessionStartTime = os.clock(),
 		ClaimedPlaytime = {},
+		UnlockedHints = if loadedData and type(loadedData.UnlockedHints) == "table" then loadedData.UnlockedHints else {},
+		CollectedCoins = if loadedData and type(loadedData.CollectedCoins) == "table" then loadedData.CollectedCoins else {},
+		UnlockedGates = savedGates,
+		ClaimedStageJackpots = if loadedData and type(loadedData.ClaimedStageJackpots) == "table" then loadedData.ClaimedStageJackpots else {},
 		BossShieldUntil = 0,
 		MythicCashBoostUntil = 0,
 		SloMoActive = false,
@@ -2892,15 +3499,21 @@ local function setupPlayer(player: Player)
 		Pedestals = {},
 	}
 
-	-- Restore saved hatched Ranch Pen Squishies (strictly Boss Egg species #1-#35) onto the player's plot pedestals!
+	local plotModelForResize = getPlotModel(assignedPlot)
+	if plotModelForResize then
+		WorldBuilder.ResizePlayerFencePen(plotModelForResize, sessions[player].FenceLevel)
+	end
+
+	-- Restore saved hatched Ranch Pen Brainrots (#1-#35) onto the player's plot pedestals!
 	if loadedData and type(loadedData.SavedPedestals) == "table" then
 		local plotModel = getPlotModel(assignedPlot)
 		local pedsFolder = plotModel and plotModel:FindFirstChild("Pedestals")
+		local maxSavedSlots = SlimeData.GetMaxBrainrotsForFenceLevel(sessions[player].FenceLevel)
 		for slotKey, pInfo in pairs(loadedData.SavedPedestals) do
 			local slotIdx = tonumber(slotKey)
 			local sId = if type(pInfo) == "table" then tostring(pInfo.SquishyId or "") else ""
 			local sData = SlimeData.ById[sId]
-			if slotIdx and slotIdx >= 1 and slotIdx <= 12 and sData and not (sData :: any).IsShiningSquishy then
+			if slotIdx and slotIdx >= 1 and slotIdx <= maxSavedSlots and sData and not (sData :: any).IsShiningSquishy then
 				local pedPart = pedsFolder and pedsFolder:FindFirstChild("Pedestal_" .. tostring(slotIdx)) :: BasePart?
 				local homePos = if pedPart then (pedPart.Position + Vector3.new(0, 1.8, 0)) else Vector3.new(0, 2.5, 54)
 				local pr = pedPart and pedPart:FindFirstChild("PlaceSquishyPrompt", true) :: ProximityPrompt?
@@ -2949,6 +3562,8 @@ local function setupPlayer(player: Player)
 
 	updatePlotOwnerSign(assignedPlot, player.DisplayName, sessions[player].PassiveIncomeRate, 0)
 	updateSpeedUpgradePrompt(player)
+	updateFenceUpgradePrompt(player)
+	updateGrowStandPrompt(player)
 	updateGlobalLeaderboards()
 
 	player.CharacterAdded:Connect(function(char: Model)
@@ -3060,6 +3675,9 @@ Players.PlayerRemoving:Connect(function(player: Player)
 					pr.Enabled = true
 				end
 			end
+		end
+		if plotModel then
+			WorldBuilder.ResizePlayerFencePen(plotModel, 1)
 		end
 		if plotOwners[session.PlotIndex] == player then
 			plotOwners[session.PlotIndex] = nil
