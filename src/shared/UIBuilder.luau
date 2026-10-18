@@ -783,7 +783,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	speedCounterLbl.Font = Enum.Font.FredokaOne
 	speedCounterLbl.TextXAlignment = Enum.TextXAlignment.Left
 	speedCounterLbl.TextColor3 = Color3.fromRGB(65, 220, 255)
-	speedCounterLbl.Text = "⚡ <b>18</b>"
+	speedCounterLbl.Text = "⚡ <b>16</b>"
 	speedCounterLbl.Parent = bottomLeftFrame
 	addTextSizeConstraint(speedCounterLbl, 14, 34)
 	addTextStroke(speedCounterLbl, Color3.fromRGB(12, 18, 30), 3.0)

@@ -401,6 +401,8 @@ local function popOneCarriedEgg(player: Player): string?
 	return poppedEggId
 end
 
+local playerEggDropCooldowns: { [string]: number } = {}
+
 -- EXACT DROP-IN-PLACE MECHANIC:
 -- When a player carrying an egg is hit by a Boss, Hazard Moat, Sweeper Bar, or Bat,
 -- the egg STOPS and DROPS right at that exact spot (never resets to the nest)!
@@ -425,10 +427,11 @@ local function dropCarriedEggAtSpot(player: Player, hitPosition: Vector3, reason
 	if not droppedEggId then
 		return
 	end
+	playerEggDropCooldowns[tostring(player.UserId) .. "_" .. droppedEggId] = os.clock() + 1.6
 	local eggData = SlimeData.ById[droppedEggId]
 
-	-- Clamp inside the playable biome bounds so it drops cleanly on the floor right where they got hit
-	local dropX = math.clamp(hitPosition.X, -58, 58)
+	-- Clamp inside the widened playable biome bounds (-110..110) so it drops cleanly on the floor right where they got hit
+	local dropX = math.clamp(hitPosition.X, -110, 110)
 	local dropZ = math.min(-6, hitPosition.Z)
 	local exactDropPos = Vector3.new(dropX, 3.8, dropZ)
 
@@ -1516,6 +1519,10 @@ local function tryCollectOrStealWorldItem(player: Player, eggId: string)
 	if eggTakenByPlayer[eggId] ~= nil then
 		return
 	end
+	local dropCdKey = tostring(player.UserId) .. "_" .. eggId
+	if playerEggDropCooldowns[dropCdKey] and os.clock() < playerEggDropCooldowns[dropCdKey] then
+		return
+	end
 
 	-- CASE B: BOSS NEST EGG (#1-#35) -> Walk-Over Automatic Steal, Carry (up to 2 with +2 Carry Capacity!), and Hatch in Fenced Hatchery Pen!
 	local maxCarry = if session.OwnedPasses and session.OwnedPasses["Carry2Eggs"] then 2 else 1
@@ -1739,9 +1746,16 @@ local function bindBiomeObstacles()
 					end
 					hazardHitCooldowns[player] = now + 1.4
 
+					local session = sessions[player]
+					if session and session.BossShieldUntil and session.BossShieldUntil > now then
+						local rem = math.ceil(session.BossShieldUntil - now)
+						GuardianAlertEvent:FireClient(player, string.format("🛡️ BOSS SHIELD blocked obstacle hit! (%ds left)", rem))
+						return
+					end
+
 					local hrp = char:FindFirstChild("HumanoidRootPart") :: BasePart?
 					if hrp then
-						if sessions[player] and sessions[player].CarriedEggId then
+						if session and session.CarriedEggId then
 							dropCarriedEggAtSpot(player, hrp.Position, "💥 Hit Obstacle")
 						end
 						local knock = (desc:GetAttribute("KnockbackImpulse") :: number?) or 60
@@ -1825,7 +1839,7 @@ RunService.Heartbeat:Connect(function(rawDt: number)
 			local session = sessions[player]
 			local char = player.Character
 			local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
-			if session and hrp then
+			if session and hrp and (session.BossShieldUntil or 0) <= now then
 				local pPos = hrp.Position
 				if pPos.Z <= levelInfo.ZStart - 2 and pPos.Z >= levelInfo.ZEnd + 2 then
 					local d = (pPos - root.Position).Magnitude
@@ -1871,7 +1885,7 @@ RunService.Heartbeat:Connect(function(rawDt: number)
 				local chaseSpeed = 16 + (levelInfo.Id * 2.2)
 				local step = dir.Unit * math.min(dist, chaseSpeed * dt)
 				local newPos = Vector3.new(
-					math.clamp(root.Position.X + step.X, -54, 54),
+					math.clamp(root.Position.X + step.X, -74, 74),
 					gData.Center.Y + math.abs(math.sin(elapsed * 7)) * 1.4,
 					math.clamp(root.Position.Z + step.Z, levelInfo.ZEnd + 8, levelInfo.ZStart - 8)
 				)
@@ -1881,13 +1895,19 @@ RunService.Heartbeat:Connect(function(rawDt: number)
 			-- Catch Check: Drop carried egg AT THAT EXACT SPOT (do NOT reset egg to nest!)
 			if dist <= 7.2 and (guardianCatchCooldowns[targetPlayer] or 0) < now then
 				guardianCatchCooldowns[targetPlayer] = now + 1.8
-				local hitSpot = targetHrp.Position
-				if sessions[targetPlayer] and sessions[targetPlayer].CarriedEggId then
-					dropCarriedEggAtSpot(targetPlayer, hitSpot, "🚨 Caught by " .. gData.Name)
+				local tSession = sessions[targetPlayer]
+				if tSession and (tSession.BossShieldUntil or 0) > now then
+					local rem = math.ceil(tSession.BossShieldUntil - now)
+					GuardianAlertEvent:FireClient(targetPlayer, string.format("🛡️ BOSS SHIELD blocked %s! (%ds left)", gData.Name, rem))
 				else
-					GuardianAlertEvent:FireClient(targetPlayer, "🚨 Bumped by " .. gData.Name .. "! Watch out!")
+					local hitSpot = targetHrp.Position
+					if tSession and tSession.CarriedEggId then
+						dropCarriedEggAtSpot(targetPlayer, hitSpot, "🚨 Caught by " .. gData.Name)
+					else
+						GuardianAlertEvent:FireClient(targetPlayer, "🚨 Bumped by " .. gData.Name .. "! Watch out!")
+					end
+					targetHrp.AssemblyLinearVelocity = Vector3.new(0, 42, 65)
 				end
-				targetHrp.AssemblyLinearVelocity = Vector3.new(0, 42, 65)
 			end
 		else
 			-- SLEEPING ("Zzz") AT NEST (Zero PivotTo calls once at home!)
@@ -2170,7 +2190,7 @@ RebirthRequestEvent.OnServerEvent:Connect(function(player: Player)
 	end
 	session.Coins = 0
 	session.Rebirths += 1
-	session.SpeedStat = 18 + (session.Rebirths * 25)
+	session.SpeedStat = 16 + (session.Rebirths * 15)
 	session.SpeedLevel = 1
 	session.TrapCharges = 3 + session.Rebirths
 	recalculateIncome(session)
@@ -2348,18 +2368,20 @@ ClaimPlaytimeRewardEvent.OnServerEvent:Connect(function(player: Player, mileston
 		activateBossShield(player, ms.ShieldSec)
 	end
 	if ms.Mythic then
-		local mythicSlime = SlimeData.Slimes[#SlimeData.Slimes]
+		local mythicSlime = SlimeData.Slimes[35] or SlimeData.Slimes[#SlimeData.Slimes]
 		if mythicSlime then
 			local sId = tostring(mythicSlime.Id)
 			session.FoundEggs[sId] = true
-			session.BackpackCounts[sId] = (session.BackpackCounts[sId] or 0) + 1
+			if not autoReleaseSquishyIntoPen(player, sId) then
+				session.BackpackCounts[sId] = (session.BackpackCounts[sId] or 0) + 1
+			end
 			refreshBackpackTools(player)
 		end
 	end
 
 	GuardianAlertEvent:FireClient(
 		player,
-		string.format("🎁 Claimed %s Playtime Reward! (+$%d Cash%s)", ms.Key, cashWon, if ms.Mythic then " + MYTHIC SQUISHY!" else "")
+		string.format("🎁 Claimed %s Playtime Reward! (+$%d Cash%s)", ms.Key, cashWon, if ms.Mythic then " + MYTHIC SQUISHY IN YOUR PEN!" else "")
 	)
 	syncPlayer(player)
 end)
@@ -2399,13 +2421,15 @@ local function executeWheelSpin(player: Player)
 		activateBossShield(player, prize.Amount)
 		GuardianAlertEvent:FireClient(player, "🎡 LUCKY WHEEL WIN: 🛡️ 60s Boss Shield Immunity Activated!")
 	else
-		local randSlime = SlimeData.Slimes[math.random(36, #SlimeData.Slimes)]
+		local randSlime = SlimeData.Slimes[math.random(15, 35)]
 		if randSlime then
 			local sId = tostring(randSlime.Id)
 			session.FoundEggs[sId] = true
-			session.BackpackCounts[sId] = (session.BackpackCounts[sId] or 0) + 1
+			if not autoReleaseSquishyIntoPen(player, sId) then
+				session.BackpackCounts[sId] = (session.BackpackCounts[sId] or 0) + 1
+			end
 			refreshBackpackTools(player)
-			GuardianAlertEvent:FireClient(player, string.format("🎡 JACKPOT! Won Shining %s ($%d/s)!", randSlime.Name, randSlime.IncomePerSec))
+			GuardianAlertEvent:FireClient(player, string.format("🎡 JACKPOT! Won %s ($%d/s) — Now roaming inside your Fenced Pen!", randSlime.Name, randSlime.IncomePerSec))
 		end
 	end
 	syncPlayer(player)
@@ -2657,6 +2681,15 @@ function savePlayerData(player: Player)
 		return
 	end
 	if playerDataStore then
+		local savedPedestals: { [string]: { SquishyId: string, Level: number } } = {}
+		for slotIdx, pedState in pairs(session.Pedestals) do
+			if pedState and pedState.SquishyId then
+				savedPedestals[tostring(slotIdx)] = {
+					SquishyId = tostring(pedState.SquishyId),
+					Level = tonumber(pedState.Level) or 1,
+				}
+			end
+		end
 		local payload = {
 			Coins = session.Coins,
 			LifetimeCoins = session.LifetimeCoins,
@@ -2667,6 +2700,7 @@ function savePlayerData(player: Player)
 			OwnedPasses = session.OwnedPasses,
 			FoundEggs = session.FoundEggs,
 			BackpackCounts = session.BackpackCounts,
+			SavedPedestals = savedPedestals,
 		}
 		pcall(function()
 			playerDataStore:SetAsync("Player_" .. tostring(player.UserId), payload)
@@ -2722,7 +2756,7 @@ local function updateGlobalLeaderboards()
 				local keyName = tostring(row.key)
 				local val = tonumber(row.value) or 0
 				if not entriesByName[keyName] then
-					entriesByName[keyName] = { Name = keyName, Coins = 0, Speed = 18, Squishies = 0 }
+					entriesByName[keyName] = { Name = keyName, Coins = 0, Speed = 16, Squishies = 0 }
 				end
 				if val > (entriesByName[keyName][field] or 0) then
 					entriesByName[keyName][field] = val
@@ -2826,7 +2860,7 @@ local function setupPlayer(player: Player)
 	sessions[player] = {
 		Coins = if loadedData and type(loadedData.Coins) == "number" then loadedData.Coins else 100,
 		LifetimeCoins = if loadedData and type(loadedData.LifetimeCoins) == "number" then loadedData.LifetimeCoins else 100,
-		SpeedStat = if loadedData and type(loadedData.SpeedStat) == "number" then loadedData.SpeedStat else 18,
+		SpeedStat = if loadedData and type(loadedData.SpeedStat) == "number" then loadedData.SpeedStat else 16,
 		SpeedLevel = if loadedData and type(loadedData.SpeedLevel) == "number" then loadedData.SpeedLevel else 1,
 		SpeedThrottleRatio = 1.0,
 		Rebirths = if loadedData and type(loadedData.Rebirths) == "number" then loadedData.Rebirths else 0,
@@ -2858,6 +2892,36 @@ local function setupPlayer(player: Player)
 		Pedestals = {},
 	}
 
+	-- Restore saved hatched Ranch Pen Squishies (strictly Boss Egg species #1-#35) onto the player's plot pedestals!
+	if loadedData and type(loadedData.SavedPedestals) == "table" then
+		local plotModel = getPlotModel(assignedPlot)
+		local pedsFolder = plotModel and plotModel:FindFirstChild("Pedestals")
+		for slotKey, pInfo in pairs(loadedData.SavedPedestals) do
+			local slotIdx = tonumber(slotKey)
+			local sId = if type(pInfo) == "table" then tostring(pInfo.SquishyId or "") else ""
+			local sData = SlimeData.ById[sId]
+			if slotIdx and slotIdx >= 1 and slotIdx <= 12 and sData and not (sData :: any).IsShiningSquishy then
+				local pedPart = pedsFolder and pedsFolder:FindFirstChild("Pedestal_" .. tostring(slotIdx)) :: BasePart?
+				local homePos = if pedPart then (pedPart.Position + Vector3.new(0, 1.8, 0)) else Vector3.new(0, 2.5, 54)
+				local pr = pedPart and pedPart:FindFirstChild("PlaceSquishyPrompt", true) :: ProximityPrompt?
+				if pr then
+					pr.Enabled = false
+				end
+				sessions[player].Pedestals[slotIdx] = {
+					SquishyId = sId,
+					Level = math.clamp(tonumber(pInfo.Level) or 1, 1, 15),
+					VisualModel = nil :: any,
+					HomePos = homePos,
+					RoamPos = homePos,
+					RoamTarget = homePos + Vector3.new((math.random() - 0.5) * 5.0, 0, (math.random() - 0.5) * 5.0),
+					NextRoamChange = os.clock() + 1.5,
+				}
+				refreshPedestalVisual(player, slotIdx)
+			end
+		end
+		recalculateIncome(sessions[player])
+	end
+
 	-- Official Server leaderstats Folder (Coins, Squishies, Speed, Rebirths)
 	local ls = Instance.new("Folder")
 	ls.Name = "leaderstats"
@@ -2883,7 +2947,7 @@ local function setupPlayer(player: Player)
 	rebVal.Value = sessions[player].Rebirths
 	rebVal.Parent = ls
 
-	updatePlotOwnerSign(assignedPlot, player.DisplayName, 0, 0)
+	updatePlotOwnerSign(assignedPlot, player.DisplayName, sessions[player].PassiveIncomeRate, 0)
 	updateSpeedUpgradePrompt(player)
 	updateGlobalLeaderboards()
 

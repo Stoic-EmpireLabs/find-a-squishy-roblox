@@ -1229,9 +1229,9 @@ local function getPlotStationPos(plotIdx: number, stationName: string): Vector3
 			end
 		elseif stationName == "GrowOrCash" then
 			local pen = pModel:FindFirstChild("HatcheryPen")
-			local growSign = pen and pen:FindFirstChild("GrowUpgradeStationSign") :: BasePart?
+			local growSign = pen and (pen:FindFirstChild("GrowSquishyStand") or pen:FindFirstChild("GrowUpgradeStationSign")) :: BasePart?
 			if growSign then
-				return growSign.Position
+				return growSign.Position + Vector3.new(0, 2.5, 0)
 			end
 			local cashPad = pModel:FindFirstChild("CollectCashPad") :: BasePart?
 			if cashPad then
