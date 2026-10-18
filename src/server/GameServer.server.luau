@@ -1077,12 +1077,15 @@ local function ensurePlacePromptOnPedestal(pedPart: BasePart, plotIdx: number, s
 		end
 
 		local chosenId: string? = session.EquippedId
+		if chosenId and SlimeData.ById[chosenId] and (SlimeData.ById[chosenId] :: any).IsShiningSquishy then
+			chosenId = nil
+		end
 		if not chosenId or (session.BackpackCounts[chosenId] or 0) <= 0 then
 			local bestInc = -1
 			for sId, count in pairs(session.BackpackCounts) do
 				if count > 0 then
 					local d = SlimeData.ById[sId]
-					if d and d.IncomePerSec > bestInc then
+					if d and not (d :: any).IsShiningSquishy and d.IncomePerSec > bestInc then
 						bestInc = d.IncomePerSec
 						chosenId = sId
 					end
@@ -1477,7 +1480,6 @@ local function tryCollectOrStealWorldItem(player: Player, eggId: string)
 		local passMult = if session.OwnedPasses and session.OwnedPasses["2xCash"] then 2.0 else 1.0
 		local earnedCash = math.floor(slimeData.CoinReward * comboMult * passMult)
 		session.FoundEggs[eggId] = true
-		session.BackpackCounts[eggId] = 1
 		session.Coins += earnedCash
 		session.LifetimeCoins += earnedCash
 
