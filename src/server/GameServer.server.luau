@@ -1049,6 +1049,8 @@ for plotIdx = 1, 4 do
 end
 
 -- Connect Prompts on all 117 World Items (35 Boss Nest Eggs + 82 Shining Collectible Squishies!)
+local shiningPlayerCooldowns: { [string]: number } = {}
+
 for eggId, eggModel in pairs(world.WorldEggs) do
 	local slimeData = SlimeData.ById[eggId]
 	local prompt = eggModel:FindFirstChild("CapturePrompt", true) :: ProximityPrompt?
@@ -1058,17 +1060,18 @@ for eggId, eggModel in pairs(world.WorldEggs) do
 			if not session then
 				return
 			end
-			if eggTakenByPlayer[eggId] ~= nil then
-				return
-			end
 
 			local isShining = (slimeData :: any).IsShiningSquishy == true or eggModel:GetAttribute("IsShiningSquishy") == true
 
 			-- CASE A: SHINING COLLECTIBLE SQUISHY (#36-#117 on Rooftops, Rainbow Staircase, Outer Mazes, Castle Walls & Obbies)
-			-- Instant grab into the player's Squishy Index (X / 117) & Backpack Hotbar!
+			-- Instant per-player grab so ALL players in the server can collect them at the exact same time!
 			if isShining then
-				eggTakenByPlayer[eggId] = player
-				setWorldEggTaken(eggId, true, false)
+				local cdKey = tostring(player.UserId) .. "_" .. eggId
+				local now = os.clock()
+				if shiningPlayerCooldowns[cdKey] and (now - shiningPlayerCooldowns[cdKey]) < 4.0 then
+					return
+				end
+				shiningPlayerCooldowns[cdKey] = now
 
 				local isFirst = not session.FoundEggs[eggId]
 				session.FoundEggs[eggId] = true
@@ -1087,12 +1090,10 @@ for eggId, eggModel in pairs(world.WorldEggs) do
 					string.format("✨ Grabbed Shining %s! (+$%d Cash, Found %d/117!)", slimeData.Name, slimeData.CoinReward, SlimeData.CountFound(session.FoundEggs))
 				)
 				syncPlayer(player)
+				return
+			end
 
-				-- Respawn the Shining Squishy after 18 seconds so others can grab it too
-				task.delay(18, function()
-					eggTakenByPlayer[eggId] = nil
-					setWorldEggTaken(eggId, false, false)
-				end)
+			if eggTakenByPlayer[eggId] ~= nil then
 				return
 			end
 
@@ -1161,21 +1162,21 @@ local function bindBiomeObstacles()
 					end)
 				end)
 			elseif desc:GetAttribute("WorldCoinPickup") == true then
-				-- Chapter 1 & 4 Touch Debounce Mechanic for Respawning Golden Squishy Coins (math.random cash + sound effect)!
+				-- Per-player simultaneous touch debounce for Respawning Golden Squishy Coins so all players running together can collect them!
 				desc.CanTouch = true
-				local coinBusy = false
+				local coinPlayerDebounce: { [Player]: number } = {}
 				desc.Touched:Connect(function(hit: BasePart)
-					if coinBusy then
-						return
-					end
 					local char = hit.Parent
 					local player = if char then Players:GetPlayerFromCharacter(char) else nil
 					local session = if player then sessions[player] else nil
 					if not player or not session then
 						return
 					end
-					coinBusy = true
-					desc.Transparency = 1.0
+					local now = os.clock()
+					if coinPlayerDebounce[player] and (now - coinPlayerDebounce[player]) < 10.0 then
+						return
+					end
+					coinPlayerDebounce[player] = now
 					local sound = desc:FindFirstChild("CoinChime") :: Sound?
 					if sound then
 						sound:Play()
@@ -1189,12 +1190,6 @@ local function bindBiomeObstacles()
 					session.LifetimeCoins += earned
 					GuardianAlertEvent:FireClient(player, string.format("🪙 Grabbed Golden Squishy Coin! +$%d Bonus Cash!", earned))
 					syncPlayer(player)
-					task.delay(14, function()
-						if desc.Parent then
-							desc.Transparency = 0
-						end
-						coinBusy = false
-					end)
 				end)
 			elseif desc:GetAttribute("ShortcutButtonLevel") ~= nil then
 				-- Chapter 1 & 4 Timed Co-Op / Solo Bridge & Gate Button (Duration attribute + visual countdown + disables Hazard Moat)!
@@ -2165,7 +2160,7 @@ end)
 
 -- Player Lifecycle Setup
 local function setupPlayer(player: Player)
-	local assignedPlot = 1
+	local assignedPlot = ((#Players:GetPlayers() - 1) % 4) + 1
 	for idx = 1, 4 do
 		if plotOwners[idx] == nil then
 			assignedPlot = idx
