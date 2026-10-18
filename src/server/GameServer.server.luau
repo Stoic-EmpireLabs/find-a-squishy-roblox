@@ -776,16 +776,16 @@ local function refreshBackpackTools(player: Player)
 
 	ensureCombatGearInBackpack(player)
 
-	-- Keep the hotbar clean (only Bat & Bear Trap gear; Squishies live in the 117 Index & Safe Zone Hatchery Pen!)
+	-- Keep the bottom hotbar 100% clean (only Bat & Bear Trap gear; zero Squishy tool boxes in the bottom inventory bar!)
 	for _, child in ipairs(backpack:GetChildren()) do
-		if child:IsA("Tool") and child:GetAttribute("SquishyId") then
+		if child:IsA("Tool") and not string.find(child.Name, "^Bat") and not string.find(child.Name, "^Bear Trap") then
 			child:Destroy()
 		end
 	end
 	local char = player.Character
 	if char then
 		for _, child in ipairs(char:GetChildren()) do
-			if child:IsA("Tool") and child:GetAttribute("SquishyId") then
+			if child:IsA("Tool") and not string.find(child.Name, "^Bat") and not string.find(child.Name, "^Bear Trap") then
 				child:Destroy()
 			end
 		end
