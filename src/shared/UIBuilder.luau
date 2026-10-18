@@ -291,23 +291,42 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	end
 
 	-- =========================================================================
-	-- 1. TOP-CENTER LIVE PROGRESS BARS (CanvasGroup + UICorner + UIGradient + UIStroke + math.clamp)
+	-- 1. TOP-CENTER LIVE PROGRESS BARS (Dismissible / Collapsible with 'X' Buttons!)
 	-- =========================================================================
 	local topContainer = Instance.new("Frame")
 	topContainer.Name = "TopHUDContainer"
-	topContainer.Size = UDim2.new(0.46, 0, 0.115, 0)
-	topContainer.Position = UDim2.new(0.5, 0, 0.01, 0)
+	topContainer.Size = UDim2.new(0.44, 0, 0.098, 0)
+	topContainer.Position = UDim2.new(0.5, 0, 0.008, 0)
 	topContainer.AnchorPoint = Vector2.new(0.5, 0)
 	topContainer.BackgroundColor3 = Color3.fromRGB(18, 22, 40)
-	topContainer.BackgroundTransparency = 0.06
+	topContainer.BackgroundTransparency = 0.08
 	topContainer.Parent = screenGui
 	addCorner(topContainer, 14)
 	addStroke(topContainer, Color3.fromRGB(255, 215, 70), 2.5)
-	addAspectRatio(topContainer, 5.85)
+	addAspectRatio(topContainer, 6.2)
+
+	-- Small Top-Right Restore Pill (Only visible when the player hides the Top HUD Boxes!)
+	local restoreTopHudBtnSize = UDim2.fromScale(0.11, 0.038)
+	local restoreTopHudBtn = Instance.new("TextButton")
+	restoreTopHudBtn.Name = "RestoreTopHudBtn"
+	restoreTopHudBtn.Size = restoreTopHudBtnSize
+	restoreTopHudBtn.AnchorPoint = Vector2.new(1, 0)
+	restoreTopHudBtn.Position = UDim2.fromScale(0.988, 0.012)
+	restoreTopHudBtn.BackgroundColor3 = Color3.fromRGB(28, 36, 64)
+	restoreTopHudBtn.AutoButtonColor = false
+	restoreTopHudBtn.Font = Enum.Font.FredokaOne
+	restoreTopHudBtn.TextColor3 = Color3.fromRGB(255, 235, 85)
+	restoreTopHudBtn.Text = "📊 <b>SHOW HUD</b>"
+	restoreTopHudBtn.Visible = false
+	restoreTopHudBtn.Parent = screenGui
+	addCorner(restoreTopHudBtn, 10)
+	addStroke(restoreTopHudBtn, Color3.fromRGB(255, 215, 70), 2.0)
+	addTextSizeConstraint(restoreTopHudBtn, 9, 14)
+	bindHoverAndClickTween(restoreTopHudBtn, restoreTopHudBtnSize, Color3.fromRGB(28, 36, 64))
 
 	local topBannerLabel = Instance.new("TextLabel")
 	topBannerLabel.Name = "TopBannerLabel"
-	topBannerLabel.Size = UDim2.new(0.74, 0, 0.28, 0)
+	topBannerLabel.Size = UDim2.new(0.66, 0, 0.28, 0)
 	topBannerLabel.Position = UDim2.fromScale(0.02, 0.04)
 	topBannerLabel.BackgroundTransparency = 1
 	topBannerLabel.Font = Enum.Font.FredokaOne
@@ -315,16 +334,16 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	topBannerLabel.TextColor3 = Color3.fromRGB(255, 245, 190)
 	topBannerLabel.Text = "✨ <b>FIND MY SQUISHY!</b>  |  Plot #1  |  ⚡ <font color='#65FF8F'>$0/sec</font>"
 	topBannerLabel.Parent = topContainer
-	addTextSizeConstraint(topBannerLabel, 11, 19)
+	addTextSizeConstraint(topBannerLabel, 11, 18)
 	addTextStroke(topBannerLabel, Color3.fromRGB(10, 12, 22), 1.8)
 
 	-- Top-Bar Quick Action Buttons (AnchorPoint = 0.5, 0.5 + Smooth Hover & Click Tween!)
-	local topIndexBtnSize = UDim2.fromScale(0.11, 0.24)
+	local topIndexBtnSize = UDim2.fromScale(0.095, 0.24)
 	local topIndexBtn = Instance.new("TextButton")
 	topIndexBtn.Name = "TopIndexBtn"
 	topIndexBtn.Size = topIndexBtnSize
 	topIndexBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-	topIndexBtn.Position = UDim2.fromScale(0.81, 0.18)
+	topIndexBtn.Position = UDim2.fromScale(0.74, 0.18)
 	topIndexBtn.BackgroundColor3 = Color3.fromRGB(55, 185, 255)
 	topIndexBtn.AutoButtonColor = false
 	topIndexBtn.Font = Enum.Font.FredokaOne
@@ -336,12 +355,12 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	addTextSizeConstraint(topIndexBtn, 10, 15)
 	bindHoverAndClickTween(topIndexBtn, topIndexBtnSize, Color3.fromRGB(55, 185, 255))
 
-	local topSpeedBtnSize = UDim2.fromScale(0.11, 0.24)
+	local topSpeedBtnSize = UDim2.fromScale(0.095, 0.24)
 	local topSpeedBtn = Instance.new("TextButton")
 	topSpeedBtn.Name = "TopSpeedBtn"
 	topSpeedBtn.Size = topSpeedBtnSize
 	topSpeedBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-	topSpeedBtn.Position = UDim2.fromScale(0.93, 0.18)
+	topSpeedBtn.Position = UDim2.fromScale(0.85, 0.18)
 	topSpeedBtn.BackgroundColor3 = Color3.fromRGB(255, 180, 45)
 	topSpeedBtn.AutoButtonColor = false
 	topSpeedBtn.Font = Enum.Font.FredokaOne
@@ -352,6 +371,24 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	addStroke(topSpeedBtn, Color3.fromRGB(255, 255, 255), 1.6)
 	addTextSizeConstraint(topSpeedBtn, 10, 15)
 	bindHoverAndClickTween(topSpeedBtn, topSpeedBtnSize, Color3.fromRGB(255, 180, 45))
+
+	-- Red Close / Hide Button ('✕') on TopHUDContainer so players can dismiss the top progress box anytime!
+	local topCloseBtnSize = UDim2.fromScale(0.065, 0.24)
+	local topHudCloseBtn = Instance.new("TextButton")
+	topHudCloseBtn.Name = "TopHudCloseBtn"
+	topHudCloseBtn.Size = topCloseBtnSize
+	topHudCloseBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+	topHudCloseBtn.Position = UDim2.fromScale(0.945, 0.18)
+	topHudCloseBtn.BackgroundColor3 = Color3.fromRGB(235, 65, 75)
+	topHudCloseBtn.AutoButtonColor = false
+	topHudCloseBtn.Font = Enum.Font.FredokaOne
+	topHudCloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	topHudCloseBtn.Text = "<b>✕</b>"
+	topHudCloseBtn.Parent = topContainer
+	addCorner(topHudCloseBtn, 8)
+	addStroke(topHudCloseBtn, Color3.fromRGB(255, 255, 255), 1.6)
+	addTextSizeConstraint(topHudCloseBtn, 10, 15)
+	bindHoverAndClickTween(topHudCloseBtn, topCloseBtnSize, Color3.fromRGB(235, 65, 75))
 
 	-- Progress Bar #1: 117 Squishy Collection Progress Bar (0 / 117 — 0% to 100%)
 	local squishyBarGroup = Instance.new("CanvasGroup")
@@ -431,11 +468,11 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	addTextSizeConstraint(speedBarText, 9, 15)
 	addTextStroke(speedBarText, Color3.fromRGB(10, 14, 24), 2.0)
 
-	-- 1B. LIVE 6-STEP OBJECTIVE & GUIDING ARROW TRACKER BANNER + HOW-TO-PLAY BUTTON
+	-- 1B. LIVE 6-STEP OBJECTIVE & GUIDING ARROW TRACKER BANNER + HOW-TO-PLAY BUTTON + CLOSE ('✕') BUTTON
 	local objectiveBanner = Instance.new("Frame")
 	objectiveBanner.Name = "ObjectiveTrackerBanner"
-	objectiveBanner.Size = UDim2.fromScale(0.46, 0.042)
-	objectiveBanner.Position = UDim2.fromScale(0.5, 0.130)
+	objectiveBanner.Size = UDim2.fromScale(0.44, 0.038)
+	objectiveBanner.Position = UDim2.fromScale(0.5, 0.112)
 	objectiveBanner.AnchorPoint = Vector2.new(0.5, 0)
 	objectiveBanner.BackgroundColor3 = Color3.fromRGB(16, 24, 46)
 	objectiveBanner.BackgroundTransparency = 0.08
@@ -445,7 +482,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 
 	local objectiveText = Instance.new("TextLabel")
 	objectiveText.Name = "ObjectiveText"
-	objectiveText.Size = UDim2.fromScale(0.83, 0.90)
+	objectiveText.Size = UDim2.fromScale(0.76, 0.90)
 	objectiveText.Position = UDim2.fromScale(0.02, 0.05)
 	objectiveText.BackgroundTransparency = 1
 	objectiveText.Font = Enum.Font.FredokaOne
@@ -453,15 +490,15 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	objectiveText.TextColor3 = Color3.fromRGB(125, 255, 195)
 	objectiveText.Text = "🧭 <b>FOLLOW 3D ARROW:</b> [Step 1] ⚡ Run on Treadmill to Train Speed!"
 	objectiveText.Parent = objectiveBanner
-	addTextSizeConstraint(objectiveText, 10, 16)
+	addTextSizeConstraint(objectiveText, 10, 15)
 	addTextStroke(objectiveText, Color3.fromRGB(10, 14, 24), 1.8)
 
-	local guideBtnSize = UDim2.fromScale(0.13, 0.78)
+	local guideBtnSize = UDim2.fromScale(0.12, 0.78)
 	local guideToggleBtn = Instance.new("TextButton")
 	guideToggleBtn.Name = "GuideToggleBtn"
 	guideToggleBtn.Size = guideBtnSize
 	guideToggleBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-	guideToggleBtn.Position = UDim2.fromScale(0.92, 0.5)
+	guideToggleBtn.Position = UDim2.fromScale(0.85, 0.5)
 	guideToggleBtn.BackgroundColor3 = Color3.fromRGB(255, 205, 55)
 	guideToggleBtn.AutoButtonColor = false
 	guideToggleBtn.Font = Enum.Font.FredokaOne
@@ -472,6 +509,45 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	addStroke(guideToggleBtn, Color3.fromRGB(255, 255, 255), 1.5)
 	addTextSizeConstraint(guideToggleBtn, 9, 14)
 	bindHoverAndClickTween(guideToggleBtn, guideBtnSize, Color3.fromRGB(255, 205, 55))
+
+	local closeBannerBtnSize = UDim2.fromScale(0.065, 0.78)
+	local closeBannerBtn = Instance.new("TextButton")
+	closeBannerBtn.Name = "CloseBannerBtn"
+	closeBannerBtn.Size = closeBannerBtnSize
+	closeBannerBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+	closeBannerBtn.Position = UDim2.fromScale(0.955, 0.5)
+	closeBannerBtn.BackgroundColor3 = Color3.fromRGB(235, 65, 75)
+	closeBannerBtn.AutoButtonColor = false
+	closeBannerBtn.Font = Enum.Font.FredokaOne
+	closeBannerBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	closeBannerBtn.Text = "<b>✕</b>"
+	closeBannerBtn.Parent = objectiveBanner
+	addCorner(closeBannerBtn, 8)
+	addStroke(closeBannerBtn, Color3.fromRGB(255, 255, 255), 1.5)
+	addTextSizeConstraint(closeBannerBtn, 9, 14)
+	bindHoverAndClickTween(closeBannerBtn, closeBannerBtnSize, Color3.fromRGB(235, 65, 75))
+
+	-- Wire immediate 1-click Close ('✕') & Restore behavior so players can get rid of either or both top boxes anytime!
+	local function updateRestoreBtnVisibility()
+		restoreTopHudBtn.Visible = (not topContainer.Visible) or (not objectiveBanner.Visible)
+	end
+	topHudCloseBtn.Activated:Connect(function()
+		topContainer.Visible = false
+		if objectiveBanner.Visible then
+			objectiveBanner.Position = UDim2.fromScale(0.5, 0.012)
+		end
+		updateRestoreBtnVisibility()
+	end)
+	closeBannerBtn.Activated:Connect(function()
+		objectiveBanner.Visible = false
+		updateRestoreBtnVisibility()
+	end)
+	restoreTopHudBtn.Activated:Connect(function()
+		topContainer.Visible = true
+		objectiveBanner.Visible = true
+		objectiveBanner.Position = UDim2.fromScale(0.5, 0.112)
+		updateRestoreBtnVisibility()
+	end)
 
 	-- 1C. SQUISH FEVER COMBO MULTIPLIER BAR (x1.5 -> x5.0 CASH!)
 	local comboFrame = Instance.new("Frame")
@@ -817,8 +893,8 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	-- Featured 3D Rotating Inspector in the Index Header
 	local indexFeaturedViewport, indexFeaturedModel = createFeaturedViewportPreview(
 		indexModal,
-		UDim2.fromOffset(52, 52),
-		UDim2.fromOffset(14, 8),
+		UDim2.fromScale(0.065, 0.095),
+		UDim2.fromScale(0.015, 0.015),
 		Color3.fromRGB(115, 225, 255),
 		Color3.fromRGB(255, 230, 85),
 		"Squishy"
@@ -826,34 +902,35 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 
 	local indexTitle = Instance.new("TextLabel")
 	indexTitle.Name = "IndexTitle"
-	indexTitle.Size = UDim2.new(1, -135, 0, 28)
-	indexTitle.Position = UDim2.fromOffset(76, 6)
+	indexTitle.Size = UDim2.fromScale(0.80, 0.055)
+	indexTitle.Position = UDim2.fromScale(0.095, 0.012)
 	indexTitle.BackgroundTransparency = 1
 	indexTitle.Font = Enum.Font.FredokaOne
 	indexTitle.TextXAlignment = Enum.TextXAlignment.Left
 	indexTitle.TextColor3 = Color3.fromRGB(255, 235, 95)
 	indexTitle.Text = "📘 <b>3D SQUISHY & EGG INDEX (0 / 117)</b>"
 	indexTitle.Parent = indexModal
-	addTextSizeConstraint(indexTitle, 13, 22)
+	addTextSizeConstraint(indexTitle, 14, 28)
+	addTextStroke(indexTitle, Color3.fromRGB(12, 16, 28), 2.2)
 
 	local indexHintLabel = Instance.new("TextLabel")
 	indexHintLabel.Name = "IndexHintBox"
-	indexHintLabel.Size = UDim2.new(1, -135, 0, 22)
-	indexHintLabel.Position = UDim2.fromOffset(76, 35)
+	indexHintLabel.Size = UDim2.fromScale(0.80, 0.042)
+	indexHintLabel.Position = UDim2.fromScale(0.095, 0.068)
 	indexHintLabel.BackgroundTransparency = 1
 	indexHintLabel.Font = Enum.Font.GothamBold
 	indexHintLabel.TextXAlignment = Enum.TextXAlignment.Left
 	indexHintLabel.TextColor3 = Color3.fromRGB(165, 235, 255)
-	indexHintLabel.Text = "💡 <b>Hover any 3D Squishy card</b> to zoom & spin its 3D model and reveal its secret biome location!"
+	indexHintLabel.Text = "💡 <b>Hover or tap any 3D Squishy card</b> to spin its 3D model and reveal its secret stage location!"
 	indexHintLabel.Parent = indexModal
-	addTextSizeConstraint(indexHintLabel, 10, 14)
+	addTextSizeConstraint(indexHintLabel, 11, 20)
 
-	local closeBtnSize = UDim2.fromOffset(38, 38)
+	local closeBtnSize = UDim2.fromScale(0.058, 0.082)
 	local indexClose = Instance.new("TextButton")
 	indexClose.Name = "CloseBtn"
 	indexClose.Size = closeBtnSize
 	indexClose.AnchorPoint = Vector2.new(0.5, 0.5)
-	indexClose.Position = UDim2.new(1, -29, 0, 31)
+	indexClose.Position = UDim2.fromScale(0.958, 0.060)
 	indexClose.BackgroundColor3 = Color3.fromRGB(235, 65, 75)
 	indexClose.AutoButtonColor = false
 	indexClose.Font = Enum.Font.FredokaOne
@@ -861,26 +938,29 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	indexClose.Text = "<b>X</b>"
 	indexClose.Parent = indexModal
 	addCorner(indexClose, 10)
-	addTextSizeConstraint(indexClose, 14, 20)
+	addStroke(indexClose, Color3.fromRGB(255, 255, 255), 2.0)
+	addTextSizeConstraint(indexClose, 14, 26)
 	bindHoverAndClickTween(indexClose, closeBtnSize, Color3.fromRGB(235, 65, 75))
 
 	local indexScroll = Instance.new("ScrollingFrame")
 	indexScroll.Name = "IndexScroll"
-	indexScroll.Size = UDim2.new(1, -28, 1, -76)
-	indexScroll.Position = UDim2.fromOffset(14, 64)
+	indexScroll.Size = UDim2.fromScale(0.96, 0.855)
+	indexScroll.Position = UDim2.fromScale(0.02, 0.125)
 	indexScroll.BackgroundTransparency = 1
-	indexScroll.ScrollBarThickness = 8
+	indexScroll.ScrollBarThickness = 10
+	indexScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	indexScroll.CanvasSize = UDim2.fromScale(0, 0)
 	indexScroll.Parent = indexModal
 
 	local gridLayout = Instance.new("UIGridLayout")
-	gridLayout.CellSize = UDim2.fromOffset(212, 92)
-	gridLayout.CellPadding = UDim2.fromOffset(10, 10)
+	gridLayout.CellSize = UDim2.new(0.318, 0, 0, 104)
+	gridLayout.CellPadding = UDim2.new(0.016, 0, 0, 12)
 	gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	gridLayout.Parent = indexScroll
 
 	local indexCards: { [string]: IndexCardEntry } = {}
-	local cardViewportBaseSize = UDim2.fromOffset(72, 72)
-	local cardViewportHoverSize = UDim2.fromOffset(80, 80)
+	local cardViewportBaseSize = UDim2.fromScale(0.28, 0.80)
+	local cardViewportHoverSize = UDim2.fromScale(0.31, 0.88)
 
 	for idx, slime in ipairs(SlimeData.Slimes) do
 		local anySlime = slime :: any
@@ -895,14 +975,14 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		local aColor = anySlime.AccentColor or slime.SecondaryColor or Color3.fromRGB(255, 230, 85)
 		local rarity = tostring(anySlime.Rarity or "Common")
 		local isBossEgg = idx <= 35
-		addStroke(card, pColor, 2.0)
+		addStroke(card, pColor, 2.2)
 
 		-- Real 3D ViewportFrame inside every single card (#1–#117) that zooms & spins on hover!
 		local cardVF = Instance.new("ViewportFrame")
 		cardVF.Name = "SquishyViewport3D"
 		cardVF.Size = cardViewportBaseSize
 		cardVF.AnchorPoint = Vector2.new(0.5, 0.5)
-		cardVF.Position = UDim2.fromOffset(44, 46)
+		cardVF.Position = UDim2.fromScale(0.16, 0.50)
 		cardVF.BackgroundColor3 = Color3.fromRGB(16, 20, 36)
 		cardVF.BackgroundTransparency = 0.08
 		cardVF.Ambient = Color3.fromRGB(215, 222, 242)
@@ -921,7 +1001,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		local squishy3DModel, basePivot = build3DSquishyViewportModel(cardVF, pColor, aColor, isBossEgg, rarity, nil)
 
 		local hintDesc = if isBossEgg
-			then string.format("Steal from Stage %d Sleeping Boss Nest & hatch in Incubator!", slime.Level)
+			then string.format("Steal from Stage %d Sleeping Boss Nest & hatch in your Fenced Pen!", slime.Level)
 			elseif idx <= 55 then string.format("Climb Stacked Wooden Crates & Plank Bridge onto House Roofs in Stage %d!", slime.Level)
 			elseif idx <= 67 then "Climb the 28-Step Rainbow Disappearing Staircase on West Plaza!"
 			elseif idx <= 87 then string.format("Explore the Flanking Outer Side Mazes outside Stage %d Castle Walls!", slime.Level)
@@ -930,8 +1010,8 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 
 		local nameLbl = Instance.new("TextLabel")
 		nameLbl.Name = "NameLabel"
-		nameLbl.Size = UDim2.new(1, -90, 0, 44)
-		nameLbl.Position = UDim2.fromOffset(86, 6)
+		nameLbl.Size = UDim2.fromScale(0.65, 0.52)
+		nameLbl.Position = UDim2.fromScale(0.32, 0.06)
 		nameLbl.BackgroundTransparency = 1
 		nameLbl.Font = Enum.Font.FredokaOne
 		nameLbl.TextWrapped = true
@@ -939,19 +1019,19 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
 		nameLbl.Text = string.format("<b>#%d %s</b>\n<font color='#A5E5FF'>[Stage %d • %s]</font>", idx, slime.Name, slime.Level, rarity)
 		nameLbl.Parent = card
-		addTextSizeConstraint(nameLbl, 10, 14)
+		addTextSizeConstraint(nameLbl, 11, 18)
 
 		local statusLbl = Instance.new("TextLabel")
 		statusLbl.Name = "StatusLabel"
-		statusLbl.Size = UDim2.new(1, -90, 0, 26)
-		statusLbl.Position = UDim2.fromOffset(86, 54)
+		statusLbl.Size = UDim2.fromScale(0.65, 0.32)
+		statusLbl.Position = UDim2.fromScale(0.32, 0.60)
 		statusLbl.BackgroundTransparency = 1
 		statusLbl.Font = Enum.Font.GothamBold
 		statusLbl.TextXAlignment = Enum.TextXAlignment.Left
 		statusLbl.TextColor3 = Color3.fromRGB(170, 180, 205)
 		statusLbl.Text = string.format("🔒 <b>$%d/s</b>", anySlime.IncomePerSec or slime.CoinsPerSec or 10)
 		statusLbl.Parent = card
-		addTextSizeConstraint(statusLbl, 10, 13)
+		addTextSizeConstraint(statusLbl, 10, 16)
 
 		local cardEntry: IndexCardEntry = {
 			Frame = card,
@@ -963,7 +1043,6 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		}
 		indexCards[tostring(slime.Id)] = cardEntry
 
-		-- Hovering any card zooms in its 3D ViewportFrame camera, starts 3D rotation, and updates the Featured Header Inspector!
 		card.MouseEnter:Connect(function()
 			activeHoveredCard = cardEntry
 			TweenService:Create(cardVF, hoverTweenInfo, {
@@ -1005,9 +1084,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 			squishy3DModel:PivotTo(basePivot)
 		end)
 	end
-	indexScroll.CanvasSize = UDim2.fromOffset(0, math.ceil(#SlimeData.Slimes / 3) * 104)
 
-	-- Allow triggering hover preview programmatically on Card #1 for default showcase
 	local firstCard = indexCards[tostring(SlimeData.Slimes[1].Id)]
 	if firstCard then
 		activeHoveredCard = firstCard
@@ -1015,265 +1092,595 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	end
 
 	-- =========================================================================
-	-- 5. MODAL #2: 🛒 PREMIUM ROBUX SHOP (Glossy Studded Simulator Styling, 5 Gamepasses + 5 DevProducts & 3D ViewportFrames)
+	-- 5. MODAL #2: 💎 FRONT-PAGE SIMULATOR SUPER SHOP (100% Scale-Responsive, Zero Empty Space, Hero VIP Banner, 2x2 Power Passes, 5 Treasure Boost Cards & Dual Upgrade Bar)
 	-- =========================================================================
 	local shopModal = Instance.new("Frame")
 	shopModal.Name = "ShopModal"
-	shopModal.Size = UDim2.fromScale(0.56, 0.65)
-	shopModal.Position = UDim2.fromScale(0.5, 0.52)
+	shopModal.Size = UDim2.fromScale(0.64, 0.72)
+	shopModal.Position = UDim2.fromScale(0.5, 0.51)
 	shopModal.AnchorPoint = Vector2.new(0.5, 0.5)
-	shopModal.BackgroundColor3 = Color3.fromRGB(20, 24, 42)
+	shopModal.BackgroundColor3 = Color3.fromRGB(22, 18, 46)
 	shopModal.Visible = false
 	shopModal.Parent = screenGui
-	addCorner(shopModal, 16)
-	addStroke(shopModal, Color3.fromRGB(255, 205, 55), 3.0)
-	addAspectRatio(shopModal, 1.50)
+	addCorner(shopModal, 20)
+	addStroke(shopModal, Color3.fromRGB(255, 215, 65), 3.8)
+	addAspectRatio(shopModal, 1.54)
 
-	-- Glossy Studded Simulator Header Banner
+	local shopBgGrad = Instance.new("UIGradient")
+	shopBgGrad.Rotation = 135
+	shopBgGrad.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0.0, Color3.fromRGB(48, 28, 88)),
+		ColorSequenceKeypoint.new(0.5, Color3.fromRGB(28, 32, 68)),
+		ColorSequenceKeypoint.new(1.0, Color3.fromRGB(18, 22, 48)),
+	})
+	shopBgGrad.Parent = shopModal
+
+	-- TOP HEADER BANNER (Y = 0.015 .. 0.110)
 	local shopHeaderBanner = Instance.new("Frame")
 	shopHeaderBanner.Name = "GlossyHeaderBanner"
-	shopHeaderBanner.Size = UDim2.new(1, -16, 0, 48)
-	shopHeaderBanner.Position = UDim2.fromOffset(8, 6)
-	shopHeaderBanner.BackgroundColor3 = Color3.fromRGB(36, 44, 78)
+	shopHeaderBanner.Size = UDim2.fromScale(0.97, 0.095)
+	shopHeaderBanner.Position = UDim2.fromScale(0.015, 0.014)
+	shopHeaderBanner.BackgroundColor3 = Color3.fromRGB(255, 165, 45)
 	shopHeaderBanner.Parent = shopModal
-	addCorner(shopHeaderBanner, 12)
-	addStroke(shopHeaderBanner, Color3.fromRGB(255, 215, 75), 1.8)
+	addCorner(shopHeaderBanner, 14)
+	addStroke(shopHeaderBanner, Color3.fromRGB(255, 245, 145), 2.5)
 	local shopBannerGrad = Instance.new("UIGradient")
-	shopBannerGrad.Rotation = 90
+	shopBannerGrad.Rotation = 0
 	shopBannerGrad.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
-		ColorSequenceKeypoint.new(1.0, Color3.fromRGB(185, 195, 230)),
+		ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 95, 185)),
+		ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 175, 45)),
+		ColorSequenceKeypoint.new(1.0, Color3.fromRGB(95, 215, 255)),
 	})
 	shopBannerGrad.Parent = shopHeaderBanner
 
 	createFeaturedViewportPreview(
-		shopModal,
-		UDim2.fromOffset(42, 42),
-		UDim2.fromOffset(14, 9),
-		Color3.fromRGB(255, 195, 45),
+		shopHeaderBanner,
+		UDim2.fromScale(0.062, 0.84),
+		UDim2.fromScale(0.010, 0.08),
+		Color3.fromRGB(255, 215, 55),
 		Color3.fromRGB(255, 255, 255),
 		"Crown"
 	)
 
 	local shopTitle = Instance.new("TextLabel")
-	shopTitle.Size = UDim2.new(1, -125, 0, 42)
-	shopTitle.Position = UDim2.fromOffset(66, 9)
+	shopTitle.Size = UDim2.fromScale(0.82, 0.86)
+	shopTitle.Position = UDim2.fromScale(0.082, 0.07)
 	shopTitle.BackgroundTransparency = 1
 	shopTitle.Font = Enum.Font.FredokaOne
 	shopTitle.TextXAlignment = Enum.TextXAlignment.Left
-	shopTitle.TextColor3 = Color3.fromRGB(255, 225, 75)
-	shopTitle.Text = "🛒 <b>PREMIUM ROBUX SHOP — GAMEPASSES & DEV PRODUCTS</b>"
-	shopTitle.Parent = shopModal
-	addTextSizeConstraint(shopTitle, 12, 20)
-	addTextStroke(shopTitle, Color3.fromRGB(12, 16, 28), 2.0)
+	shopTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+	shopTitle.Text = "💎 <b>SUPER SQUISHY SHOP — VIP BUNDLES, PASSES & MEGA BOOSTS!</b> ✨"
+	shopTitle.Parent = shopHeaderBanner
+	addTextSizeConstraint(shopTitle, 14, 30)
+	addTextStroke(shopTitle, Color3.fromRGB(18, 12, 38), 2.8)
 
 	local shopClose = Instance.new("TextButton")
-	shopClose.Size = closeBtnSize
+	local shopCloseSize = UDim2.fromScale(0.055, 0.80)
+	shopClose.Size = shopCloseSize
 	shopClose.AnchorPoint = Vector2.new(0.5, 0.5)
-	shopClose.Position = UDim2.new(1, -29, 0, 30)
-	shopClose.BackgroundColor3 = Color3.fromRGB(235, 65, 75)
+	shopClose.Position = UDim2.fromScale(0.964, 0.50)
+	shopClose.BackgroundColor3 = Color3.fromRGB(245, 55, 75)
 	shopClose.AutoButtonColor = false
 	shopClose.Font = Enum.Font.FredokaOne
 	shopClose.TextColor3 = Color3.fromRGB(255, 255, 255)
 	shopClose.Text = "<b>X</b>"
-	shopClose.Parent = shopModal
+	shopClose.Parent = shopHeaderBanner
 	addCorner(shopClose, 10)
-	addTextSizeConstraint(shopClose, 14, 20)
-	bindHoverAndClickTween(shopClose, closeBtnSize, Color3.fromRGB(235, 65, 75))
-
-	-- 5 Gamepasses (MarketplaceService:PromptGamePassPurchase) with 3D ViewportFrame Icons!
-	local gamepassConfigs = {
-		{ Key = "2xCash", Title = "💰 2x CASH FOREVER", Desc = "Double all Cash & Pedestal $/s!", Price = "199 R$", Color = Color3.fromRGB(255, 195, 45), X = 12, Y = 60, W = 204 },
-		{ Key = "2xSpeed", Title = "⚡ 2x TREADMILL SPEED", Desc = "+16 Spd & 2x Treadmill Forever!", Price = "149 R$", Color = Color3.fromRGB(55, 205, 255), X = 224, Y = 60, W = 204 },
-		{ Key = "AutoHatch", Title = "🥚 FAST 1s INCUBATORS", Desc = "Instant 1s Hatch on All Eggs!", Price = "249 R$", Color = Color3.fromRGB(195, 95, 255), X = 436, Y = 60, W = 208 },
-		{ Key = "VIP", Title = "👑 VIP CROWN + TRAIL", Desc = "VIP Crown, Gold Trail & +50% Cash!", Price = "399 R$", Color = Color3.fromRGB(255, 95, 195), X = 12, Y = 152, W = 310 },
-		{ Key = "Carry2Eggs", Title = "🎒 +2 CARRY CAPACITY", Desc = "Carry 2 Boss Eggs at Once to Base!", Price = "299 R$", Color = Color3.fromRGB(75, 235, 130), X = 334, Y = 152, W = 310 },
-	}
+	addStroke(shopClose, Color3.fromRGB(255, 255, 255), 2.2)
+	addTextSizeConstraint(shopClose, 14, 26)
+	bindHoverAndClickTween(shopClose, shopCloseSize, Color3.fromRGB(245, 55, 75))
 
 	local passButtonsByKey: { [string]: TextButton } = {}
-	for _, gp in ipairs(gamepassConfigs) do
+
+	-- =========================================================================
+	-- TIER 1: FEATURED VIP SUPREME KING HERO BANNER (Y = 0.122 .. 0.328)
+	-- =========================================================================
+	local vipHeroCard = Instance.new("Frame")
+	vipHeroCard.Name = "GamepassCard_VIP"
+	vipHeroCard.Size = UDim2.fromScale(0.97, 0.202)
+	vipHeroCard.Position = UDim2.fromScale(0.015, 0.122)
+	vipHeroCard.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	vipHeroCard.Parent = shopModal
+	addCorner(vipHeroCard, 16)
+	addStroke(vipHeroCard, Color3.fromRGB(255, 235, 85), 3.2)
+
+	local vipHeroGrad = Instance.new("UIGradient")
+	vipHeroGrad.Rotation = 15
+	vipHeroGrad.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0.0, Color3.fromRGB(165, 35, 195)),
+		ColorSequenceKeypoint.new(0.52, Color3.fromRGB(235, 65, 155)),
+		ColorSequenceKeypoint.new(1.0, Color3.fromRGB(255, 165, 35)),
+	})
+	vipHeroGrad.Parent = vipHeroCard
+
+	-- Left 3D Golden King Squishy Showcase inside VIP Hero Card
+	local vipVF = Instance.new("ViewportFrame")
+	vipVF.Name = "GamepassViewport3D"
+	vipVF.Size = UDim2.fromScale(0.135, 0.84)
+	vipVF.Position = UDim2.fromScale(0.012, 0.08)
+	vipVF.BackgroundColor3 = Color3.fromRGB(32, 16, 54)
+	vipVF.Ambient = Color3.fromRGB(235, 235, 255)
+	vipVF.LightColor = Color3.fromRGB(255, 245, 185)
+	vipVF.LightDirection = Vector3.new(-1, -1.2, -1)
+	vipVF.Parent = vipHeroCard
+	addCorner(vipVF, 14)
+	addStroke(vipVF, Color3.fromRGB(255, 235, 85), 2.5)
+
+	local vipCam = Instance.new("Camera")
+	vipCam.FieldOfView = 44
+	vipCam.CFrame = CFrame.lookAt(Vector3.new(0, 0.85, 4.2), Vector3.new(0, 0.08, 0))
+	vipCam.Parent = vipVF
+	vipVF.CurrentCamera = vipCam
+
+	local vipModel, vipPivot = build3DSquishyViewportModel(
+		vipVF,
+		Color3.fromRGB(255, 205, 55),
+		Color3.fromRGB(255, 95, 205),
+		false,
+		"Cosmic",
+		"Crown"
+	)
+	table.insert(rotatingViewportModels, {
+		Model = vipModel,
+		BaseCFrame = vipPivot,
+		Speed = 1.65,
+	})
+
+	local vipCrownBadge = Instance.new("TextLabel")
+	vipCrownBadge.Size = UDim2.fromScale(0.92, 0.28)
+	vipCrownBadge.Position = UDim2.fromScale(0.04, 0.70)
+	vipCrownBadge.BackgroundColor3 = Color3.fromRGB(255, 215, 45)
+	vipCrownBadge.Font = Enum.Font.FredokaOne
+	vipCrownBadge.TextColor3 = Color3.fromRGB(28, 16, 42)
+	vipCrownBadge.Text = "👑 <b>KING VIP</b>"
+	vipCrownBadge.Parent = vipVF
+	addCorner(vipCrownBadge, 6)
+	addTextSizeConstraint(vipCrownBadge, 8, 15)
+
+	local vipBestTag = Instance.new("TextLabel")
+	vipBestTag.Size = UDim2.fromScale(0.28, 0.22)
+	vipBestTag.Position = UDim2.fromScale(0.16, 0.07)
+	vipBestTag.BackgroundColor3 = Color3.fromRGB(255, 235, 65)
+	vipBestTag.Font = Enum.Font.FredokaOne
+	vipBestTag.TextColor3 = Color3.fromRGB(32, 14, 48)
+	vipBestTag.Text = "🔥 <b>BEST VALUE • LIMITED BUNDLE!</b>"
+	vipBestTag.Parent = vipHeroCard
+	addCorner(vipBestTag, 8)
+	addStroke(vipBestTag, Color3.fromRGB(255, 255, 255), 1.5)
+	addTextSizeConstraint(vipBestTag, 9, 16)
+
+	local vipTitleLbl = Instance.new("TextLabel")
+	vipTitleLbl.Size = UDim2.fromScale(0.55, 0.34)
+	vipTitleLbl.Position = UDim2.fromScale(0.16, 0.31)
+	vipTitleLbl.BackgroundTransparency = 1
+	vipTitleLbl.Font = Enum.Font.FredokaOne
+	vipTitleLbl.TextXAlignment = Enum.TextXAlignment.Left
+	vipTitleLbl.TextColor3 = Color3.fromRGB(255, 248, 145)
+	vipTitleLbl.Text = "👑 <b>ULTIMATE VIP KING PASS + RAINBOW TRAIL!</b>"
+	vipTitleLbl.Parent = vipHeroCard
+	addTextSizeConstraint(vipTitleLbl, 13, 28)
+	addTextStroke(vipTitleLbl, Color3.fromRGB(24, 10, 42), 2.5)
+
+	local vipPerksLbl = Instance.new("TextLabel")
+	vipPerksLbl.Size = UDim2.fromScale(0.56, 0.26)
+	vipPerksLbl.Position = UDim2.fromScale(0.16, 0.66)
+	vipPerksLbl.BackgroundTransparency = 1
+	vipPerksLbl.Font = Enum.Font.FredokaOne
+	vipPerksLbl.TextXAlignment = Enum.TextXAlignment.Left
+	vipPerksLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+	vipPerksLbl.Text = "✅ <b>+50% CASH FOREVER</b>   •   👑 <b>GOLDEN CROWN</b>   •   🌈 <b>RAINBOW SPEED TRAIL</b>"
+	vipPerksLbl.Parent = vipHeroCard
+	addTextSizeConstraint(vipPerksLbl, 10, 19)
+	addTextStroke(vipPerksLbl, Color3.fromRGB(20, 10, 36), 1.8)
+
+	local vipBuySize = UDim2.fromScale(0.235, 0.72)
+	local vipBuyBtn = Instance.new("TextButton")
+	vipBuyBtn.Name = "BuyVIPBtn"
+	vipBuyBtn.Size = vipBuySize
+	vipBuyBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+	vipBuyBtn.Position = UDim2.fromScale(0.865, 0.50)
+	vipBuyBtn.BackgroundColor3 = Color3.fromRGB(65, 238, 105)
+	vipBuyBtn.AutoButtonColor = false
+	vipBuyBtn.Font = Enum.Font.FredokaOne
+	vipBuyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	vipBuyBtn.Text = "🟢 <b>BUY VIP PASS\n(399 R$)</b>"
+	vipBuyBtn.Parent = vipHeroCard
+	addCorner(vipBuyBtn, 14)
+	addStroke(vipBuyBtn, Color3.fromRGB(255, 255, 255), 2.8)
+	addTextSizeConstraint(vipBuyBtn, 12, 24)
+	addTextStroke(vipBuyBtn, Color3.fromRGB(12, 48, 22), 2.2)
+	bindHoverAndClickTween(vipBuyBtn, vipBuySize, Color3.fromRGB(65, 238, 105))
+	passButtonsByKey["VIP"] = vipBuyBtn
+
+	-- =========================================================================
+	-- TIER 2: 4 FOREVER GAMEPASS POWER CARDS IN A 2x2 RESPONSIVE GRID (Y = 0.338 .. 0.642)
+	-- =========================================================================
+	local gridGamepasses = {
+		{
+			Key = "2xCash",
+			Ribbon = "🔥 MOST POPULAR!",
+			EmojiBadge = "💰x2",
+			Title = "💰 2x CASH FOREVER",
+			Desc = "Doubles ALL Roaming Squishy $/sec & Pickup Cash Forever!",
+			Price = "199 R$",
+			ColorTop = Color3.fromRGB(245, 165, 25),
+			ColorBot = Color3.fromRGB(165, 95, 15),
+			StrokeColor = Color3.fromRGB(255, 235, 95),
+			BodyCol = Color3.fromRGB(255, 215, 55),
+			AccCol = Color3.fromRGB(95, 255, 135),
+			IsEgg = false,
+			Pos = UDim2.fromScale(0.015, 0.338),
+		},
+		{
+			Key = "2xSpeed",
+			Ribbon = "⚡ HYPER SPEED!",
+			EmojiBadge = "⚡x2",
+			Title = "⚡ 2x TREADMILL SPEED",
+			Desc = "Doubles ALL Treadmill Speed Gains (x1 to x50M) Forever!",
+			Price = "149 R$",
+			ColorTop = Color3.fromRGB(25, 165, 245),
+			ColorBot = Color3.fromRGB(22, 85, 175),
+			StrokeColor = Color3.fromRGB(125, 242, 255),
+			BodyCol = Color3.fromRGB(65, 225, 255),
+			AccCol = Color3.fromRGB(255, 235, 75),
+			IsEgg = false,
+			Pos = UDim2.fromScale(0.506, 0.338),
+		},
+		{
+			Key = "AutoHatch",
+			Ribbon = "🐣 ZERO WAIT!",
+			EmojiBadge = "🐣1s",
+			Title = "🥚 INSTANT 1s HATCH",
+			Desc = "Hatches ALL Stolen Boss Eggs in 1 Second Inside Your Fence!",
+			Price = "249 R$",
+			ColorTop = Color3.fromRGB(175, 55, 235),
+			ColorBot = Color3.fromRGB(98, 28, 158),
+			StrokeColor = Color3.fromRGB(235, 155, 255),
+			BodyCol = Color3.fromRGB(205, 105, 255),
+			AccCol = Color3.fromRGB(255, 235, 95),
+			IsEgg = true,
+			Pos = UDim2.fromScale(0.015, 0.494),
+		},
+		{
+			Key = "Carry2Eggs",
+			Ribbon = "🥚 DOUBLE STEAL!",
+			EmojiBadge = "🎒+2",
+			Title = "🎒 +2 EGG CARRY CAPACITY",
+			Desc = "Carry 2 Boss Eggs at Once From Any Stage Back to Your Ranch!",
+			Price = "299 R$",
+			ColorTop = Color3.fromRGB(35, 195, 115),
+			ColorBot = Color3.fromRGB(18, 115, 68),
+			StrokeColor = Color3.fromRGB(125, 255, 175),
+			BodyCol = Color3.fromRGB(85, 245, 145),
+			AccCol = Color3.fromRGB(255, 225, 75),
+			IsEgg = true,
+			Pos = UDim2.fromScale(0.506, 0.494),
+		},
+	}
+
+	for _, gp in ipairs(gridGamepasses) do
 		local card = Instance.new("Frame")
 		card.Name = "GamepassCard_" .. gp.Key
-		card.Size = UDim2.fromOffset(gp.W, 84)
-		card.Position = UDim2.fromOffset(gp.X, gp.Y)
-		card.BackgroundColor3 = Color3.fromRGB(30, 36, 62)
+		card.Size = UDim2.fromScale(0.479, 0.144)
+		card.Position = gp.Pos
+		card.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 		card.Parent = shopModal
-		addCorner(card, 12)
-		addStroke(card, gp.Color, 2.0)
+		addCorner(card, 14)
+		addStroke(card, gp.StrokeColor, 2.6)
 
 		local cardGrad = Instance.new("UIGradient")
 		cardGrad.Rotation = 90
 		cardGrad.Color = ColorSequence.new({
-			ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
-			ColorSequenceKeypoint.new(1.0, Color3.fromRGB(205, 212, 235)),
+			ColorSequenceKeypoint.new(0.0, gp.ColorTop),
+			ColorSequenceKeypoint.new(1.0, gp.ColorBot),
 		})
 		cardGrad.Parent = card
 
 		-- 3D ViewportFrame preview on each Gamepass Card!
 		local gpVF = Instance.new("ViewportFrame")
 		gpVF.Name = "GamepassViewport3D"
-		gpVF.Size = UDim2.fromOffset(58, 58)
-		gpVF.Position = UDim2.fromOffset(8, 13)
-		gpVF.BackgroundColor3 = Color3.fromRGB(16, 20, 36)
-		gpVF.Ambient = Color3.fromRGB(215, 222, 242)
+		gpVF.Size = UDim2.fromScale(0.20, 0.84)
+		gpVF.Position = UDim2.fromScale(0.02, 0.08)
+		gpVF.BackgroundColor3 = Color3.fromRGB(18, 22, 42)
+		gpVF.Ambient = Color3.fromRGB(225, 232, 250)
 		gpVF.LightColor = Color3.fromRGB(255, 255, 255)
 		gpVF.LightDirection = Vector3.new(-1, -1.2, -1)
 		gpVF.Parent = card
-		addCorner(gpVF, 10)
-		addStroke(gpVF, gp.Color, 1.8)
+		addCorner(gpVF, 12)
+		addStroke(gpVF, gp.StrokeColor, 2.2)
 
 		local gpCam = Instance.new("Camera")
-		gpCam.FieldOfView = 48
-		gpCam.CFrame = CFrame.lookAt(Vector3.new(0, 0.85, 4.4), Vector3.new(0, 0.05, 0))
+		gpCam.FieldOfView = 46
+		gpCam.CFrame = CFrame.lookAt(Vector3.new(0, 0.85, 4.3), Vector3.new(0, 0.05, 0))
 		gpCam.Parent = gpVF
 		gpVF.CurrentCamera = gpCam
 
-		local isEggPass = (gp.Key == "AutoHatch" or gp.Key == "Carry2Eggs")
-		local gpModel, gpPivot = build3DSquishyViewportModel(gpVF, gp.Color, Color3.fromRGB(255, 245, 120), isEggPass, "Mythic", "Crown")
+		local gpModel, gpPivot = build3DSquishyViewportModel(gpVF, gp.BodyCol, gp.AccCol, gp.IsEgg, "Mythic", "Crown")
 		table.insert(rotatingViewportModels, {
 			Model = gpModel,
 			BaseCFrame = gpPivot,
 			Speed = 1.45,
 		})
 
-		local textW = gp.W - 76
+		local emojiTag = Instance.new("TextLabel")
+		emojiTag.Size = UDim2.fromScale(0.90, 0.30)
+		emojiTag.Position = UDim2.fromScale(0.05, 0.66)
+		emojiTag.BackgroundColor3 = gp.StrokeColor
+		emojiTag.Font = Enum.Font.FredokaOne
+		emojiTag.TextColor3 = Color3.fromRGB(18, 20, 34)
+		emojiTag.Text = "<b>" .. gp.EmojiBadge .. "</b>"
+		emojiTag.Parent = gpVF
+		addCorner(emojiTag, 6)
+		addTextSizeConstraint(emojiTag, 8, 15)
+
+		local ribbonLbl = Instance.new("TextLabel")
+		ribbonLbl.Size = UDim2.fromScale(0.42, 0.22)
+		ribbonLbl.Position = UDim2.fromScale(0.24, 0.06)
+		ribbonLbl.BackgroundColor3 = Color3.fromRGB(255, 235, 75)
+		ribbonLbl.Font = Enum.Font.FredokaOne
+		ribbonLbl.TextColor3 = Color3.fromRGB(24, 16, 38)
+		ribbonLbl.Text = "<b>" .. gp.Ribbon .. "</b>"
+		ribbonLbl.Parent = card
+		addCorner(ribbonLbl, 6)
+		addTextSizeConstraint(ribbonLbl, 8, 14)
+
 		local tLbl = Instance.new("TextLabel")
-		tLbl.Size = UDim2.fromOffset(textW, 22)
-		tLbl.Position = UDim2.fromOffset(72, 5)
+		tLbl.Size = UDim2.fromScale(0.46, 0.32)
+		tLbl.Position = UDim2.fromScale(0.24, 0.29)
 		tLbl.BackgroundTransparency = 1
 		tLbl.Font = Enum.Font.FredokaOne
 		tLbl.TextXAlignment = Enum.TextXAlignment.Left
-		tLbl.TextColor3 = gp.Color
+		tLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
 		tLbl.Text = "<b>" .. gp.Title .. "</b>"
 		tLbl.Parent = card
-		addTextSizeConstraint(tLbl, 9, 14)
+		addTextSizeConstraint(tLbl, 11, 22)
+		addTextStroke(tLbl, Color3.fromRGB(14, 16, 32), 2.2)
 
 		local dLbl = Instance.new("TextLabel")
-		dLbl.Size = UDim2.fromOffset(textW, 18)
-		dLbl.Position = UDim2.fromOffset(72, 26)
+		dLbl.Size = UDim2.fromScale(0.46, 0.32)
+		dLbl.Position = UDim2.fromScale(0.24, 0.61)
 		dLbl.BackgroundTransparency = 1
 		dLbl.Font = Enum.Font.GothamBold
+		dLbl.TextWrapped = true
 		dLbl.TextXAlignment = Enum.TextXAlignment.Left
-		dLbl.TextColor3 = Color3.fromRGB(215, 225, 245)
+		dLbl.TextColor3 = Color3.fromRGB(245, 248, 255)
 		dLbl.Text = gp.Desc
 		dLbl.Parent = card
-		addTextSizeConstraint(dLbl, 8, 11)
+		addTextSizeConstraint(dLbl, 9, 15)
+		addTextStroke(dLbl, Color3.fromRGB(14, 16, 32), 1.4)
 
 		local buyBtn = Instance.new("TextButton")
-		local buySize = UDim2.fromOffset(textW - 4, 26)
+		local buySize = UDim2.fromScale(0.26, 0.72)
 		buyBtn.Size = buySize
 		buyBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-		buyBtn.Position = UDim2.fromOffset(72 + (textW - 4) * 0.5, 62)
-		buyBtn.BackgroundColor3 = gp.Color
+		buyBtn.Position = UDim2.fromScale(0.85, 0.50)
+		buyBtn.BackgroundColor3 = Color3.fromRGB(65, 238, 105)
 		buyBtn.AutoButtonColor = false
 		buyBtn.Font = Enum.Font.FredokaOne
-		buyBtn.TextColor3 = Color3.fromRGB(16, 20, 32)
-		buyBtn.Text = "🟢 <b>BUY PASS (" .. gp.Price .. ")</b>"
+		buyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+		buyBtn.Text = "🟢 <b>BUY\n" .. gp.Price .. "</b>"
 		buyBtn.Parent = card
-		addCorner(buyBtn, 8)
-		addTextSizeConstraint(buyBtn, 9, 13)
-		bindHoverAndClickTween(buyBtn, buySize, gp.Color)
+		addCorner(buyBtn, 12)
+		addStroke(buyBtn, Color3.fromRGB(255, 255, 255), 2.4)
+		addTextSizeConstraint(buyBtn, 11, 20)
+		addTextStroke(buyBtn, Color3.fromRGB(12, 48, 22), 2.0)
+		bindHoverAndClickTween(buyBtn, buySize, Color3.fromRGB(65, 238, 105))
 		passButtonsByKey[gp.Key] = buyBtn
 	end
 
-	-- 5 Developer Products (MarketplaceService:PromptProductPurchase + ProcessReceipt):
-	-- ⚡ Hatch All Incubators Now, 🛡️ Boss Shield (60s), 💵 Starter / Mega / Ultimate Cash Packs!
+	-- =========================================================================
+	-- TIER 3: 5 TREASURE & INSTANT POWER-UP CARDS (Y = 0.650 .. 0.858)
+	-- =========================================================================
 	local devProducts = {
-		{ Key = "InstantHatchAll", Label = "⚡ Hatch All Now (29 R$)", Color = Color3.fromRGB(190, 110, 255), X = 68, W = 120 },
-		{ Key = "BossShield60s", Label = "🛡️ Boss Shield 60s (39 R$)", Color = Color3.fromRGB(65, 215, 255), X = 196, W = 124 },
-		{ Key = "CashPack5K", Label = "💵 Starter +$5K (49 R$)", Color = Color3.fromRGB(85, 235, 125), X = 324, W = 120 },
-		{ Key = "CashPack25K", Label = "💵 Mega +$25K (149 R$)", Color = Color3.fromRGB(255, 205, 55), X = 450, W = 120 },
-		{ Key = "CashPack100K", Label = "💎 Ultimate +$100K (399 R$)", Color = Color3.fromRGB(255, 110, 195), X = 580, W = 128 },
+		{
+			Key = "InstantHatchAll",
+			Tag = "⚡ INSTANT!",
+			Icon = "🐣⚡",
+			Title = "HATCH ALL EGGS",
+			Sub = "Skip All Timers!",
+			Price = "29 R$",
+			ColTop = Color3.fromRGB(195, 75, 255),
+			ColBot = Color3.fromRGB(105, 28, 165),
+			Stroke = Color3.fromRGB(235, 165, 255),
+		},
+		{
+			Key = "BossShield60s",
+			Tag = "🛡️ IMMORTAL!",
+			Icon = "🛡️✨",
+			Title = "60s BOSS SHIELD",
+			Sub = "Bosses Can't Hit!",
+			Price = "39 R$",
+			ColTop = Color3.fromRGB(45, 185, 255),
+			ColBot = Color3.fromRGB(22, 95, 175),
+			Stroke = Color3.fromRGB(135, 235, 255),
+		},
+		{
+			Key = "CashPack5K",
+			Tag = "💵 STARTER",
+			Icon = "💵💰",
+			Title = "+$5,000 CASH",
+			Sub = "Instant Coins!",
+			Price = "49 R$",
+			ColTop = Color3.fromRGB(55, 205, 105),
+			ColBot = Color3.fromRGB(24, 115, 55),
+			Stroke = Color3.fromRGB(135, 255, 165),
+		},
+		{
+			Key = "CashPack25K",
+			Tag = "🔥 POPULAR!",
+			Icon = "💰💎",
+			Title = "+$25,000 CASH",
+			Sub = "5x Huge Vault!",
+			Price = "149 R$",
+			ColTop = Color3.fromRGB(255, 175, 35),
+			ColBot = Color3.fromRGB(175, 95, 15),
+			Stroke = Color3.fromRGB(255, 235, 95),
+		},
+		{
+			Key = "CashPack100K",
+			Tag = "👑 JACKPOT!",
+			Icon = "💎👑",
+			Title = "+$100,000 CASH",
+			Sub = "Mega Rich Chest!",
+			Price = "399 R$",
+			ColTop = Color3.fromRGB(255, 65, 175),
+			ColBot = Color3.fromRGB(155, 22, 105),
+			Stroke = Color3.fromRGB(255, 165, 225),
+		},
 	}
+
 	local devProductButtons: { [string]: TextButton } = {}
-	for _, dp in ipairs(devProducts) do
-		local dpSize = UDim2.fromOffset(dp.W, 42)
+	for idx, dp in ipairs(devProducts) do
+		local xCenter = 0.107 + (idx - 1) * 0.1965
+		local dpSize = UDim2.fromScale(0.184, 0.204)
 		local dpBtn = Instance.new("TextButton")
 		dpBtn.Name = "DevProduct_" .. dp.Key
 		dpBtn.Size = dpSize
 		dpBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-		dpBtn.Position = UDim2.fromOffset(dp.X, 266)
-		dpBtn.BackgroundColor3 = dp.Color
+		dpBtn.Position = UDim2.fromScale(xCenter, 0.754)
+		dpBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 		dpBtn.AutoButtonColor = false
-		dpBtn.Font = Enum.Font.FredokaOne
-		dpBtn.TextColor3 = Color3.fromRGB(16, 20, 32)
-		dpBtn.Text = "<b>" .. dp.Label .. "</b>"
+		dpBtn.Text = ""
 		dpBtn.Parent = shopModal
-		addCorner(dpBtn, 10)
-		addStroke(dpBtn, Color3.fromRGB(255, 255, 255), 1.5)
-		addTextSizeConstraint(dpBtn, 8, 12)
-		bindHoverAndClickTween(dpBtn, dpSize, dp.Color)
+		addCorner(dpBtn, 14)
+		addStroke(dpBtn, dp.Stroke, 2.4)
+
+		local dpGrad = Instance.new("UIGradient")
+		dpGrad.Rotation = 90
+		dpGrad.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0.0, dp.ColTop),
+			ColorSequenceKeypoint.new(1.0, dp.ColBot),
+		})
+		dpGrad.Parent = dpBtn
+
+		local topTag = Instance.new("TextLabel")
+		topTag.Size = UDim2.fromScale(0.88, 0.19)
+		topTag.Position = UDim2.fromScale(0.06, 0.05)
+		topTag.BackgroundColor3 = Color3.fromRGB(255, 235, 75)
+		topTag.Font = Enum.Font.FredokaOne
+		topTag.TextColor3 = Color3.fromRGB(24, 16, 38)
+		topTag.Text = "<b>" .. dp.Tag .. "</b>"
+		topTag.Parent = dpBtn
+		addCorner(topTag, 6)
+		addTextSizeConstraint(topTag, 8, 14)
+
+		local iconLbl = Instance.new("TextLabel")
+		iconLbl.Size = UDim2.fromScale(0.90, 0.26)
+		iconLbl.Position = UDim2.fromScale(0.05, 0.24)
+		iconLbl.BackgroundTransparency = 1
+		iconLbl.Font = Enum.Font.FredokaOne
+		iconLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+		iconLbl.Text = dp.Icon
+		iconLbl.Parent = dpBtn
+		addTextSizeConstraint(iconLbl, 14, 28)
+
+		local titleLbl = Instance.new("TextLabel")
+		titleLbl.Size = UDim2.fromScale(0.92, 0.20)
+		titleLbl.Position = UDim2.fromScale(0.04, 0.50)
+		titleLbl.BackgroundTransparency = 1
+		titleLbl.Font = Enum.Font.FredokaOne
+		titleLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+		titleLbl.Text = "<b>" .. dp.Title .. "</b>"
+		titleLbl.Parent = dpBtn
+		addTextSizeConstraint(titleLbl, 10, 18)
+		addTextStroke(titleLbl, Color3.fromRGB(14, 16, 32), 2.0)
+
+		local pricePill = Instance.new("TextLabel")
+		pricePill.Size = UDim2.fromScale(0.88, 0.23)
+		pricePill.Position = UDim2.fromScale(0.06, 0.72)
+		pricePill.BackgroundColor3 = Color3.fromRGB(65, 238, 105)
+		pricePill.Font = Enum.Font.FredokaOne
+		pricePill.TextColor3 = Color3.fromRGB(255, 255, 255)
+		pricePill.Text = "🟢 <b>" .. dp.Price .. "</b>"
+		pricePill.Parent = dpBtn
+		addCorner(pricePill, 8)
+		addStroke(pricePill, Color3.fromRGB(255, 255, 255), 1.8)
+		addTextSizeConstraint(pricePill, 10, 18)
+		addTextStroke(pricePill, Color3.fromRGB(12, 48, 22), 1.8)
+
+		bindHoverAndClickTween(dpBtn, dpSize, Color3.fromRGB(255, 255, 255))
 		devProductButtons[dp.Key] = dpBtn
 	end
 
-	local buySpeedSize = UDim2.fromOffset(630, 48)
+	-- =========================================================================
+	-- TIER 4: BOTTOM DUAL POWER BAR (TREADMILL UPGRADE + REBIRTH SIDE-BY-SIDE, Y = 0.870 .. 0.982)
+	-- =========================================================================
+	local powerBtnSize = UDim2.fromScale(0.479, 0.110)
+
 	local buySpeedBtn = Instance.new("TextButton")
-	buySpeedBtn.Size = buySpeedSize
+	buySpeedBtn.Name = "BuySpeedBtn"
+	buySpeedBtn.Size = powerBtnSize
 	buySpeedBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-	buySpeedBtn.Position = UDim2.fromOffset(328, 324)
-	buySpeedBtn.BackgroundColor3 = Color3.fromRGB(55, 195, 255)
+	buySpeedBtn.Position = UDim2.fromScale(0.2545, 0.926)
+	buySpeedBtn.BackgroundColor3 = Color3.fromRGB(45, 195, 255)
 	buySpeedBtn.AutoButtonColor = false
 	buySpeedBtn.Font = Enum.Font.FredokaOne
-	buySpeedBtn.TextColor3 = Color3.fromRGB(15, 20, 32)
-	buySpeedBtn.Text = "🦖 <b>Upgrade Treadmill (+4 Speed) - $50</b>"
+	buySpeedBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	buySpeedBtn.Text = "🦖 <b>Upgrade Treadmill (+Speed) - $50</b>"
 	buySpeedBtn.Parent = shopModal
-	addCorner(buySpeedBtn, 12)
-	addTextSizeConstraint(buySpeedBtn, 12, 18)
-	bindHoverAndClickTween(buySpeedBtn, buySpeedSize, Color3.fromRGB(55, 195, 255))
+	addCorner(buySpeedBtn, 14)
+	addStroke(buySpeedBtn, Color3.fromRGB(255, 255, 255), 2.5)
+	addTextSizeConstraint(buySpeedBtn, 12, 24)
+	addTextStroke(buySpeedBtn, Color3.fromRGB(12, 24, 48), 2.2)
+	bindHoverAndClickTween(buySpeedBtn, powerBtnSize, Color3.fromRGB(45, 195, 255))
 
 	local rebirthBtn = Instance.new("TextButton")
-	rebirthBtn.Size = buySpeedSize
+	rebirthBtn.Name = "RebirthBtn"
+	rebirthBtn.Size = powerBtnSize
 	rebirthBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-	rebirthBtn.Position = UDim2.fromOffset(328, 384)
-	rebirthBtn.BackgroundColor3 = Color3.fromRGB(255, 125, 215)
+	rebirthBtn.Position = UDim2.fromScale(0.7455, 0.926)
+	rebirthBtn.BackgroundColor3 = Color3.fromRGB(255, 95, 195)
 	rebirthBtn.AutoButtonColor = false
 	rebirthBtn.Font = Enum.Font.FredokaOne
-	rebirthBtn.TextColor3 = Color3.fromRGB(20, 15, 30)
-	rebirthBtn.Text = "✨ <b>Rebirth (+50% Cash & Faster Treadmill) - $5,000</b>"
+	rebirthBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	rebirthBtn.Text = "🔥 <b>Rebirth #1 (+50% Cash & Speed) - $5,000</b>"
 	rebirthBtn.Parent = shopModal
-	addCorner(rebirthBtn, 12)
-	addTextSizeConstraint(rebirthBtn, 12, 18)
-	bindHoverAndClickTween(rebirthBtn, buySpeedSize, Color3.fromRGB(255, 125, 215))
+	addCorner(rebirthBtn, 14)
+	addStroke(rebirthBtn, Color3.fromRGB(255, 235, 85), 2.5)
+	addTextSizeConstraint(rebirthBtn, 12, 24)
+	addTextStroke(rebirthBtn, Color3.fromRGB(38, 12, 32), 2.2)
+	bindHoverAndClickTween(rebirthBtn, powerBtnSize, Color3.fromRGB(255, 95, 195))
 
 	-- =========================================================================
-	-- 6. MODAL #3: 🎡 LUCKY SQUISHY SPIN WHEEL (1 Free Spin / 5m + Cash/R$ Spins) & 🎁 PLAYTIME REWARDS CHEST (2m, 5m, 10m, 15m, 30m)
+	-- 6. MODAL #3: 🎡 LUCKY SQUISHY SPIN WHEEL & 🎁 PLAYTIME REWARDS CHEST (100% Scale-Responsive!)
 	-- =========================================================================
 	local spinModal = Instance.new("Frame")
 	spinModal.Name = "SpinWheelModal"
-	spinModal.Size = UDim2.fromScale(0.56, 0.65)
-	spinModal.Position = UDim2.fromScale(0.5, 0.52)
+	spinModal.Size = UDim2.fromScale(0.62, 0.68)
+	spinModal.Position = UDim2.fromScale(0.5, 0.51)
 	spinModal.AnchorPoint = Vector2.new(0.5, 0.5)
-	spinModal.BackgroundColor3 = Color3.fromRGB(24, 18, 44)
+	spinModal.BackgroundColor3 = Color3.fromRGB(28, 18, 52)
 	spinModal.Visible = false
 	spinModal.Parent = screenGui
-	addCorner(spinModal, 16)
-	addStroke(spinModal, Color3.fromRGB(255, 105, 215), 3.0)
-	addAspectRatio(spinModal, 1.50)
+	addCorner(spinModal, 18)
+	addStroke(spinModal, Color3.fromRGB(255, 115, 220), 3.4)
+	addAspectRatio(spinModal, 1.52)
 
 	createFeaturedViewportPreview(
 		spinModal,
-		UDim2.fromOffset(42, 42),
-		UDim2.fromOffset(14, 8),
+		UDim2.fromScale(0.062, 0.095),
+		UDim2.fromScale(0.016, 0.016),
 		Color3.fromRGB(255, 95, 205),
 		Color3.fromRGB(255, 235, 75),
 		"Crown"
 	)
 
 	local spinTitle = Instance.new("TextLabel")
-	spinTitle.Size = UDim2.new(1, -120, 0, 42)
-	spinTitle.Position = UDim2.fromOffset(66, 8)
+	spinTitle.Size = UDim2.fromScale(0.80, 0.085)
+	spinTitle.Position = UDim2.fromScale(0.092, 0.018)
 	spinTitle.BackgroundTransparency = 1
 	spinTitle.Font = Enum.Font.FredokaOne
 	spinTitle.TextXAlignment = Enum.TextXAlignment.Left
 	spinTitle.TextColor3 = Color3.fromRGB(255, 235, 85)
 	spinTitle.Text = "🎡 <b>LUCKY SPIN WHEEL (FREE EVERY 5M) & 🎁 PLAYTIME CHEST</b>"
 	spinTitle.Parent = spinModal
-	addTextSizeConstraint(spinTitle, 12, 20)
+	addTextSizeConstraint(spinTitle, 13, 26)
+	addTextStroke(spinTitle, Color3.fromRGB(16, 10, 32), 2.2)
 
 	local spinClose = Instance.new("TextButton")
 	spinClose.Size = closeBtnSize
 	spinClose.AnchorPoint = Vector2.new(0.5, 0.5)
-	spinClose.Position = UDim2.new(1, -29, 0, 29)
+	spinClose.Position = UDim2.fromScale(0.958, 0.060)
 	spinClose.BackgroundColor3 = Color3.fromRGB(235, 65, 75)
 	spinClose.AutoButtonColor = false
 	spinClose.Font = Enum.Font.FredokaOne
@@ -1281,7 +1688,8 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	spinClose.Text = "<b>X</b>"
 	spinClose.Parent = spinModal
 	addCorner(spinClose, 10)
-	addTextSizeConstraint(spinClose, 14, 20)
+	addStroke(spinClose, Color3.fromRGB(255, 255, 255), 2.0)
+	addTextSizeConstraint(spinClose, 14, 24)
 	bindHoverAndClickTween(spinClose, closeBtnSize, Color3.fromRGB(235, 65, 75))
 
 	local wheelPrizesInfo = {
@@ -1296,80 +1704,85 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		local col = (idx - 1) % 3
 		local row = math.floor((idx - 1) / 3)
 		local pCard = Instance.new("TextLabel")
-		pCard.Size = UDim2.fromOffset(204, 42)
-		pCard.Position = UDim2.fromOffset(14 + col * 212, 56 + row * 48)
-		pCard.BackgroundColor3 = Color3.fromRGB(44, 32, 72)
+		pCard.Size = UDim2.fromScale(0.31, 0.105)
+		pCard.Position = UDim2.fromScale(0.02 + col * 0.325, 0.125 + row * 0.118)
+		pCard.BackgroundColor3 = Color3.fromRGB(48, 34, 82)
 		pCard.Font = Enum.Font.FredokaOne
 		pCard.TextColor3 = Color3.fromRGB(255, 245, 200)
 		pCard.Text = pText
 		pCard.Parent = spinModal
-		addCorner(pCard, 10)
-		addStroke(pCard, Color3.fromRGB(255, 145, 225), 1.8)
-		addTextSizeConstraint(pCard, 9, 14)
+		addCorner(pCard, 12)
+		addStroke(pCard, Color3.fromRGB(255, 145, 225), 2.0)
+		addTextSizeConstraint(pCard, 10, 20)
+		addTextStroke(pCard, Color3.fromRGB(16, 10, 32), 1.6)
 	end
 
 	-- 3 Spin Action Buttons: Free Spin (Every 5m) + Buy 1 Spin ($2,500 Cash) + Buy 3 Spins (19 R$)
-	local spinFreeSize = UDim2.fromOffset(252, 46)
+	local spinFreeSize = UDim2.fromScale(0.36, 0.11)
 	local spinNowBtn = Instance.new("TextButton")
 	spinNowBtn.Name = "SpinNowBtn"
 	spinNowBtn.Size = spinFreeSize
 	spinNowBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-	spinNowBtn.Position = UDim2.fromOffset(140, 180)
-	spinNowBtn.BackgroundColor3 = Color3.fromRGB(255, 95, 205)
+	spinNowBtn.Position = UDim2.fromScale(0.20, 0.43)
+	spinNowBtn.BackgroundColor3 = Color3.fromRGB(255, 85, 205)
 	spinNowBtn.AutoButtonColor = false
 	spinNowBtn.Font = Enum.Font.FredokaOne
 	spinNowBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 	spinNowBtn.Text = "🎡 <b>FREE SPIN (READY!)</b>"
 	spinNowBtn.Parent = spinModal
 	addCorner(spinNowBtn, 12)
-	addStroke(spinNowBtn, Color3.fromRGB(255, 255, 255), 1.8)
-	addTextSizeConstraint(spinNowBtn, 10, 16)
-	bindHoverAndClickTween(spinNowBtn, spinFreeSize, Color3.fromRGB(255, 95, 205))
+	addStroke(spinNowBtn, Color3.fromRGB(255, 255, 255), 2.2)
+	addTextSizeConstraint(spinNowBtn, 11, 22)
+	addTextStroke(spinNowBtn, Color3.fromRGB(32, 10, 38), 2.0)
+	bindHoverAndClickTween(spinNowBtn, spinFreeSize, Color3.fromRGB(255, 85, 205))
 
-	local buySpinBtnSize = UDim2.fromOffset(180, 46)
+	local buySpinBtnSize = UDim2.fromScale(0.285, 0.11)
 	local buySpinCashBtn = Instance.new("TextButton")
 	buySpinCashBtn.Name = "BuySpinCashBtn"
 	buySpinCashBtn.Size = buySpinBtnSize
 	buySpinCashBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-	buySpinCashBtn.Position = UDim2.fromOffset(366, 180)
-	buySpinCashBtn.BackgroundColor3 = Color3.fromRGB(85, 225, 120)
+	buySpinCashBtn.Position = UDim2.fromScale(0.54, 0.43)
+	buySpinCashBtn.BackgroundColor3 = Color3.fromRGB(65, 235, 115)
 	buySpinCashBtn.AutoButtonColor = false
 	buySpinCashBtn.Font = Enum.Font.FredokaOne
-	buySpinCashBtn.TextColor3 = Color3.fromRGB(16, 28, 18)
+	buySpinCashBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 	buySpinCashBtn.Text = "💵 <b>BUY SPIN ($2,500)</b>"
 	buySpinCashBtn.Parent = spinModal
 	addCorner(buySpinCashBtn, 12)
-	addStroke(buySpinCashBtn, Color3.fromRGB(255, 255, 255), 1.8)
-	addTextSizeConstraint(buySpinCashBtn, 10, 15)
-	bindHoverAndClickTween(buySpinCashBtn, buySpinBtnSize, Color3.fromRGB(85, 225, 120))
+	addStroke(buySpinCashBtn, Color3.fromRGB(255, 255, 255), 2.2)
+	addTextSizeConstraint(buySpinCashBtn, 11, 20)
+	addTextStroke(buySpinCashBtn, Color3.fromRGB(12, 42, 20), 2.0)
+	bindHoverAndClickTween(buySpinCashBtn, buySpinBtnSize, Color3.fromRGB(65, 235, 115))
 
 	local buySpinRobuxBtn = Instance.new("TextButton")
 	buySpinRobuxBtn.Name = "BuySpinRobuxBtn"
 	buySpinRobuxBtn.Size = buySpinBtnSize
 	buySpinRobuxBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-	buySpinRobuxBtn.Position = UDim2.fromOffset(554, 180)
-	buySpinRobuxBtn.BackgroundColor3 = Color3.fromRGB(255, 200, 55)
+	buySpinRobuxBtn.Position = UDim2.fromScale(0.84, 0.43)
+	buySpinRobuxBtn.BackgroundColor3 = Color3.fromRGB(255, 195, 45)
 	buySpinRobuxBtn.AutoButtonColor = false
 	buySpinRobuxBtn.Font = Enum.Font.FredokaOne
-	buySpinRobuxBtn.TextColor3 = Color3.fromRGB(20, 18, 28)
+	buySpinRobuxBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 	buySpinRobuxBtn.Text = "💎 <b>+3 SPINS (19 R$)</b>"
 	buySpinRobuxBtn.Parent = spinModal
 	addCorner(buySpinRobuxBtn, 12)
-	addStroke(buySpinRobuxBtn, Color3.fromRGB(255, 255, 255), 1.8)
-	addTextSizeConstraint(buySpinRobuxBtn, 10, 15)
-	bindHoverAndClickTween(buySpinRobuxBtn, buySpinBtnSize, Color3.fromRGB(255, 200, 55))
+	addStroke(buySpinRobuxBtn, Color3.fromRGB(255, 255, 255), 2.2)
+	addTextSizeConstraint(buySpinRobuxBtn, 11, 20)
+	addTextStroke(buySpinRobuxBtn, Color3.fromRGB(42, 24, 8), 2.0)
+	bindHoverAndClickTween(buySpinRobuxBtn, buySpinBtnSize, Color3.fromRGB(255, 195, 45))
 
 	-- Playtime Rewards Chest Section Header (2m, 5m, 10m, 15m, 30m)
 	local playtimeHeader = Instance.new("TextLabel")
-	playtimeHeader.Size = UDim2.new(1, -28, 0, 24)
-	playtimeHeader.Position = UDim2.fromOffset(14, 212)
+	playtimeHeader.Size = UDim2.fromScale(0.96, 0.06)
+	playtimeHeader.Position = UDim2.fromScale(0.02, 0.505)
 	playtimeHeader.BackgroundTransparency = 1
 	playtimeHeader.Font = Enum.Font.FredokaOne
 	playtimeHeader.TextXAlignment = Enum.TextXAlignment.Left
 	playtimeHeader.TextColor3 = Color3.fromRGB(115, 245, 255)
 	playtimeHeader.Text = "⏱️ <b>PLAYTIME REWARDS CHEST (2m • 5m • 10m • 15m • 30m)</b> — Stay in-game for free Cash, Speed & Mythics!"
 	playtimeHeader.Parent = spinModal
-	addTextSizeConstraint(playtimeHeader, 10, 15)
+	addTextSizeConstraint(playtimeHeader, 11, 20)
+	addTextStroke(playtimeHeader, Color3.fromRGB(12, 16, 32), 1.8)
 
 	local playtimeMilestones = {
 		{ Index = 1, TimeLabel = "2m", RewardText = "+$1.5K\n+3 Spd", Color = Color3.fromRGB(75, 215, 255) },
@@ -1380,43 +1793,42 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	}
 	local playtimeButtons: { [number]: TextButton } = {}
 	for i, pm in ipairs(playtimeMilestones) do
-		local cardW = 120
-		local cardX = 14 + (i - 1) * 127
+		local cardX = 0.02 + (i - 1) * 0.194
 		local pBox = Instance.new("Frame")
 		pBox.Name = "PlaytimeCard_" .. pm.TimeLabel
-		pBox.Size = UDim2.fromOffset(cardW, 108)
-		pBox.Position = UDim2.fromOffset(cardX, 240)
-		pBox.BackgroundColor3 = Color3.fromRGB(36, 28, 62)
+		pBox.Size = UDim2.fromScale(0.182, 0.255)
+		pBox.Position = UDim2.fromScale(cardX, 0.57)
+		pBox.BackgroundColor3 = Color3.fromRGB(40, 30, 68)
 		pBox.Parent = spinModal
-		addCorner(pBox, 10)
-		addStroke(pBox, pm.Color, 2.0)
+		addCorner(pBox, 12)
+		addStroke(pBox, pm.Color, 2.4)
 
 		local tBadge = Instance.new("TextLabel")
-		tBadge.Size = UDim2.new(1, -8, 0, 22)
-		tBadge.Position = UDim2.fromOffset(4, 4)
+		tBadge.Size = UDim2.fromScale(0.92, 0.22)
+		tBadge.Position = UDim2.fromScale(0.04, 0.05)
 		tBadge.BackgroundTransparency = 1
 		tBadge.Font = Enum.Font.FredokaOne
 		tBadge.TextColor3 = pm.Color
 		tBadge.Text = "🎁 <b>" .. pm.TimeLabel .. " REWARD</b>"
 		tBadge.Parent = pBox
-		addTextSizeConstraint(tBadge, 9, 13)
+		addTextSizeConstraint(tBadge, 9, 17)
 
 		local rDesc = Instance.new("TextLabel")
-		rDesc.Size = UDim2.new(1, -8, 0, 40)
-		rDesc.Position = UDim2.fromOffset(4, 26)
+		rDesc.Size = UDim2.fromScale(0.92, 0.38)
+		rDesc.Position = UDim2.fromScale(0.04, 0.27)
 		rDesc.BackgroundTransparency = 1
 		rDesc.Font = Enum.Font.FredokaOne
 		rDesc.TextColor3 = Color3.fromRGB(255, 255, 255)
 		rDesc.Text = "<b>" .. pm.RewardText .. "</b>"
 		rDesc.Parent = pBox
-		addTextSizeConstraint(rDesc, 9, 13)
+		addTextSizeConstraint(rDesc, 10, 18)
 
-		local ptBtnSize = UDim2.fromOffset(106, 28)
+		local ptBtnSize = UDim2.fromScale(0.88, 0.26)
 		local ptBtn = Instance.new("TextButton")
 		ptBtn.Name = "ClaimPlaytime_" .. tostring(i)
 		ptBtn.Size = ptBtnSize
 		ptBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-		ptBtn.Position = UDim2.fromOffset(cardW * 0.5, 86)
+		ptBtn.Position = UDim2.fromScale(0.5, 0.81)
 		ptBtn.BackgroundColor3 = pm.Color
 		ptBtn.AutoButtonColor = false
 		ptBtn.Font = Enum.Font.FredokaOne
@@ -1424,25 +1836,27 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		ptBtn.Text = "⏳ <b>" .. pm.TimeLabel .. "</b>"
 		ptBtn.Parent = pBox
 		addCorner(ptBtn, 8)
-		addTextSizeConstraint(ptBtn, 9, 13)
+		addTextSizeConstraint(ptBtn, 10, 17)
 		bindHoverAndClickTween(ptBtn, ptBtnSize, pm.Color)
 		playtimeButtons[i] = ptBtn
 	end
 
-	local dailyBtnSize = UDim2.fromOffset(630, 48)
+	local dailyBtnSize = UDim2.fromScale(0.96, 0.115)
 	local claimDailyModalBtn = Instance.new("TextButton")
 	claimDailyModalBtn.Size = dailyBtnSize
 	claimDailyModalBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-	claimDailyModalBtn.Position = UDim2.fromOffset(328, 382)
-	claimDailyModalBtn.BackgroundColor3 = Color3.fromRGB(85, 235, 115)
+	claimDailyModalBtn.Position = UDim2.fromScale(0.50, 0.91)
+	claimDailyModalBtn.BackgroundColor3 = Color3.fromRGB(65, 235, 115)
 	claimDailyModalBtn.AutoButtonColor = false
 	claimDailyModalBtn.Font = Enum.Font.FredokaOne
-	claimDailyModalBtn.TextColor3 = Color3.fromRGB(16, 28, 18)
+	claimDailyModalBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 	claimDailyModalBtn.Text = "🎁 <b>CLAIM DAILY LOGIN STREAK CHEST (+Cash, +Speed & +Bear Trap)</b>"
 	claimDailyModalBtn.Parent = spinModal
-	addCorner(claimDailyModalBtn, 12)
-	addTextSizeConstraint(claimDailyModalBtn, 11, 18)
-	bindHoverAndClickTween(claimDailyModalBtn, dailyBtnSize, Color3.fromRGB(85, 235, 115))
+	addCorner(claimDailyModalBtn, 14)
+	addStroke(claimDailyModalBtn, Color3.fromRGB(255, 255, 255), 2.4)
+	addTextSizeConstraint(claimDailyModalBtn, 12, 24)
+	addTextStroke(claimDailyModalBtn, Color3.fromRGB(12, 42, 20), 2.0)
+	bindHoverAndClickTween(claimDailyModalBtn, dailyBtnSize, Color3.fromRGB(65, 235, 115))
 
 	-- =========================================================================
 	-- 7. CENTER-SCREEN "🎉 YOU FOUND 🎉" CELEBRATION POPUP
@@ -1509,7 +1923,24 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	yfNameLbl.Text = "<b>Squishy Name</b>"
 	yfNameLbl.Parent = youFoundPopup
 	addTextSizeConstraint(yfNameLbl, 14, 25)
-	addTextStroke(yfNameLbl, Color3.fromRGB(14, 18, 30), 2.5)
+	-- 8. INTERACTIVE TREADMILL TURBO SPRINT BUTTON (Appears when standing on any Treadmill Belt — Tap/Click for 2x Speed Burst!)
+	local turboBtnSize = UDim2.fromScale(0.32, 0.068)
+	local treadmillTurboBtn = Instance.new("TextButton")
+	treadmillTurboBtn.Name = "TreadmillTurboBtn"
+	treadmillTurboBtn.Size = turboBtnSize
+	treadmillTurboBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+	treadmillTurboBtn.Position = UDim2.fromScale(0.5, 0.82)
+	treadmillTurboBtn.BackgroundColor3 = Color3.fromRGB(255, 185, 35)
+	treadmillTurboBtn.AutoButtonColor = false
+	treadmillTurboBtn.Font = Enum.Font.FredokaOne
+	treadmillTurboBtn.TextColor3 = Color3.fromRGB(16, 20, 32)
+	treadmillTurboBtn.Text = "⚡ <b>TAP / CLICK FOR 2x TURBO SPRINT! (+SPEED BURST)</b> ⚡"
+	treadmillTurboBtn.Visible = false
+	treadmillTurboBtn.Parent = screenGui
+	addCorner(treadmillTurboBtn, 16)
+	addStroke(treadmillTurboBtn, Color3.fromRGB(255, 255, 255), 3.0)
+	addTextSizeConstraint(treadmillTurboBtn, 12, 22)
+	bindHoverAndClickTween(treadmillTurboBtn, turboBtnSize, Color3.fromRGB(255, 185, 35))
 
 	return {
 		ScreenGui = screenGui,
@@ -1517,6 +1948,8 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		TopBannerLabel = topBannerLabel,
 		TopIndexBtn = topIndexBtn,
 		TopSpeedBtn = topSpeedBtn,
+		TopHudCloseBtn = topHudCloseBtn,
+		RestoreTopHudBtn = restoreTopHudBtn,
 		SquishyBarGroup = squishyBarGroup,
 		SquishyBarFill = squishyBarFill,
 		SquishyBarText = squishyBarText,
@@ -1526,6 +1959,8 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		ObjectiveBanner = objectiveBanner,
 		ObjectiveText = objectiveText,
 		GuideToggleBtn = guideToggleBtn,
+		CloseBannerBtn = closeBannerBtn,
+		TreadmillTurboBtn = treadmillTurboBtn,
 		HowToPlayModal = howToPlayModal,
 		HowToPlayClose = htpClose,
 		ComboFrame = comboFrame,

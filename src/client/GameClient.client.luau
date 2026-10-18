@@ -32,6 +32,7 @@ local StateSyncEvent = Remotes:WaitForChild("StateSync") :: RemoteEvent
 local EggCapturedEvent = Remotes:WaitForChild("SquishyCaptured") :: RemoteEvent
 local GuardianAlertEvent = Remotes:WaitForChild("GuardianAlert") :: RemoteEvent
 local BuySpeedUpgradeEvent = Remotes:WaitForChild("BuySpeedUpgrade") :: RemoteEvent
+local TreadmillTapBoostEvent = Remotes:WaitForChild("TreadmillTapBoost") :: RemoteEvent
 local RebirthRequestEvent = Remotes:WaitForChild("RebirthRequest") :: RemoteEvent
 local ClaimDailyRewardEvent = Remotes:WaitForChild("ClaimDailyReward") :: RemoteEvent
 local ClaimPlaytimeRewardEvent = Remotes:WaitForChild("ClaimPlaytimeReward") :: RemoteEvent
@@ -66,6 +67,12 @@ if ui.SpeedThrottleButtons then
 			SetSpeedThrottleEvent:FireServer(pct / 100)
 		end)
 	end
+end
+
+if ui.TreadmillTurboBtn then
+	ui.TreadmillTurboBtn.Activated:Connect(function()
+		TreadmillTapBoostEvent:FireServer()
+	end)
 end
 
 ui.TopIndexBtn.MouseButton1Click:Connect(function()
@@ -315,7 +322,11 @@ RunService.RenderStepped:Connect(function(dt: number)
 	-- Check if LocalPlayer is running on any Creator Store Treadmill belt (Plot 1-4 or Stage 1-8)
 	local myChar = localPlayer.Character
 	local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
-	if myChar and myHum and myChar:GetAttribute("OnTreadmillBelt") == true then
+	local onBelt = (myChar ~= nil) and (myHum ~= nil) and (myChar:GetAttribute("OnTreadmillBelt") == true)
+	if ui.TreadmillTurboBtn then
+		ui.TreadmillTurboBtn.Visible = onBelt
+	end
+	if onBelt and myHum and myChar then
 		local animSpd = (myChar:GetAttribute("TreadmillAnimSpeed") :: number?) or 1.45
 		startRun(myHum, animSpd)
 	else
@@ -537,6 +548,37 @@ local function applyStateToUI(state: any)
 			if state.OwnedPasses[k] then
 				btn.Text = "✅ <b>OWNED & ACTIVE</b>"
 				btn.BackgroundColor3 = Color3.fromRGB(75, 225, 115)
+			end
+		end
+	end
+
+	if state.Found then
+		local sw = Workspace:FindFirstChild("SquishyWorld")
+		local worldEggsFolder = sw and sw:FindFirstChild("WorldEggs")
+		if worldEggsFolder then
+			for sKey, isFound in pairs(state.Found) do
+				if isFound then
+					local sData = SlimeData.ById[sKey]
+					local numId = if sData then (tonumber((sData :: any).UnlockOrder or (sData :: any).NumericId or sData.Id) or 1) else 999
+					-- Collectible Squishies (#36-#117) permanently disappear on the client once collected!
+					if numId > 35 then
+						local m = worldEggsFolder:FindFirstChild("WorldEgg_" .. tostring(sKey)) or worldEggsFolder:FindFirstChild(tostring(sKey))
+						if m then
+							for _, d in ipairs(m:GetDescendants()) do
+								if d:IsA("BasePart") then
+									d.Transparency = 1
+									d.CanTouch = false
+									d.CanQuery = false
+									d.CanCollide = false
+								elseif d:IsA("ProximityPrompt") or d:IsA("BillboardGui") or d:IsA("SurfaceGui") or d:IsA("ParticleEmitter") then
+									(d :: any).Enabled = false
+								elseif d:IsA("Decal") or d:IsA("Texture") then
+									d.Transparency = 1
+								end
+							end
+						end
+					end
+				end
 			end
 		end
 	end
@@ -991,12 +1033,33 @@ EggCapturedEvent.OnClientEvent:Connect(function(info: any)
 					Color3.fromRGB(255, 165, 45)
 				)
 			else
+				-- Immediately hide collected Squishy (#36-#117) on the client so it vanishes on contact!
+				local sw = Workspace:FindFirstChild("SquishyWorld")
+				local worldEggsFolder = sw and sw:FindFirstChild("WorldEggs")
+				if worldEggsFolder then
+					local m = worldEggsFolder:FindFirstChild("WorldEgg_" .. tostring(info.SquishyId)) or worldEggsFolder:FindFirstChild(tostring(info.SquishyId))
+					if m then
+						for _, d in ipairs(m:GetDescendants()) do
+							if d:IsA("BasePart") then
+								d.Transparency = 1
+								d.CanTouch = false
+								d.CanQuery = false
+								d.CanCollide = false
+							elseif d:IsA("ProximityPrompt") or d:IsA("BillboardGui") or d:IsA("SurfaceGui") or d:IsA("ParticleEmitter") then
+								(d :: any).Enabled = false
+							elseif d:IsA("Decal") or d:IsA("Texture") then
+								d.Transparency = 1
+							end
+						end
+					end
+				end
+
 				showToast(
 					string.format(
-						"✨ PICKED UP [%s] %s! Roaming in your Fenced Hatchery Pen (+$%s/s)!",
+						"✨ COLLECTED [%s] %s! Added to your 117 Squishy Index (+$%s Cash)!",
 						string.upper(rarity),
 						string.upper(sData.Name),
-						SlimeData.FormatNumber(sData.IncomePerSec)
+						SlimeData.FormatNumber(info.CoinsEarned or sData.CoinReward or 200)
 					),
 					Color3.fromRGB(45, 175, 85)
 				)
@@ -1012,35 +1075,51 @@ GuardianAlertEvent.OnClientEvent:Connect(function(msg: string)
 end)
 
 -- =========================================================================
--- PHASE 5: STAGE-BY-STAGE 3D GUIDING ARROWS (BEAM CHEVRONS + BOUNCING 3D TARGET ARROW ACROSS ALL 8 STAGES!)
+-- PHASE 7: SOLID 100% OPAQUE 3D GUIDING ARROWS (WIDE BEAM + 10 SOLID 3D GROUND CHEVRON ARROWS + 35-STUD SKY BEACON PILLAR!)
 -- Points step-by-step from the player to:
 --   [Step 1] Stage / Plot Treadmill -> [Step 2] Stage N Squishies -> [Step 3] Stage N Boss Egg Nest ->
 --   [Step 4] Fenced Hatchery Pen -> [Step 5] Grow/Level Up & Cash Pad -> [Step 6] Unlocked Stage N+1 Gate
 -- =========================================================================
 local guidanceTargetPart = Instance.new("Part")
 guidanceTargetPart.Name = "GuidanceTargetMarker3D"
-guidanceTargetPart.Size = Vector3.new(2.2, 2.2, 2.2)
+guidanceTargetPart.Size = Vector3.new(3.2, 3.2, 3.2)
 guidanceTargetPart.Shape = Enum.PartType.Ball
 guidanceTargetPart.Color = Color3.fromRGB(85, 255, 165)
 guidanceTargetPart.Material = Enum.Material.Neon
-guidanceTargetPart.Transparency = 0.25
+guidanceTargetPart.Transparency = 0
 guidanceTargetPart.Anchored = true
 guidanceTargetPart.CanCollide = false
 guidanceTargetPart.CanQuery = false
 guidanceTargetPart.CanTouch = false
-guidanceTargetPart.Position = Vector3.new(0, 6, 15)
+guidanceTargetPart.Position = Vector3.new(-94, 6, 54)
 guidanceTargetPart.Parent = Workspace
 
 local targetAtt = Instance.new("Attachment")
 targetAtt.Name = "GuidanceTargetAtt"
 targetAtt.Parent = guidanceTargetPart
 
+-- 35-Stud Vertical Neon Sky Beacon Pillar at Target so players can see their objective from across the entire map!
+local skyBeaconPillar = Instance.new("Part")
+skyBeaconPillar.Name = "GuidanceSkyBeacon3D"
+skyBeaconPillar.Shape = Enum.PartType.Cylinder
+skyBeaconPillar.Size = Vector3.new(35.0, 2.2, 2.2)
+skyBeaconPillar.Color = Color3.fromRGB(85, 255, 165)
+skyBeaconPillar.Material = Enum.Material.Neon
+skyBeaconPillar.Transparency = 0.22
+skyBeaconPillar.Anchored = true
+skyBeaconPillar.CanCollide = false
+skyBeaconPillar.CanQuery = false
+skyBeaconPillar.CanTouch = false
+skyBeaconPillar.CFrame = CFrame.new(-94, 18.5, 54) * CFrame.Angles(0, 0, math.rad(90))
+skyBeaconPillar.Parent = guidanceTargetPart
+
 -- Bouncing 3D Downward Pointer Cone above the Target
 local pointerShaft = Instance.new("Part")
 pointerShaft.Name = "PointerArrow3D"
-pointerShaft.Size = Vector3.new(1.2, 3.6, 1.2)
+pointerShaft.Size = Vector3.new(2.2, 4.8, 2.2)
 pointerShaft.Color = Color3.fromRGB(255, 235, 65)
 pointerShaft.Material = Enum.Material.Neon
+pointerShaft.Transparency = 0
 pointerShaft.Anchored = true
 pointerShaft.CanCollide = false
 pointerShaft.CanQuery = false
@@ -1049,8 +1128,8 @@ pointerShaft.Parent = guidanceTargetPart
 
 local pointerBB = Instance.new("BillboardGui")
 pointerBB.Name = "GuidanceTargetSign"
-pointerBB.Size = UDim2.new(10, 0, 2.6, 0)
-pointerBB.StudsOffset = Vector3.new(0, 4.8, 0)
+pointerBB.Size = UDim2.new(14, 0, 3.4, 0)
+pointerBB.StudsOffset = Vector3.new(0, 6.2, 0)
 pointerBB.AlwaysOnTop = true
 pointerBB.LightInfluence = 0
 pointerBB.Parent = guidanceTargetPart
@@ -1066,7 +1145,7 @@ pointerSignLbl.Parent = pointerBB
 
 local pointerSignStroke = Instance.new("UIStroke")
 pointerSignStroke.Color = Color3.fromRGB(14, 18, 32)
-pointerSignStroke.Thickness = 2.6
+pointerSignStroke.Thickness = 3.0
 pointerSignStroke.Parent = pointerSignLbl
 
 local playerGuidanceAtt: Attachment? = nil
@@ -1074,25 +1153,68 @@ local guidanceBeam = Instance.new("Beam")
 guidanceBeam.Name = "StageGuidanceBeam3D"
 guidanceBeam.Texture = "rbxassetid://4887782888"
 guidanceBeam.TextureMode = Enum.TextureMode.Wrap
-guidanceBeam.TextureLength = 5.0
-guidanceBeam.TextureSpeed = 3.4
-guidanceBeam.Width0 = 2.6
-guidanceBeam.Width1 = 2.6
+guidanceBeam.TextureLength = 6.0
+guidanceBeam.TextureSpeed = 4.2
+guidanceBeam.Width0 = 4.5
+guidanceBeam.Width1 = 4.8
+guidanceBeam.Brightness = 4.5
 guidanceBeam.LightEmission = 1
 guidanceBeam.LightInfluence = 0
 guidanceBeam.FaceCamera = true
-guidanceBeam.Transparency = NumberSequence.new({
-	NumberSequenceKeypoint.new(0, 0.10),
-	NumberSequenceKeypoint.new(0.85, 0.05),
-	NumberSequenceKeypoint.new(1, 0.25),
-})
+-- 100% Solid Opaque Guiding Arrow Beam (Zero Transparency!)
+guidanceBeam.Transparency = NumberSequence.new(0)
 guidanceBeam.Color = ColorSequence.new({
-	ColorSequenceKeypoint.new(0, Color3.fromRGB(85, 235, 255)),
-	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(95, 255, 145)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 235, 75)),
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(85, 245, 255)),
+	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(95, 255, 135)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 235, 65)),
 })
 guidanceBeam.Attachment1 = targetAtt
 guidanceBeam.Parent = guidanceTargetPart
+
+-- Live 10-Part Solid 3D Neon Ground Chevron Arrow Chain so players can follow unmistakable physical 3D arrows on the ground!
+local arrowChainFolder = Instance.new("Folder")
+arrowChainFolder.Name = "GuidanceArrowChainFolder"
+arrowChainFolder.Parent = Workspace
+
+local NUM_GROUND_ARROWS = 10
+local groundArrowParts: { { LeftWing: Part, RightWing: Part } } = {}
+for i = 1, NUM_GROUND_ARROWS do
+	local leftWing = Instance.new("Part")
+	leftWing.Name = "GroundArrowLeft_" .. tostring(i)
+	leftWing.Size = Vector3.new(0.65, 0.35, 2.6)
+	leftWing.Material = Enum.Material.Neon
+	leftWing.Color = Color3.fromRGB(255, 235, 65)
+	leftWing.Transparency = 0
+	leftWing.Anchored = true
+	leftWing.CanCollide = false
+	leftWing.CanQuery = false
+	leftWing.CanTouch = false
+	leftWing.Parent = arrowChainFolder
+
+	local rightWing = Instance.new("Part")
+	rightWing.Name = "GroundArrowRight_" .. tostring(i)
+	rightWing.Size = Vector3.new(0.65, 0.35, 2.6)
+	rightWing.Material = Enum.Material.Neon
+	rightWing.Color = Color3.fromRGB(255, 235, 65)
+	rightWing.Transparency = 0
+	rightWing.Anchored = true
+	rightWing.CanCollide = false
+	rightWing.CanQuery = false
+	rightWing.CanTouch = false
+	rightWing.Parent = arrowChainFolder
+
+	table.insert(groundArrowParts, {
+		LeftWing = leftWing,
+		RightWing = rightWing,
+	})
+end
+
+local FALLBACK_PLOT_COORDS = {
+	[1] = Vector3.new(-94, 4, 54),
+	[2] = Vector3.new(94, 4, 54),
+	[3] = Vector3.new(-94, 4, 136),
+	[4] = Vector3.new(94, 4, 136),
+}
 
 local function getPlotStationPos(plotIdx: number, stationName: string): Vector3
 	local sw = Workspace:FindFirstChild("SquishyWorld")
@@ -1122,7 +1244,7 @@ local function getPlotStationPos(plotIdx: number, stationName: string): Vector3
 			end
 		end
 	end
-	return Vector3.new(-66 + (plotIdx - 1) * 44, 4, 24)
+	return FALLBACK_PLOT_COORDS[plotIdx] or Vector3.new(-94, 4, 54)
 end
 
 local function getStageTreadmillPos(stageId: number, plotIdx: number): Vector3
@@ -1139,12 +1261,12 @@ end
 
 local function computeCurrent6StepTarget(hrpPos: Vector3): (Vector3, string, string, Color3)
 	if not latestState then
-		return Vector3.new(-66, 4, 24), "⚡ STEP 1: RUN ON TREADMILL!", "🧭 <b>FOLLOW 3D ARROW:</b> [Step 1] ⚡ Run on Treadmill to Train Speed!", Color3.fromRGB(85, 235, 255)
+		return Vector3.new(-94, 4, 54), "⚡ STEP 1: RUN ON TREADMILL!", "🧭 <b>FOLLOW 3D ARROW:</b> [Step 1] ⚡ Run on Treadmill to Train Speed!", Color3.fromRGB(85, 235, 255)
 	end
 
 	local plotIdx = tonumber(latestState.PlotIndex) or 1
 	local foundMap = latestState.Found or {}
-	local spd = tonumber(latestState.SpeedStat) or 18
+	local spd = tonumber(latestState.SpeedStat) or 16
 	local coins = tonumber(latestState.Coins) or 0
 	local carriedEggs = tonumber(latestState.CarriedEggCount) or 0
 	local hatchingCount = tonumber(latestState.HatchingCount) or 0
@@ -1212,7 +1334,7 @@ local function computeCurrent6StepTarget(hrpPos: Vector3): (Vector3, string, str
 			Color3.fromRGB(95, 255, 145)
 	end
 
-	-- [STEP 1] If player is at very start of Stage 1 with low Speed (< 60) OR has 100% of activeStage items and needs Speed for Stage (activeStage + 1):
+	-- [STEP 1] If player is at very start of Stage 1 with low Speed (< 45) OR has 100% of activeStage items and needs Speed for Stage (activeStage + 1):
 	local nextReqSpeed = if nextStageInfo then (nextStageInfo.RequiredSpeed or 250) else 0
 	if (activeStage == 1 and spd < 45 and foundInStage == 0) or (foundInStage >= totalInStage and nextStageInfo and spd < nextReqSpeed) then
 		local tmPos = getStageTreadmillPos(activeStage, plotIdx)
@@ -1300,7 +1422,7 @@ RunService.RenderStepped:Connect(function()
 		end
 	end
 
-	-- Update 3D Guiding Arrow Beam + Bouncing 3D Target Marker
+	-- Update 3D Guiding Arrow Beam + 10-Part Ground Chevron Chain + 35-Stud Sky Beacon Pillar
 	local char = localPlayer.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
 	if hrp then
@@ -1320,12 +1442,50 @@ RunService.RenderStepped:Connect(function()
 		local bobY = math.sin(now * 4.5) * 1.15
 		guidanceTargetPart.Position = targetPos + Vector3.new(0, 1.4 + bobY * 0.35, 0)
 		guidanceTargetPart.Color = themeCol
-		pointerShaft.CFrame = CFrame.new(targetPos + Vector3.new(0, 4.4 + bobY, 0)) * CFrame.Angles(0, now * 2.4, 0)
+		skyBeaconPillar.CFrame = CFrame.new(targetPos + Vector3.new(0, 18.5, 0)) * CFrame.Angles(0, 0, math.rad(90))
+		skyBeaconPillar.Color = themeCol
+		pointerShaft.CFrame = CFrame.new(targetPos + Vector3.new(0, 4.8 + bobY, 0)) * CFrame.Angles(0, now * 2.4, 0)
 		pointerShaft.Color = themeCol
 		pointerSignLbl.Text = signText
 		pointerSignLbl.TextColor3 = themeCol:Lerp(Color3.fromRGB(255, 255, 255), 0.35)
 		if ui.ObjectiveText then
 			ui.ObjectiveText.Text = hudText
+		end
+
+		-- Animate the 10 Solid 3D Ground Chevron Arrows marching from the player to the target!
+		local startGround = hrp.Position + Vector3.new(0, -1.6, 0)
+		local endGround = targetPos + Vector3.new(0, 0.5, 0)
+		local delta = endGround - startGround
+		local dist = delta.Magnitude
+		local dir = if dist > 0.5 then delta.Unit else Vector3.new(0, 0, -1)
+		local flatDir = Vector3.new(dir.X, 0, dir.Z)
+		if flatDir.Magnitude < 0.05 then
+			flatDir = Vector3.new(0, 0, -1)
+		else
+			flatDir = flatDir.Unit
+		end
+		local marchOffset = (now * 1.65) % 1.0
+		local maxChainDist = math.min(dist, 95)
+
+		for i, chevron in ipairs(groundArrowParts) do
+			if dist < 4.0 then
+				chevron.LeftWing.Transparency = 1
+				chevron.RightWing.Transparency = 1
+			else
+				local frac = ((i - 1 + marchOffset) / NUM_GROUND_ARROWS)
+				local dAlong = 4.0 + frac * math.max(2.0, maxChainDist - 5.0)
+				local arrowCenter = startGround + dir * dAlong + Vector3.new(0, math.sin(now * 5.0 + i * 0.7) * 0.18, 0)
+				local baseCF = CFrame.lookAt(arrowCenter, arrowCenter + flatDir)
+				local pulseCol = if (math.floor(now * 6) + i) % 3 == 0
+					then Color3.fromRGB(255, 255, 160)
+					else themeCol
+				chevron.LeftWing.Color = pulseCol
+				chevron.RightWing.Color = pulseCol
+				chevron.LeftWing.Transparency = 0
+				chevron.RightWing.Transparency = 0
+				chevron.LeftWing.CFrame = baseCF * CFrame.new(-0.78, 0, 0) * CFrame.Angles(0, math.rad(-35), 0)
+				chevron.RightWing.CFrame = baseCF * CFrame.new(0.78, 0, 0) * CFrame.Angles(0, math.rad(35), 0)
+			end
 		end
 	end
 end)
@@ -1338,4 +1498,3 @@ task.spawn(function()
 		applyStateToUI(initData)
 	end
 end)
-

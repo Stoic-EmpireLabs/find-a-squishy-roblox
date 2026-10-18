@@ -24,8 +24,8 @@ local PrebuiltLoader = require(Shared:WaitForChild("PrebuiltLoader"))
 
 local WorldBuilder = {}
 
-local MAP_WIDTH = 220
-local OUTER_MAZE_WIDTH = 56 -- Flanking outer mazes cleanly outside Castle Walls (X = ±116 to ±172)
+local MAP_WIDTH = 296
+local OUTER_MAZE_WIDTH = 56 -- Flanking outer mazes cleanly outside Castle Walls (X = ±154 to ±210)
 local WALL_HEIGHT = 18
 local WALL_THICKNESS = 5
 
@@ -495,33 +495,36 @@ local function buildBigCartoonHouse(
 	})
 
 	-- 7. Authentic "Find The Squishies" Stacked Wooden Crate Pyramid + Tilted Wooden Plank Bridge to Roof (`fts_frame_12.png`, `full_frame_06.png`)!
-	buildWoodenCrate(hModel, cf * CFrame.new(11.5, 2.0, 5.2), 4.0)
-	buildWoodenCrate(hModel, cf * CFrame.new(11.5, 2.0, 1.0), 4.0)
-	buildWoodenCrate(hModel, cf * CFrame.new(11.5, 6.0, 1.0), 4.0)
-	buildWoodenCrate(hModel, cf * CFrame.new(11.5, 2.0, -3.2), 4.0)
-	buildWoodenCrate(hModel, cf * CFrame.new(11.5, 6.0, -3.2), 4.0)
-	buildWoodenCrate(hModel, cf * CFrame.new(11.5, 10.0, -3.2), 4.0)
+	-- Only build rooftop crate stairs in Stages 1-8 (pos.Z < 0) so Safe Zone Player Plots have zero crate box clutter next to the Hatchery Pen!
+	if pos.Z < 0 then
+		buildWoodenCrate(hModel, cf * CFrame.new(11.5, 2.0, 5.2), 4.0)
+		buildWoodenCrate(hModel, cf * CFrame.new(11.5, 2.0, 1.0), 4.0)
+		buildWoodenCrate(hModel, cf * CFrame.new(11.5, 6.0, 1.0), 4.0)
+		buildWoodenCrate(hModel, cf * CFrame.new(11.5, 2.0, -3.2), 4.0)
+		buildWoodenCrate(hModel, cf * CFrame.new(11.5, 6.0, -3.2), 4.0)
+		buildWoodenCrate(hModel, cf * CFrame.new(11.5, 10.0, -3.2), 4.0)
 
-	-- Tilted Narrow Wooden Plank Bridge from Top Crate onto the House Roof (`fts_frame_12.png`)!
-	makePart({
-		Name = "CrateToRoofPlankBridge",
-		Size = Vector3.new(8.5, 0.6, 2.4),
-		CFrame = (cf * CFrame.new(7.8, 12.8, -3.2)) * CFrame.Angles(0, 0, math.rad(16)),
-		Color = Color3.fromRGB(198, 145, 92),
-		Material = Enum.Material.Plastic,
-		Parent = hModel,
-	})
+		-- Tilted Narrow Wooden Plank Bridge from Top Crate onto the House Roof (`fts_frame_12.png`)!
+		makePart({
+			Name = "CrateToRoofPlankBridge",
+			Size = Vector3.new(8.5, 0.6, 2.4),
+			CFrame = (cf * CFrame.new(7.8, 12.8, -3.2)) * CFrame.Angles(0, 0, math.rad(16)),
+			Color = Color3.fromRGB(198, 145, 92),
+			Material = Enum.Material.Plastic,
+			Parent = hModel,
+		})
 
-	-- Plus a Bouncy Awning Pad for fast launches to the roof!
-	local bounceAwning = makePart({
-		Name = "BouncePad",
-		Size = Vector3.new(5.2, 1.0, 5.2),
-		CFrame = cf * CFrame.new(11.5, 4.4, 5.2),
-		Color = roofColor:Lerp(Color3.fromRGB(255, 235, 75), 0.45),
-		Material = Enum.Material.Neon,
-		Parent = hModel,
-	})
-	bounceAwning:SetAttribute("BounceImpulse", 78)
+		-- Plus a Bouncy Awning Pad for fast launches to the roof!
+		local bounceAwning = makePart({
+			Name = "BouncePad",
+			Size = Vector3.new(5.2, 1.0, 5.2),
+			CFrame = cf * CFrame.new(11.5, 4.4, 5.2),
+			Color = roofColor:Lerp(Color3.fromRGB(255, 235, 75), 0.45),
+			Material = Enum.Material.Neon,
+			Parent = hModel,
+		})
+		bounceAwning:SetAttribute("BounceImpulse", 78)
+	end
 
 	-- Biome-Specific Accent alongside the house
 	if biomeId == 1 then
@@ -635,31 +638,41 @@ local function buildBigCartoonHouse(
 	return hModel
 end
 
--- Builds the Giant 28-Step Rainbow Disappearing Staircase on its own dedicated West Plaza (X = -142)
--- ascending from Z = 152 to the Sky Cloud Sanctuary at Z = 16! Zero overlap with any Plot or House!
+-- Builds the Giant 28-Step Rainbow Disappearing Staircase on Stage 1's dedicated Outer West Sky Plaza (X = -236)
+-- ascending from Z = -20 to the Sky Cloud Sanctuary at Z = -148 (100% inside Stage 1, zero wild Squishies in Safe Zone!)
 local function buildRainbowDisappearingStaircase(worldFolder: Folder)
 	local stairFolder = Instance.new("Folder")
 	stairFolder.Name = "RainbowDisappearingStaircase"
 	stairFolder.Parent = worldFolder
 
-	local stairCenterX = -142
+	local stairCenterX = -236
 
-	-- Rainbow Launch Plaza pad at (X = -142, Z = 152)
+	-- Connector Walkway from Stage 1's West Outer Maze (X = -210) to the Rainbow Launch Plaza (X = -236, Z = -20)
+	makePart({
+		Name = "RainbowPlazaConnectorBridge",
+		Size = Vector3.new(38, 1.2, 22),
+		Position = Vector3.new(-220, -0.4, -20),
+		Color = Color3.fromRGB(255, 195, 85),
+		Material = Enum.Material.SmoothPlastic,
+		Parent = stairFolder,
+	})
+
+	-- Rainbow Launch Plaza pad at (X = -236, Z = -18)
 	buildGlowingNeonCircle(
 		stairFolder,
 		"RainbowLaunchPlaza",
-		Vector3.new(stairCenterX, 0.35, 152),
+		Vector3.new(stairCenterX, 0.35, -18),
 		20,
 		Color3.fromRGB(255, 95, 195),
 		Color3.fromRGB(85, 235, 255)
 	)
 
-	-- Entrance Archway at (X = -142, Z = 150)
+	-- Entrance Archway at (X = -236, Z = -20)
 	for _, sideX in ipairs({ stairCenterX - 6.5, stairCenterX + 6.5 }) do
 		makePart({
 			Name = "RainbowGatePillar",
 			Size = Vector3.new(2.4, 14, 2.4),
-			Position = Vector3.new(sideX, 7.0, 150),
+			Position = Vector3.new(sideX, 7.0, -20),
 			Color = Color3.fromRGB(255, 235, 85),
 			Material = Enum.Material.Neon,
 			Parent = stairFolder,
@@ -668,7 +681,7 @@ local function buildRainbowDisappearingStaircase(worldFolder: Folder)
 	local header = makePart({
 		Name = "RainbowArchHeader",
 		Size = Vector3.new(18, 3.8, 2.8),
-		Position = Vector3.new(stairCenterX, 15.2, 150),
+		Position = Vector3.new(stairCenterX, 15.2, -20),
 		Color = Color3.fromRGB(255, 85, 185),
 		Material = Enum.Material.SmoothPlastic,
 		Parent = stairFolder,
@@ -682,13 +695,13 @@ local function buildRainbowDisappearingStaircase(worldFolder: Folder)
 		220
 	)
 
-	-- 28 Glowing Rainbow Steps ascending from Y=1.5, Z=148 up to Y=50.5, Z=22 (4.5 studs per step in Z!)
+	-- 28 Glowing Rainbow Steps ascending from Y=1.5, Z=-22 up to Y=50.5, Z=-148 (4.5 studs per step in Z!)
 	local totalSteps = 28
 	for s = 1, totalSteps do
 		local hue = ((s - 1) / totalSteps) % 1.0
 		local stepColor = Color3.fromHSV(hue, 0.88, 1.0)
 		local yPos = 1.2 + s * 1.75
-		local zPos = 148 - s * 4.5
+		local zPos = -22 - s * 4.5
 		local xPos = stairCenterX + math.sin(s * 0.25) * 3.5
 
 		local stepPart = makePart({
@@ -717,12 +730,12 @@ local function buildRainbowDisappearingStaircase(worldFolder: Folder)
 		end
 	end
 
-	-- Giant Sky Cloud Sanctuary at the top of the Rainbow Staircase (X = -142, Y = 50.5, Z = 16)
+	-- Giant Sky Cloud Sanctuary at the top of the Rainbow Staircase (X = -236, Y = 50.5, Z = -148)
 	local skyCloud = makePart({
 		Name = "SkySanctuaryCloud",
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(2.6, 26, 26),
-		CFrame = CFrame.new(stairCenterX, 49.5, 16) * CFrame.Angles(0, 0, math.rad(90)),
+		CFrame = CFrame.new(stairCenterX, 49.5, -148) * CFrame.Angles(0, 0, math.rad(90)),
 		Color = Color3.fromRGB(245, 250, 255),
 		Material = Enum.Material.SmoothPlastic,
 		Parent = stairFolder,
@@ -730,7 +743,7 @@ local function buildRainbowDisappearingStaircase(worldFolder: Folder)
 	buildGlowingNeonCircle(
 		stairFolder,
 		"SkySanctuaryRing",
-		Vector3.new(stairCenterX, 50.9, 16),
+		Vector3.new(stairCenterX, 50.9, -148),
 		14,
 		Color3.fromRGB(255, 95, 205),
 		Color3.fromRGB(85, 235, 255)
@@ -745,7 +758,7 @@ local function buildRainbowDisappearingStaircase(worldFolder: Folder)
 	)
 end
 
--- Builds Biome-Themed Crenellated Castle Wall Battlements along both sides of the expanded map (X = ±108)
+-- Builds Biome-Themed Crenellated Castle Wall Battlements along both sides of the expanded map (X = ±146)
 -- Plus Overhead Biome Sky Archways & Rib Vaults so every stage has an unmistakable skyline silhouette!
 local function buildCastleWallBattlements(parent: Instance, levelInfo: any, halfW: number)
 	local id = levelInfo.Id or levelInfo.Level or 1
@@ -788,7 +801,7 @@ local function buildCastleWallBattlements(parent: Instance, levelInfo: any, half
 	castleFolder.Parent = parent
 
 	for _, side in ipairs({ -1, 1 }) do
-		local wallX = side * (halfW - 2.0) -- X = ±108
+		local wallX = side * (halfW - 2.0) -- X = ±146
 
 		-- Lower & Upper Castle Wall Sections with an 18-stud doorway opening at zMid into the Outer Maze!
 		local segLen = (length - 18) * 0.5
@@ -873,11 +886,11 @@ local function buildCastleWallBattlements(parent: Instance, levelInfo: any, half
 	-- Dramatic Overhead Biome Skyline Rib Archways spanning across the stage at zStart - 52 and zStart - 106!
 	for archIdx, archZ in ipairs({ zStart - 52, zStart - 106 }) do
 		for _, side in ipairs({ -1, 1 }) do
-			-- Angled Lower Arch Rib rising from the Castle Wall (X = ±104, Y = 18) toward the sky
+			-- Angled Lower Arch Rib rising from the Castle Wall toward the sky
 			makePart({
 				Name = string.format("SkylineArchLower_%d_%d", id, archIdx),
 				Size = Vector3.new(3.6, 36, 3.6),
-				CFrame = CFrame.new(side * 86, 31, archZ) * CFrame.Angles(0, 0, math.rad(side * 34)),
+				CFrame = CFrame.new(side * (halfW - 24), 31, archZ) * CFrame.Angles(0, 0, math.rad(side * 34)),
 				Color = if archIdx % 2 == 1 then themeColor else trimStone,
 				Material = if id >= 5 then Enum.Material.Neon else wallMat,
 				CanCollide = false,
@@ -888,7 +901,7 @@ local function buildCastleWallBattlements(parent: Instance, levelInfo: any, half
 		if id >= 2 then
 			makePart({
 				Name = string.format("SkylineCrownArch_%d_%d", id, archIdx),
-				Size = Vector3.new(142, 2.8, 2.8),
+				Size = Vector3.new(halfW * 2 - 64, 2.8, 2.8),
 				Position = Vector3.new(0, 44, archZ),
 				Color = trimStone,
 				Material = if id >= 5 then Enum.Material.Neon else Enum.Material.SmoothPlastic,
@@ -899,7 +912,7 @@ local function buildCastleWallBattlements(parent: Instance, levelInfo: any, half
 	end
 end
 
--- Builds the Flanking Outer Mazes cleanly outside the Castle Walls on Left (X = -116..-172) and Right (X = +116..+172)!
+-- Builds the Flanking Outer Mazes cleanly outside the Castle Walls on Left (X = -154..-210) and Right (X = +154..+210)!
 local function buildOuterSideMazes(parent: Instance, levelInfo: any, halfW: number)
 	local id = levelInfo.Id or levelInfo.Level or 1
 	local zStart = levelInfo.ZStart
@@ -930,9 +943,9 @@ local function buildOuterSideMazes(parent: Instance, levelInfo: any, halfW: numb
 	mazeFolder.Name = "OuterSideMazes_" .. tostring(id)
 	mazeFolder.Parent = parent
 
-	local mazeInnerX = halfW + 6 -- 116 (6 studs outside halfW=110 so Watchtowers at ±108 never touch the maze!)
-	local mazeOuterX = mazeInnerX + OUTER_MAZE_WIDTH -- 172
-	local mazeCenterX = (mazeInnerX + mazeOuterX) * 0.5 -- 144
+	local mazeInnerX = halfW + 6 -- 154 (6 studs outside halfW=148 so Watchtowers at ±146 never touch the maze!)
+	local mazeOuterX = mazeInnerX + OUTER_MAZE_WIDTH -- 210
+	local mazeCenterX = (mazeInnerX + mazeOuterX) * 0.5 -- 182
 
 	for _, side in ipairs({ -1, 1 }) do
 		-- Outer Maze Floor (including connector bridge across the 6-stud gap from the Castle Wall gate!)
@@ -945,17 +958,19 @@ local function buildOuterSideMazes(parent: Instance, levelInfo: any, halfW: numb
 			Parent = mazeFolder,
 		})
 
-		-- Outer Perimeter Boundary Wall at X = ±172
+		-- Outer Perimeter Boundary Wall at X = ±210 (leaves doorway opening on West of Stage 1 at Z = -20 for Rainbow Staircase!)
 		makePart({
 			Name = "OuterMazeBoundaryWall",
 			Size = Vector3.new(3.5, 14, length),
 			Position = Vector3.new(side * mazeOuterX, 7, zMid),
 			Color = mazeWallColor,
 			Material = mazeMat,
+			CanCollide = not (id == 1 and side == -1),
+			Transparency = if (id == 1 and side == -1) then 0.65 else 0,
 			Parent = mazeFolder,
 		})
 
-		-- Entrance Archway Sign at zMid (X = ±116)
+		-- Entrance Archway Sign at zMid (X = ±154)
 		local archHeader = makePart({
 			Name = "MazeArchHeader",
 			Size = Vector3.new(3.2, 4.0, 18),
@@ -966,22 +981,22 @@ local function buildOuterSideMazes(parent: Instance, levelInfo: any, halfW: numb
 		})
 		createSurfaceSign(
 			archHeader,
-			string.format("🌿 STAGE %d OUTER MAZE\nFind 4 Hidden Shining Squishies Inside!", id),
+			string.format("🌿 STAGE %d OUTER MAZE\nFind Hidden Shining Squishies Inside!", id),
 			Color3.fromRGB(255, 245, 130),
 			Color3.fromRGB(20, 34, 26),
 			{ Enum.NormalId.Left, Enum.NormalId.Right },
 			180
 		)
 
-		-- Winding Interior Labyrinth Corridors & Baffles (leaves wide 22-stud lanes at X = ±130 and X = ±156!)
+		-- Winding Interior Labyrinth Corridors & Baffles (leaves wide 22-stud lanes at X = ±168 and X = ±194!)
 		local wallH = 10.5
-		-- Center Spine Divider at X = ±143 with Alternating Gaps
+		-- Center Spine Divider at X = ±181 with Alternating Gaps
 		for seg = 1, 3 do
 			local zSeg = zStart - (seg * 40) + 6
 			makePart({
 				Name = "MazeSpine_" .. tostring(seg),
 				Size = Vector3.new(2.8, wallH, 24),
-				Position = Vector3.new(side * 143, wallH * 0.5, zSeg),
+				Position = Vector3.new(side * (mazeCenterX - 1), wallH * 0.5, zSeg),
 				Color = mazeWallColor,
 				Material = mazeMat,
 				Parent = mazeFolder,
@@ -990,10 +1005,10 @@ local function buildOuterSideMazes(parent: Instance, levelInfo: any, halfW: numb
 
 		-- Transverse Maze Baffles spaced cleanly between the Squishy positions (zStart - 26, -60, -94, -128)
 		local baffleOffsets = {
-			{ X = 128, Z = zStart - 43 },
-			{ X = 156, Z = zStart - 77 },
-			{ X = 128, Z = zStart - 111 },
-			{ X = 156, Z = zStart - 144 },
+			{ X = mazeCenterX - 16, Z = zStart - 43 },
+			{ X = mazeCenterX + 12, Z = zStart - 77 },
+			{ X = mazeCenterX - 16, Z = zStart - 111 },
+			{ X = mazeCenterX + 12, Z = zStart - 144 },
 		}
 		for bIdx, b in ipairs(baffleOffsets) do
 			makePart({
@@ -1011,7 +1026,7 @@ end
 -- Builds the Authentic Creator Store 3D Speed Treadmill (Assets 85105314510723, 105125399134543, 135041830463035, 98972491411819)
 -- Includes:
 --   1. Creator Store 3D Treadmill Hood/Console Mesh (`rbxassetid://9507455017`, `10256224170`, `2682037588`, `15108756532`)
---   2. Physical Conveyor Belt Pushback (`AssemblyLinearVelocity`)
+--   2. Hybrid AFK + Interactive Belt (Zero pushback so players stay centered & run AFK hands-free OR tap for 2x Turbo Speed!)
 --   3. Scrolling `Beam` Belt Arrows (`rbxassetid://6798365555`, `123374008022599`, `4887782888`)
 --   4. Speed Aura `ParticleEmitter` (`rbxassetid://9129151031`, `7451822955`)
 --   5. Overhead `[x1 SPEED]` -> `[x50M SPEED]` Display Sign (`formatSpeed(speedPerSec)`)
@@ -1063,7 +1078,7 @@ local function buildDinoJawTreadmill(
 		})
 	end
 
-	-- Active Conveyor Belt Part (`TreadmillBelt_<id>`) with `Touched` / `TouchEnded` + Conveyor Velocity Pushback!
+	-- Active AFK + Interactive Treadmill Belt Part (`TreadmillBelt_<id>`)
 	local beltName = if isStageTreadmill
 		then ("TreadmillBelt_Stage_" .. tostring(tierId))
 		else ("TreadmillBelt_" .. tostring(plotIdx))
@@ -1089,8 +1104,8 @@ local function buildDinoJawTreadmill(
 		belt:SetAttribute("StageId", tierId)
 	end
 
-	-- Physical conveyor belt pushback so players run in place against the moving belt!
-	belt.AssemblyLinearVelocity = Vector3.new(faceDir * 9.5, 0, 0)
+	-- AFK-Friendly Zero Conveyor Pushback (players stay centered & run in place hands-free OR tap for 2x Turbo!)
+	belt.AssemblyLinearVelocity = Vector3.zero
 
 	-- Authentic Creator Store Scrolling `Beam` Belt Texture (`rbxassetid://6798365555`, `123374008022599`, `4887782888`)
 	local att0 = Instance.new("Attachment")
@@ -1347,35 +1362,35 @@ local function createAttachmentPrompt(
 	return prompt
 end
 
--- Builds the 3 Physical 3D Global OrderedDataStore Leaderboards + Spin Wheel, Daily Chest & VIP Robux Shop Booths on the Dedicated Outer East Hub Plaza (X = +122..+152)!
+-- Builds the 3 Physical 3D Global OrderedDataStore Leaderboards + Spin Wheel, Daily Chest & VIP Robux Shop Booths on the Dedicated Outer East Hub Plaza (X = +162..+192)!
 local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstaclesFolder: Folder)
 	-- East-West Cross-Boulevard connecting the Central Path to the East Champions & Rewards Plaza
 	makePart({
 		Name = "EastRewardsPlazaPath",
-		Size = Vector3.new(148, 0.25, 20),
-		Position = Vector3.new(74, 0.12, 76),
+		Size = Vector3.new(188, 0.25, 22),
+		Position = Vector3.new(94, 0.12, 92),
 		Color = Color3.fromRGB(228, 214, 185),
 		Material = Enum.Material.Cobblestone,
 		Parent = hubFolder,
 	})
 	makePart({
 		Name = "EastRewardsPlazaPad",
-		Size = Vector3.new(44, 0.25, 104),
-		Position = Vector3.new(136, 0.12, 78),
+		Size = Vector3.new(54, 0.25, 128),
+		Position = Vector3.new(176, 0.12, 92),
 		Color = Color3.fromRGB(228, 214, 185),
 		Material = Enum.Material.Cobblestone,
 		Parent = hubFolder,
 	})
 
-	-- 1. 3 Physical 3D Global OrderedDataStore Leaderboard Monuments on the Safe Zone Plaza (X = 152, Z = 44, 78, 112)
+	-- 1. 3 Physical 3D Global OrderedDataStore Leaderboard Monuments on the Safe Zone Plaza (X = 192, Z = 52, 92, 132)
 	local lbFolder = Instance.new("Folder")
 	lbFolder.Name = "GlobalLeaderboards"
 	lbFolder.Parent = hubFolder
 
 	local lbConfigs = {
-		{ Name = "CoinsBoard", StatKey = "Coins", Title = "💰 RICHEST PLAYERS (TOP 10)", Color = Color3.fromRGB(255, 205, 55), Z = 44 },
-		{ Name = "SpeedBoard", StatKey = "Speed", Title = "⚡ FASTEST SPEED (TOP 10)", Color = Color3.fromRGB(65, 220, 255), Z = 78 },
-		{ Name = "SquishiesBoard", StatKey = "Squishies", Title = "✨ MOST SQUISHIES (0/117)", Color = Color3.fromRGB(255, 115, 215), Z = 112 },
+		{ Name = "CoinsBoard", StatKey = "Coins", Title = "💰 RICHEST PLAYERS (TOP 10)", Color = Color3.fromRGB(255, 205, 55), Z = 52 },
+		{ Name = "SpeedBoard", StatKey = "Speed", Title = "⚡ FASTEST SPEED (TOP 10)", Color = Color3.fromRGB(65, 220, 255), Z = 92 },
+		{ Name = "SquishiesBoard", StatKey = "Squishies", Title = "✨ MOST SQUISHIES (0/117)", Color = Color3.fromRGB(255, 115, 215), Z = 132 },
 	}
 
 	for _, cfg in ipairs(lbConfigs) do
@@ -1387,7 +1402,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 		makePart({
 			Name = "MonumentStepBase",
 			Size = Vector3.new(6.8, 1.0, 19.5),
-			Position = Vector3.new(152, 0.5, cfg.Z),
+			Position = Vector3.new(192, 0.5, cfg.Z),
 			Color = Color3.fromRGB(72, 78, 98),
 			Material = Enum.Material.Plastic,
 			Parent = boardModel,
@@ -1396,7 +1411,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 		makePart({
 			Name = "BoardPedestal",
 			Size = Vector3.new(4.8, 1.6, 17.2),
-			Position = Vector3.new(152, 1.5, cfg.Z),
+			Position = Vector3.new(192, 1.5, cfg.Z),
 			Color = Color3.fromRGB(52, 58, 78),
 			Material = Enum.Material.Plastic,
 			Parent = boardModel,
@@ -1407,7 +1422,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 			makePart({
 				Name = "MonumentPillar",
 				Size = Vector3.new(2.2, 16.5, 2.2),
-				Position = Vector3.new(152, 9.6, cfg.Z + sideZ),
+				Position = Vector3.new(192, 9.6, cfg.Z + sideZ),
 				Color = Color3.fromRGB(235, 238, 248),
 				Material = Enum.Material.Plastic,
 				Parent = boardModel,
@@ -1416,7 +1431,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 				Name = "MonumentPillarCap",
 				Shape = Enum.PartType.Ball,
 				Size = Vector3.new(2.8, 2.8, 2.8),
-				Position = Vector3.new(152, 18.8, cfg.Z + sideZ),
+				Position = Vector3.new(192, 18.8, cfg.Z + sideZ),
 				Color = cfg.Color,
 				Material = Enum.Material.Neon,
 				Parent = boardModel,
@@ -1426,7 +1441,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 		local boardPart = makePart({
 			Name = "BoardSurface",
 			Size = Vector3.new(1.4, 15.5, 14.5),
-			Position = Vector3.new(152, 9.6, cfg.Z),
+			Position = Vector3.new(192, 9.6, cfg.Z),
 			Color = Color3.fromRGB(22, 26, 44),
 			Material = Enum.Material.SmoothPlastic,
 			Parent = boardModel,
@@ -1436,7 +1451,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 		makePart({
 			Name = "BoardTopCrest",
 			Size = Vector3.new(2.4, 1.8, 17.6),
-			Position = Vector3.new(152, 18.0, cfg.Z),
+			Position = Vector3.new(192, 18.0, cfg.Z),
 			Color = cfg.Color,
 			Material = Enum.Material.Neon,
 			Parent = boardModel,
@@ -1446,7 +1461,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 			Name = "MonumentCrownOrb",
 			Shape = Enum.PartType.Ball,
 			Size = Vector3.new(3.6, 3.6, 3.6),
-			Position = Vector3.new(152, 20.4, cfg.Z),
+			Position = Vector3.new(192, 20.4, cfg.Z),
 			Color = Color3.fromRGB(255, 225, 75),
 			Material = Enum.Material.Neon,
 			Parent = boardModel,
@@ -1536,7 +1551,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 		end
 	end
 
-	-- 2. 🎡 Lucky Squishy Spin Wheel Booth (Outer East Plaza North at X = 122, Z = 44)
+	-- 2. 🎡 Lucky Squishy Spin Wheel Booth (Outer East Plaza North at X = 162, Z = 52)
 	local spinBooth = Instance.new("Model")
 	spinBooth.Name = "LuckySpinWheelBooth"
 	spinBooth.Parent = hubFolder
@@ -1544,7 +1559,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	local spinPad = buildGlowingNeonCircle(
 		spinBooth,
 		"SpinWheelPad",
-		Vector3.new(122, 0.35, 44),
+		Vector3.new(162, 0.35, 52),
 		13,
 		Color3.fromRGB(255, 95, 205),
 		Color3.fromRGB(255, 235, 75)
@@ -1554,7 +1569,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	makePart({
 		Name = "WheelStandPost",
 		Size = Vector3.new(2.6, 12.0, 2.6),
-		Position = Vector3.new(124.5, 6.0, 44),
+		Position = Vector3.new(164.5, 6.0, 52),
 		Color = Color3.fromRGB(255, 215, 65),
 		Material = Enum.Material.Plastic,
 		Parent = spinBooth,
@@ -1564,7 +1579,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	makePart({
 		Name = "SpinCanopyRoof",
 		Size = Vector3.new(9.5, 1.4, 14.5),
-		Position = Vector3.new(122.5, 15.2, 44),
+		Position = Vector3.new(162.5, 15.2, 52),
 		Color = Color3.fromRGB(255, 85, 195),
 		Material = Enum.Material.Plastic,
 		Parent = spinBooth,
@@ -1575,7 +1590,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 		Name = "SpinWheelDisk",
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(1.4, 11.2, 11.2),
-		CFrame = CFrame.new(123.2, 10.2, 44),
+		CFrame = CFrame.new(163.2, 10.2, 52),
 		Color = Color3.fromRGB(255, 85, 195),
 		Material = Enum.Material.Neon,
 		Parent = obstaclesFolder,
@@ -1586,7 +1601,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	local wheelHeader = makePart({
 		Name = "SpinWheelSign",
 		Size = Vector3.new(1.2, 3.4, 13.5),
-		Position = Vector3.new(122.5, 17.6, 44),
+		Position = Vector3.new(162.5, 17.6, 52),
 		Color = Color3.fromRGB(255, 95, 205),
 		Material = Enum.Material.SmoothPlastic,
 		Parent = spinBooth,
@@ -1601,7 +1616,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	)
 	createAttachmentPrompt(spinPad, "SpinWheelPrompt", "Spin Lucky Wheel! (Free Every 5m)", "🎡 Lucky Squishy Spin Wheel", Vector3.new(0, 3.2, 0), 16)
 
-	-- 3. 🎁 Daily Login Streak & Playtime Rewards Chest Shrine (Outer East Plaza Center at X = 122, Z = 78)
+	-- 3. 🎁 Daily Login Streak & Playtime Rewards Chest Shrine (Outer East Plaza Center at X = 162, Z = 92)
 	local chestBooth = Instance.new("Model")
 	chestBooth.Name = "DailyRewardChestBooth"
 	chestBooth.Parent = hubFolder
@@ -1609,21 +1624,21 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	local chestPad = buildGlowingNeonCircle(
 		chestBooth,
 		"DailyChestPad",
-		Vector3.new(122, 0.35, 78),
+		Vector3.new(162, 0.35, 92),
 		13,
 		Color3.fromRGB(255, 205, 55),
 		Color3.fromRGB(85, 245, 130)
 	)
 	chestBooth.PrimaryPart = chestPad
 
-	placePrebuiltAsset("CashChest", 1, chestBooth, Vector3.new(122, 0.8, 78), -90, 6.2, true)
+	placePrebuiltAsset("CashChest", 1, chestBooth, Vector3.new(162, 0.8, 92), -90, 6.2, true)
 
 	-- Twin Studded Golden Shrine Pillars
 	for _, zSide in ipairs({ -5.2, 5.2 }) do
 		makePart({
 			Name = "ChestShrinePillar",
 			Size = Vector3.new(2.0, 9.2, 2.0),
-			Position = Vector3.new(124.2, 4.6, 78 + zSide),
+			Position = Vector3.new(164.2, 4.6, 92 + zSide),
 			Color = Color3.fromRGB(255, 205, 55),
 			Material = Enum.Material.Plastic,
 			Parent = chestBooth,
@@ -1633,7 +1648,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	local chestHeader = makePart({
 		Name = "DailyChestSign",
 		Size = Vector3.new(1.2, 3.4, 13.5),
-		Position = Vector3.new(124.2, 10.6, 78),
+		Position = Vector3.new(164.2, 10.6, 92),
 		Color = Color3.fromRGB(255, 195, 55),
 		Material = Enum.Material.SmoothPlastic,
 		Parent = chestBooth,
@@ -1648,7 +1663,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	)
 	createAttachmentPrompt(chestPad, "DailyChestPrompt", "Claim Daily & Playtime Chest", "🎁 2m/5m/10m/15m/30m Rewards", Vector3.new(0, 3.2, 0), 16)
 
-	-- 4. 🛒 Premium Robux Shop & 5-Gamepass Kiosk (Outer East Plaza South at X = 122, Z = 114)
+	-- 4. 🛒 Premium Robux Shop & 5-Gamepass Kiosk (Outer East Plaza South at X = 162, Z = 132)
 	local vipBooth = Instance.new("Model")
 	vipBooth.Name = "VIPRobuxShopBooth"
 	vipBooth.Parent = hubFolder
@@ -1656,7 +1671,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	local vipPad = buildGlowingNeonCircle(
 		vipBooth,
 		"VIPShopPad",
-		Vector3.new(122, 0.35, 114),
+		Vector3.new(162, 0.35, 132),
 		18,
 		Color3.fromRGB(85, 215, 255),
 		Color3.fromRGB(255, 215, 65)
@@ -1668,7 +1683,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 		makePart({
 			Name = "VIPShopColumn",
 			Size = Vector3.new(2.2, 10.5, 2.2),
-			Position = Vector3.new(124.8, 5.25, 114 + zSide),
+			Position = Vector3.new(164.8, 5.25, 132 + zSide),
 			Color = Color3.fromRGB(255, 215, 65),
 			Material = Enum.Material.Plastic,
 			Parent = vipBooth,
@@ -1677,7 +1692,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	makePart({
 		Name = "VIPShopCanopy",
 		Size = Vector3.new(10.5, 1.4, 19.2),
-		Position = Vector3.new(122.5, 10.2, 114),
+		Position = Vector3.new(162.5, 10.2, 132),
 		Color = Color3.fromRGB(32, 42, 78),
 		Material = Enum.Material.Plastic,
 		Parent = vipBooth,
@@ -1686,7 +1701,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	local vipHeader = makePart({
 		Name = "VIPShopSign",
 		Size = Vector3.new(1.4, 3.8, 18.5),
-		Position = Vector3.new(124.8, 12.6, 114),
+		Position = Vector3.new(164.8, 12.6, 132),
 		Color = Color3.fromRGB(65, 205, 255),
 		Material = Enum.Material.SmoothPlastic,
 		Parent = vipBooth,
@@ -1709,12 +1724,12 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 		Color3.fromRGB(85, 245, 135),
 	}
 	for i, dColor in ipairs(displayColors) do
-		local zOff = 114 + (i - 3) * 3.4
+		local zOff = 132 + (i - 3) * 3.4
 		makePart({
 			Name = "VIPDisplayPillar_" .. tostring(i),
 			Shape = Enum.PartType.Cylinder,
 			Size = Vector3.new(3.0, 2.6, 2.6),
-			CFrame = CFrame.new(122, 1.7, zOff) * CFrame.Angles(0, 0, math.rad(90)),
+			CFrame = CFrame.new(162, 1.7, zOff) * CFrame.Angles(0, 0, math.rad(90)),
 			Color = Color3.fromRGB(42, 48, 68),
 			Material = Enum.Material.Plastic,
 			Parent = vipBooth,
@@ -1723,7 +1738,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 			Name = "VIPDisplayOrb_" .. tostring(i),
 			Shape = Enum.PartType.Ball,
 			Size = Vector3.new(2.4, 2.4, 2.4),
-			Position = Vector3.new(122, 4.4, zOff),
+			Position = Vector3.new(162, 4.4, zOff),
 			Color = dColor,
 			Material = Enum.Material.Neon,
 			Parent = vipBooth,
@@ -1840,8 +1855,8 @@ local function buildFindTheSquishiesTownStreet(hubFolder: Folder, obstaclesFolde
 	townFolder.Name = "FindTheSquishiesTownStreet"
 	townFolder.Parent = hubFolder
 
-	-- 1. Walk-In "McBurger's" Fast-Food Restaurant at X = -92, Z = 16 (North-West Town Corner, facing South toward the Hub!)
-	local mcPos = Vector3.new(-92, 0, 18)
+	-- 1. Walk-In "McBurger's" Fast-Food Restaurant at X = -142, Z = 22 (North-West Town Corner, widely spaced from Player Plots!)
+	local mcPos = Vector3.new(-142, 0, 22)
 	local mcModel = Instance.new("Model")
 	mcModel.Name = "McBurgersRestaurant"
 	mcModel.Parent = townFolder
@@ -1917,8 +1932,8 @@ local function buildFindTheSquishiesTownStreet(hubFolder: Folder, obstaclesFolde
 		Parent = mcModel,
 	})
 
-	-- 2. Walk-In "Squishy Market" Supermarket at X = 92, Z = 18 with Multi-Tier Purple Display Shelves inside (`full_frame_05.png`, `full_frame_24.png`)
-	local mktPos = Vector3.new(92, 0, 18)
+	-- 2. Walk-In "Squishy Market" Supermarket at X = 142, Z = 22 with Multi-Tier Purple Display Shelves inside (`full_frame_05.png`, `full_frame_24.png`)
+	local mktPos = Vector3.new(142, 0, 22)
 	local mktModel = Instance.new("Model")
 	mktModel.Name = "SquishySupermarket"
 	mktModel.Parent = townFolder
@@ -1991,15 +2006,15 @@ local function buildFindTheSquishiesTownStreet(hubFolder: Folder, obstaclesFolde
 	makePart({
 		Name = "RedShippingContainer",
 		Size = Vector3.new(11, 9.5, 22),
-		Position = Vector3.new(-112, 4.75, 162),
+		Position = Vector3.new(-148, 4.75, 198),
 		Color = Color3.fromRGB(215, 58, 62),
 		Material = Enum.Material.Plastic,
 		Parent = townFolder,
 	})
-	buildStackedCrateArchBridge(townFolder, Vector3.new(-58, 0, 164), 0)
+	buildStackedCrateArchBridge(townFolder, Vector3.new(-72, 0, 198), 0)
 
 	-- 4. Town Bus Stop Glass Shelter on the South Boulevard (`full_frame_24.png`)
-	local busPos = Vector3.new(58, 0, 158)
+	local busPos = Vector3.new(72, 0, 194)
 	makePart({
 		Name = "BusStopRoof",
 		Size = Vector3.new(12, 0.8, 6.5),
@@ -2026,8 +2041,8 @@ local function buildFindTheSquishiesTownStreet(hubFolder: Folder, obstaclesFolde
 		Parent = townFolder,
 	})
 
-	-- 5. Iconic Dark Vault Building with Red Laser Door (`full_frame_20.png`) at X = 114, Z = 164!
-	local vaultPos = Vector3.new(114, 0, 164)
+	-- 5. Iconic Dark Vault Building with Red Laser Door (`full_frame_20.png`) at X = 148, Z = 198!
+	local vaultPos = Vector3.new(148, 0, 198)
 	makePart({
 		Name = "LaserVaultBack",
 		Size = Vector3.new(18, 13, 14),
@@ -2049,8 +2064,8 @@ local function buildFindTheSquishiesTownStreet(hubFolder: Folder, obstaclesFolde
 	end
 
 	-- 6. Stepped Dirt-and-Grass Cliff Hills framing the South-East & South-West corners (`full_frame_09.png`)
-	buildSteppedDirtGrassHill(townFolder, Vector3.new(-118, 0, 82), 24, 24, 3)
-	buildSteppedDirtGrassHill(townFolder, Vector3.new(112, 0, 182), 26, 20, 3)
+	buildSteppedDirtGrassHill(townFolder, Vector3.new(-158, 0, 96), 24, 24, 3)
+	buildSteppedDirtGrassHill(townFolder, Vector3.new(152, 0, 214), 26, 20, 3)
 end
 
 -- Builds Dedicated Right-Side & Center Signature "Find The Squishies" Creative Sections, Landmarks, Puzzles & Obstacles in each Stage!
@@ -2069,8 +2084,8 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 	-- =========================================================================================
 	-- SECTOR 1 (Z = zStart - 12 to zStart - 34):
 	-- Uniform Entry Plaza in EVERY Stage (Stages 1–8):
-	-- 1. Left Side (X = -32, Z = zStart - 16): 3D Stage Completion Checklist Board (`StageChecklistBoard_<id>`)
-	-- 2. Right Side (X = +32, Z = zStart - 16): Stage Treadmill Plaza Pad (`TreadmillPlazaPad_<id>`)
+	-- 1. Left Side (X = -48, Z = zStart - 16): 3D Stage Completion Checklist Board (`StageChecklistBoard_<id>`)
+	-- 2. Right Side (X = +48, Z = zStart - 16): Stage Treadmill Plaza Pad (`TreadmillPlazaPad_<id>`)
 	-- 3. Center (X = 0, Z = zStart - 13): Timed Shortcut Bridge Button (`ShortcutBridgeButton_<id>`)
 	-- =========================================================================================
 	local totalEggsInStage = 0
@@ -2091,7 +2106,7 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 		then string.format("⚡ Next Gate (Stage %d): %s Speed + 100%% Stage %d", id + 1, SlimeData.FormatNumber(nextReqSpeed), id)
 		else "👑 Final Stage: Complete 100% for Cosmic Mastery!"
 
-	local checklistPos = Vector3.new(-32, 0, zStart - 16)
+	local checklistPos = Vector3.new(-48, 0, zStart - 16)
 	buildGlowingNeonCircle(
 		landmarksFolder,
 		"StageChecklistPad_" .. tostring(id),
@@ -2140,18 +2155,18 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 		180
 	)
 
-	-- Dedicated Right-Side Sector 1 Creator Store 3D Treadmill at X = +32, Z = zStart - 16 (Tier 1..8: x1 SPEED -> x50M SPEED!)
+	-- Dedicated Right-Side Sector 1 Creator Store 3D Treadmill at X = +48, Z = zStart - 16 (Tier 1..8: x1 SPEED -> x50M SPEED!)
 	local tmTier = SlimeData.TreadmillTiers[id] or SlimeData.TreadmillTiers[1]
 	local tmPlazaPad = buildGlowingNeonCircle(
 		landmarksFolder,
 		"TreadmillPlazaPad_" .. tostring(id),
-		Vector3.new(32, 0.35, zStart - 16),
+		Vector3.new(48, 0.35, zStart - 16),
 		16.5,
 		tmTier.PrimaryColor,
 		tmTier.AccentColor
 	)
 	tmPlazaPad:SetAttribute("TreadmillStageId", id)
-	buildDinoJawTreadmill(landmarksFolder, Vector3.new(32, 0.35, zStart - 16), -1, 0, id)
+	buildDinoJawTreadmill(landmarksFolder, Vector3.new(48, 0.35, zStart - 16), -1, 0, id)
 
 	if id == 1 then
 		-- =========================================================================================
@@ -3248,14 +3263,14 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 		placePrebuiltAsset("Crystals", 3, landmarksFolder, Vector3.new(72, 0, zStart - 68), 60, 25.0, true)
 	end
 
-	-- Chapter 1 & 4 Interactive Respawning Golden Squishy Coins along Obbies, Landmark Courses, Center Courses & Outer Side Mazes (6 per Stage = 30 Total)!
+	-- Chapter 1 & 4 Interactive Respawning Golden Squishy Coins along Obbies, Landmark Courses, Center Courses & Outer Side Mazes (6 per Stage = 48 Total)!
 	local coinSpots = {
-		Vector3.new(-55, 13.8, zStart - 58), -- Left-Side Elevated Obby Coin #1
-		Vector3.new(-44, 16.5, zStart - 80), -- Left-Side Elevated Obby Coin #2
-		Vector3.new(46, 6.8, zStart - 48), -- Right-Side Landmark Course Coin #1
-		Vector3.new(46, 8.2, zStart - 76), -- Right-Side Landmark Course Coin #2
-		Vector3.new(-130, 3.2, zStart - 50), -- Left Outer Maze Coin
-		Vector3.new(130, 3.2, zStart - 50), -- Right Outer Maze Coin
+		Vector3.new(-83, 13.8, zStart - 58), -- Left-Side Elevated Obby Coin #1
+		Vector3.new(-72, 16.5, zStart - 80), -- Left-Side Elevated Obby Coin #2
+		Vector3.new(54, 6.8, zStart - 48), -- Right-Side Landmark Course Coin #1
+		Vector3.new(54, 8.2, zStart - 76), -- Right-Side Landmark Course Coin #2
+		Vector3.new(-168, 3.2, zStart - 50), -- Left Outer Maze Coin
+		Vector3.new(168, 3.2, zStart - 50), -- Right Outer Maze Coin
 	}
 	for cIdx, cPos in ipairs(coinSpots) do
 		local coinPart = makePart({
@@ -3316,7 +3331,7 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 	centerBridge:SetAttribute("ShortcutBridgeLevel", id)
 end
 
--- Builds 4 Widely Spaced Fenced Player Base Plots + South Village Boulevard in the Expanded Safe Zone (Z = 0..195)
+-- Builds 4 Widely Spaced Fenced Player Base Plots + South Village Boulevard in the Expanded Safe Zone (490 x 240, Z = 0..238)
 local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folder)
 	local hubFolder = Instance.new("Folder")
 	hubFolder.Name = "SafeZoneHub"
@@ -3324,16 +3339,16 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 
 	makePart({
 		Name = "HubGrassMain",
-		Size = Vector3.new(368, 2, 196),
-		Position = Vector3.new(0, -1, 96),
+		Size = Vector3.new(490, 2, 240),
+		Position = Vector3.new(0, -1, 118),
 		Color = Color3.fromRGB(88, 198, 78),
 		Material = Enum.Material.LeafyGrass,
 		Parent = hubFolder,
 	})
 
-	for xTile = -96, 96, 24 do
-		for zTile = 16, 160, 24 do
-			if ((math.floor((xTile + 120) / 24) + math.floor(zTile / 24)) % 2) == 0 then
+	for xTile = -144, 144, 24 do
+		for zTile = 16, 184, 24 do
+			if ((math.floor((xTile + 144) / 24) + math.floor(zTile / 24)) % 2) == 0 then
 				makePart({
 					Name = "CheckeredTile",
 					Size = Vector3.new(24, 0.12, 24),
@@ -3347,21 +3362,21 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 		end
 	end
 
-	-- Wide Central Stone Boulevard running North-South (X = -18..+18, Z = 0..158)
+	-- Wide Central Stone Boulevard running North-South (X = -22..+22, Z = 0..192)
 	makePart({
 		Name = "CentralPath",
-		Size = Vector3.new(36, 0.25, 160),
-		Position = Vector3.new(0, 0.12, 80),
+		Size = Vector3.new(44, 0.25, 196),
+		Position = Vector3.new(0, 0.12, 98),
 		Color = Color3.fromRGB(228, 214, 185),
 		Material = Enum.Material.Cobblestone,
 		Parent = hubFolder,
 	})
 
-	-- Wide South Village & West Rainbow Staircase Cross-Boulevard (Z = 148, X = -152..+110)
+	-- Wide South Village Cross-Boulevard (Z = 178, X = -190..+190)
 	makePart({
 		Name = "SouthBoulevardPath",
-		Size = Vector3.new(264, 0.25, 22),
-		Position = Vector3.new(-20, 0.12, 148),
+		Size = Vector3.new(380, 0.25, 24),
+		Position = Vector3.new(0, 0.12, 178),
 		Color = Color3.fromRGB(228, 214, 185),
 		Material = Enum.Material.Cobblestone,
 		Parent = hubFolder,
@@ -3373,41 +3388,41 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 		spawnLoc.Name = "SpawnLocation"
 		spawnLoc.Anchored = true
 		spawnLoc.Size = Vector3.new(14, 1, 14)
-		spawnLoc.CFrame = CFrame.new(0, 0.5, 68)
+		spawnLoc.CFrame = CFrame.new(0, 0.5, 86)
 		spawnLoc.Neutral = true
 		spawnLoc.Transparency = 1
 		spawnLoc.CanCollide = false
 		spawnLoc.Parent = Workspace
 	else
-		existingSpawn.CFrame = CFrame.new(0, 0.5, 68)
+		existingSpawn.CFrame = CFrame.new(0, 0.5, 86)
 		existingSpawn.Transparency = 1
 		existingSpawn.CanCollide = false
 	end
 
-	local fountainModel = placePrebuiltAsset("HubFountain", 1, hubFolder, Vector3.new(0, 0, 134), 0, 14.0, true)
+	local fountainModel = placePrebuiltAsset("HubFountain", 1, hubFolder, Vector3.new(0, 0, 162), 0, 14.0, true)
 	local fountainTop = makePart({
 		Name = "FountainSignAnchor",
 		Size = Vector3.new(2, 2, 2),
-		Position = Vector3.new(0, 15, 134),
+		Position = Vector3.new(0, 15, 162),
 		Transparency = 1,
 		CanCollide = false,
 		Parent = fountainModel or hubFolder,
 	})
 	createBillboardText(
 		fountainTop,
-		"🥚 STEAL MY EGG! (MAX 117 SQUISHIES)\nSteal Boss Eggs + Grab Shining Squishies on Houses, Castle Walls, Mazes & Rainbow Stairs!",
+		"🥚 FIND MY SQUISHY! [117 SQUISHIES]\nEnter Stage 1 Ahead -> Steal Boss Eggs & Grab 117 Squishies Across Stages 1-8!",
 		Color3.fromRGB(255, 235, 90),
 		Vector3.new(0, 2.5, 0),
 		UDim2.new(11.5, 0, 2.4, 0),
 		75
 	)
 
-	-- Frame the South Boulevard (Z = 166) with 4 Widely Spaced Properly Colored Houses + Rooftop Parkour!
+	-- Frame the South Boulevard (Z = 202) with 4 Widely Spaced Properly Colored Houses!
 	local borderHouses = {
-		{ Pos = Vector3.new(-88, 0, 166), Yaw = 0, Wall = Color3.fromRGB(255, 205, 105), Roof = Color3.fromRGB(215, 58, 55), Idx = 1, H = 24 },
-		{ Pos = Vector3.new(88, 0, 166), Yaw = 0, Wall = Color3.fromRGB(135, 212, 255), Roof = Color3.fromRGB(52, 96, 218), Idx = 2, H = 24 },
-		{ Pos = Vector3.new(-30, 0, 166), Yaw = 0, Wall = Color3.fromRGB(255, 165, 205), Roof = Color3.fromRGB(185, 52, 138), Idx = 3, H = 23 },
-		{ Pos = Vector3.new(30, 0, 166), Yaw = 0, Wall = Color3.fromRGB(162, 238, 158), Roof = Color3.fromRGB(48, 158, 82), Idx = 4, H = 23 },
+		{ Pos = Vector3.new(-118, 0, 202), Yaw = 0, Wall = Color3.fromRGB(255, 205, 105), Roof = Color3.fromRGB(215, 58, 55), Idx = 1, H = 24 },
+		{ Pos = Vector3.new(118, 0, 202), Yaw = 0, Wall = Color3.fromRGB(135, 212, 255), Roof = Color3.fromRGB(52, 96, 218), Idx = 2, H = 24 },
+		{ Pos = Vector3.new(-44, 0, 202), Yaw = 0, Wall = Color3.fromRGB(255, 165, 205), Roof = Color3.fromRGB(185, 52, 138), Idx = 3, H = 23 },
+		{ Pos = Vector3.new(44, 0, 202), Yaw = 0, Wall = Color3.fromRGB(162, 238, 158), Roof = Color3.fromRGB(48, 158, 82), Idx = 4, H = 23 },
 	}
 	for _, bh in ipairs(borderHouses) do
 		buildBigCartoonHouse(hubFolder, bh.Pos, bh.Yaw, bh.Wall, bh.Roof, bh.Idx, bh.H, 1)
@@ -3416,26 +3431,26 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 	-- Build the Authentic "Find The Squishies" Town Street (McBurger's, Squishy Market, Bus Stop, Red Shipping Container & Laser Vault)!
 	buildFindTheSquishiesTownStreet(hubFolder, obstaclesFolder)
 
-	-- Build the Giant Rainbow Disappearing Staircase on the dedicated West Plaza (X = -142)!
+	-- Build the Giant Rainbow Disappearing Staircase on Stage 1's dedicated Outer West Sky Plaza (X = -236, Z = -20..-148)!
 	buildRainbowDisappearingStaircase(worldFolder)
 
 	-- Build Global Top-10 OrderedDataStore 3D Leaderboards + Spin Wheel, Daily Chest & VIP Robux Shop Booths!
 	buildHubRetentionBoothsAndLeaderboards(hubFolder, obstaclesFolder)
 
-	-- Build the 4 Widely Spaced Fenced Player Base Plots (X = ±62, Z = 44 & 108)
+	-- Build the 4 Widely Spaced Fenced Player Base Plots (X = ±94, Z = 54 & 136 — 188 studs across road, 82 studs North-to-South!)
 	local plotsFolder = Instance.new("Folder")
 	plotsFolder.Name = "PlayerPlots"
 	plotsFolder.Parent = worldFolder
 
 	local plotConfigs = {
-		{ Index = 1, Center = Vector3.new(-62, 0, 44), Color = Color3.fromRGB(80, 190, 255), Roof = Color3.fromRGB(45, 95, 210), FaceDir = 1 },
-		{ Index = 2, Center = Vector3.new(62, 0, 44), Color = Color3.fromRGB(255, 140, 195), Roof = Color3.fromRGB(190, 52, 135), FaceDir = -1 },
-		{ Index = 3, Center = Vector3.new(-62, 0, 108), Color = Color3.fromRGB(125, 235, 135), Roof = Color3.fromRGB(48, 155, 78), FaceDir = 1 },
-		{ Index = 4, Center = Vector3.new(62, 0, 108), Color = Color3.fromRGB(255, 205, 90), Roof = Color3.fromRGB(215, 68, 55), FaceDir = -1 },
+		{ Index = 1, Center = Vector3.new(-94, 0, 54), Color = Color3.fromRGB(80, 190, 255), Roof = Color3.fromRGB(45, 95, 210), FaceDir = 1 },
+		{ Index = 2, Center = Vector3.new(94, 0, 54), Color = Color3.fromRGB(255, 140, 195), Roof = Color3.fromRGB(190, 52, 135), FaceDir = -1 },
+		{ Index = 3, Center = Vector3.new(-94, 0, 136), Color = Color3.fromRGB(125, 235, 135), Roof = Color3.fromRGB(48, 155, 78), FaceDir = 1 },
+		{ Index = 4, Center = Vector3.new(94, 0, 136), Color = Color3.fromRGB(255, 205, 90), Roof = Color3.fromRGB(215, 68, 55), FaceDir = -1 },
 	}
 
-	local plotW = 52
-	local plotD = 38
+	local plotW = 58
+	local plotD = 44
 
 	for _, cfg in ipairs(plotConfigs) do
 		local plotModel = Instance.new("Model")
@@ -3491,10 +3506,10 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 			180
 		)
 
-		-- Properly Colored Player Base House + Rooftop Parkour at Outer Back Corner (X = ±78, Z = 53 / 117)
+		-- Properly Colored Player Base House placed cleanly at the Outer Back Edge (-cfg.FaceDir * 22) with zero crate clutter!
 		buildBigCartoonHouse(
 			plotModel,
-			cfg.Center + Vector3.new(-cfg.FaceDir * 16, 0.5, 9),
+			cfg.Center + Vector3.new(-cfg.FaceDir * 22, 0.5, 10),
 			if cfg.FaceDir > 0 then 90 else -90,
 			cfg.Color,
 			cfg.Roof,
@@ -3504,14 +3519,14 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 		)
 
 		-- 1. Giant 18-Stud Green Dino-Jaw Speed Treadmill
-		local treadCenter = cfg.Center + Vector3.new(-cfg.FaceDir * 8, 0.5, -8.5)
+		local treadCenter = cfg.Center + Vector3.new(-cfg.FaceDir * 9, 0.5, -10.5)
 		buildDinoJawTreadmill(plotModel, treadCenter, cfg.FaceDir, cfg.Index)
 
 		-- 2. Newer Concentric Glowing Green Cash Collector Circle + Chest
 		local collectPad = buildGlowingNeonCircle(
 			plotModel,
 			"CollectCashPad",
-			cfg.Center + Vector3.new(cfg.FaceDir * 19, 0.6, -12.5),
+			cfg.Center + Vector3.new(cfg.FaceDir * 21, 0.6, -14.0),
 			7.4,
 			Color3.fromRGB(65, 250, 115),
 			Color3.fromRGB(255, 235, 85)
@@ -3530,7 +3545,7 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 		local upgStand = buildGlowingNeonCircle(
 			plotModel,
 			"SpeedUpgradeStand",
-			cfg.Center + Vector3.new(cfg.FaceDir * 19, 0.7, 12.5),
+			cfg.Center + Vector3.new(cfg.FaceDir * 21, 0.7, 14.0),
 			6.2,
 			Color3.fromRGB(65, 215, 255),
 			Color3.fromRGB(185, 110, 255)
@@ -3697,7 +3712,7 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 	end
 end
 
--- Builds the Expanded Themed Obby Gauntlet + Properly Colored Biome Village Houses + Wide Boss Egg Nest in each 220 x 160 Biome Arena
+-- Builds the Expanded Themed Obby Gauntlet + Properly Colored Biome Village Houses + Wide Boss Egg Nest in each 296 x 160 Biome Arena
 local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstaclesFolder: Folder)
 	local id = levelInfo.Id or levelInfo.Level or 1
 	local zStart = levelInfo.ZStart
@@ -3718,7 +3733,7 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 
 	local moat = makePart({
 		Name = "HazardMoat_" .. tostring(id),
-		Size = Vector3.new(146, 0.9, 16),
+		Size = Vector3.new(196, 0.9, 16),
 		Position = Vector3.new(0, 0.2, moatZ),
 		Color = moatColor,
 		Material = Enum.Material.Neon,
@@ -3727,7 +3742,7 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 	moat:SetAttribute("HazardDropEgg", true)
 	moat:SetAttribute("KnockbackImpulse", 55)
 
-	for _, bridgeX in ipairs({ -38, 38 }) do
+	for _, bridgeX in ipairs({ -48, 48 }) do
 		buildProceduralPlankBridge(
 			parent,
 			Vector3.new(bridgeX, 0.2, moatZ),
@@ -3741,24 +3756,24 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 	-- Build Sector 1 (Checklist Board + Treadmill Plaza Pad + Shortcut Button) & Sector 2 Landmarks!
 	buildBiomeLandmarksAndInteractiveProps(parent, levelInfo, obstaclesFolder)
 
-	-- 2. Dedicated Left-Side Elevated Biome Sky Obby Gauntlet (`full_frame_04.png`: White-and-Blue Sky Obby Beams, Truss Ladder & Crate Steps at X = -62 to -38, Z = zStart - 34 to zStart - 95) holding the Biome Obby Shining Squishies (#103-#117)!
+	-- 2. Dedicated Left-Side Elevated Biome Sky Obby Gauntlet (`full_frame_04.png`: White-and-Blue Sky Obby Beams, Truss Ladder & Crate Steps at X = -83 to -61, Z = zStart - 34 to zStart - 95) holding the Biome Obby Shining Squishies (#103-#117)!
 	local obbyTruss = Instance.new("TrussPart")
 	obbyTruss.Name = "ObbyStartTruss_" .. tostring(id)
 	obbyTruss.Anchored = true
 	obbyTruss.Size = Vector3.new(2, 12, 2)
-	obbyTruss.Position = Vector3.new(-61, 6.0, zStart - 35)
+	obbyTruss.Position = Vector3.new(-83, 6.0, zStart - 35)
 	obbyTruss.Color = Color3.fromRGB(75, 145, 255)
 	obbyTruss.Material = Enum.Material.Metal
 	obbyTruss.Parent = parent
 
 	for subIdx = 1, 3 do
-		local xPos = -72 + subIdx * 11
+		local xPos = -94 + subIdx * 11
 		local yPos = 9.0 + subIdx * 2.8
 		local zPos = zStart - 26 - subIdx * 22
 
 		-- White-and-Blue Sky Obby Balance Beam + Stepping Pads (`full_frame_04.png`)
 		if subIdx > 1 then
-			local prevX = -72 + (subIdx - 1) * 11
+			local prevX = -94 + (subIdx - 1) * 11
 			local prevY = 9.0 + (subIdx - 1) * 2.8
 			local prevZ = zStart - 26 - (subIdx - 1) * 22
 			local midPos = Vector3.new((prevX + xPos) * 0.5, (prevY + yPos) * 0.5 - 0.4, (prevZ + zPos) * 0.5)
@@ -3793,11 +3808,11 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 		)
 	end
 
-	-- Creator Store Obby Kit Stages on Left & Right approaches (X = ±62, Z = zStart - 28)
-	placePrebuiltAsset("ObbyStages", ((id - 1) % 3) + 1, parent, Vector3.new(-62, 0, zStart - 28), 0, 11.0, true)
-	placePrebuiltAsset("ObbyStages", (id % 3) + 1, parent, Vector3.new(62, 0, zStart - 28), 180, 11.0, true)
+	-- Creator Store Obby Kit Stages on Left & Right approaches (X = ±78, Z = zStart - 28)
+	placePrebuiltAsset("ObbyStages", ((id - 1) % 3) + 1, parent, Vector3.new(-78, 0, zStart - 28), 0, 11.0, true)
+	placePrebuiltAsset("ObbyStages", (id % 3) + 1, parent, Vector3.new(78, 0, zStart - 28), 180, 11.0, true)
 
-	-- 3. 4 Walk-Inside Biome Village Houses per Stage (32 Biome Houses total across Stages 1-8 at X = ±84, Z = zStart - 56 and Z = zStart - 94)!
+	-- 3. 4 Walk-Inside Biome Village Houses per Stage (32 Biome Houses total across Stages 1-8 at X = ±114, Z = zStart - 56 and Z = zStart - 94)!
 	local biomeHouseConfigs: { [number]: { { Side: number, Wall: Color3, Roof: Color3, Z: number } } } = {
 		[1] = {
 			{ Side = -1, Wall = Color3.fromRGB(225, 78, 68), Roof = Color3.fromRGB(145, 42, 38), Z = -56 },
@@ -3853,7 +3868,7 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 		for hIdx, hc in ipairs(housesForLvl) do
 			buildBigCartoonHouse(
 				parent,
-				Vector3.new(hc.Side * 84, 0, hc.Z),
+				Vector3.new(hc.Side * 114, 0, hc.Z),
 				if hc.Side < 0 then 90 else -90,
 				hc.Wall,
 				hc.Roof,
@@ -3887,8 +3902,8 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 	sweeper:SetAttribute("KnockbackImpulse", 75)
 	sweeper:SetAttribute("HazardDropEgg", true)
 
-	-- 2 Super Bounce Pads per Biome at X = ±34, Z = zStart - 88
-	for _, bx in ipairs({ -34, 34 }) do
+	-- 2 Super Bounce Pads per Biome at X = ±44, Z = zStart - 88
+	for _, bx in ipairs({ -44, 44 }) do
 		local bPad = buildGlowingNeonCircle(
 			parent,
 			"BouncePad",
@@ -3900,24 +3915,24 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 		bPad:SetAttribute("BounceImpulse", 98)
 	end
 
-	-- 5. Sector 3: Concentric Glowing Boss Nest Arena Circle (78-stud diameter) under the 2 Giant Sleeping Bosses & Egg Cluster
+	-- 5. Sector 3: Concentric Glowing Boss Nest Arena Circle (146-stud diameter) under the 2 Giant Sleeping Bosses & Widened Egg Cluster
 	buildGlowingNeonCircle(
 		parent,
 		"BossNestArenaPad",
 		Vector3.new(0, 0.3, zBoss),
-		78,
+		146,
 		secColor,
 		secColor:Lerp(Color3.fromRGB(255, 255, 255), 0.35)
 	)
 
 	-- 6. Oversized 22-28 Stud Biome Scenery Framing the Expanded Arena (cleanly separated from Houses & Boss Nest!)
 	local scenerySpots = {
-		Vector3.new(-82, 0, zBoss - 8),
-		Vector3.new(82, 0, zBoss - 8),
-		Vector3.new(-74, 0, zEnd + 18),
-		Vector3.new(74, 0, zEnd + 18),
-		Vector3.new(-36, 0, zEnd + 16),
-		Vector3.new(36, 0, zEnd + 16),
+		Vector3.new(-106, 0, zBoss - 8),
+		Vector3.new(106, 0, zBoss - 8),
+		Vector3.new(-96, 0, zEnd + 18),
+		Vector3.new(96, 0, zEnd + 18),
+		Vector3.new(-48, 0, zEnd + 16),
+		Vector3.new(48, 0, zEnd + 16),
 	}
 
 	for idx, sPos in ipairs(scenerySpots) do
@@ -3947,7 +3962,7 @@ local function buildLevelGate(parent: Instance, levelInfo: any, halfW: number): 
 	gateModel.Name = "Gate_Level_" .. tostring(id)
 	gateModel.Parent = parent
 
-	local doorWidth = 44
+	local doorWidth = 48
 	local sideWallWidth = halfW - (doorWidth * 0.5)
 
 	for _, side in ipairs({ -1, 1 }) do
@@ -4002,9 +4017,9 @@ local function buildLevelGate(parent: Instance, levelInfo: any, halfW: number): 
 		260
 	)
 
-	-- Full-width 360-stud x 42-stud ForceField barrier across the central road, Castle Walls, and Outer Side Mazes
+	-- Full-width 440-stud x 42-stud ForceField barrier across the central road, Castle Walls, and Outer Side Mazes
 	-- so players cannot walk or jump around into a locked Stage before completing 100% of the previous Stage!
-	local barrierWidth = if id <= 1 then (doorWidth - 2) else 360
+	local barrierWidth = if id <= 1 then (doorWidth - 2) else 440
 	local barrierHeight = if id <= 1 then 18 else 42
 	local barrier = makePart({
 		Name = "GateBarrier_" .. tostring(id),

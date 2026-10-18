@@ -70,6 +70,7 @@ local SpinWheelRequestEvent = ensureRemoteEvent("SpinWheelRequest")
 local BuySpinCashEvent = ensureRemoteEvent("BuySpinCash")
 local BuyRobuxItemEvent = ensureRemoteEvent("BuyRobuxItem")
 local OpenModalEvent = ensureRemoteEvent("OpenModal")
+local TreadmillTapBoostEvent = ensureRemoteEvent("TreadmillTapBoost")
 local GetInitialStateFunc = ensureRemoteFunction("GetInitialState")
 
 -- Preload any missing assets if needed (instant 0ms if PrebuiltAssets is already in ReplicatedStorage)
@@ -124,6 +125,7 @@ export type PlayerSession = {
 	PassiveIncomeRate: number,
 	UncollectedPlotCash: number,
 	LastTreadmillStep: number,
+	LastTreadmillTap: number?,
 	TrapCharges: number,
 	LastBatSwing: number,
 	Incubators: { [number]: IncubatorState },
@@ -283,7 +285,12 @@ local function syncPlayer(player: Player)
 	end
 end
 
-local function applyPlayerSpeed(player: Player)
+-- AUTOMATIC CALIBRATED WALKSPEED SYSTEM:
+-- 1. Starts every player at a natural 16 WalkSpeed (never "too fast to start off with"!).
+-- 2. Scales smoothly along a gentle logarithmic curve up to 42 Max WalkSpeed on open roads.
+-- 3. Automatically calibrates/damps WalkSpeed to 16-20 whenever on a Treadmill, inside a Base Plot,
+--    climbing an Obby / Rainbow Staircase / Rooftop (Y > 4.5), or approaching an Egg/Squishy!
+local function applyPlayerSpeed(player: Player, inPrecisionZone: boolean?)
 	local session = sessions[player]
 	if not session then
 		return
@@ -297,21 +304,30 @@ local function applyPlayerSpeed(player: Player)
 		return
 	end
 
-	-- Smoothly map massive Simulator SpeedStat (18 -> 250M+) to responsive, controllable physical WalkSpeed (18 -> 125)
-	local rawStat = math.max(18, session.SpeedStat)
-	local physicalSpeed = 18 + math.log10(1 + math.max(0, rawStat - 18)) * 12.5
+	local rawStat = math.max(16, session.SpeedStat)
+	local physicalSpeed = 16 + math.log10(1 + math.max(0, rawStat - 16) / 60) * 6.5
+	physicalSpeed = math.clamp(physicalSpeed, 16, 42)
+
 	if session.CarriedEggId then
 		local eggData = SlimeData.ById[session.CarriedEggId]
 		if eggData then
-			local weightPenalty = 1 + (eggData.Level * 0.04)
+			local weightPenalty = 1 + (eggData.Level * 0.03)
 			physicalSpeed = math.max(14, physicalSpeed / weightPenalty)
 		end
 	end
+
 	local throttle = math.clamp(session.SpeedThrottleRatio or 1.0, 0.25, 1.0)
 	if session.SloMoActive and throttle >= 0.99 then
 		throttle = 0.50
 	end
-	hum.WalkSpeed = math.clamp(physicalSpeed * throttle, 12, 135)
+
+	local calibratedSpeed = math.clamp(physicalSpeed * throttle, 12, 42)
+	if char:GetAttribute("OnTreadmillBelt") then
+		calibratedSpeed = 16
+	elseif inPrecisionZone then
+		calibratedSpeed = math.min(calibratedSpeed, 20)
+	end
+	hum.WalkSpeed = calibratedSpeed
 end
 
 -- Controls visibility & prompt of a World Egg
@@ -760,53 +776,17 @@ local function refreshBackpackTools(player: Player)
 
 	ensureCombatGearInBackpack(player)
 
+	-- Keep the hotbar clean (only Bat & Bear Trap gear; Squishies live in the 117 Index & Safe Zone Hatchery Pen!)
 	for _, child in ipairs(backpack:GetChildren()) do
 		if child:IsA("Tool") and child:GetAttribute("SquishyId") then
 			child:Destroy()
 		end
 	end
-
 	local char = player.Character
-	local equippedSquishyId: string? = nil
 	if char then
 		for _, child in ipairs(char:GetChildren()) do
 			if child:IsA("Tool") and child:GetAttribute("SquishyId") then
-				local sId = child:GetAttribute("SquishyId") :: string
-				if (session.BackpackCounts[sId] or 0) <= 0 then
-					child:Destroy()
-				else
-					local sData = SlimeData.ById[sId]
-					if sData then
-						local count = session.BackpackCounts[sId]
-						child.Name = if count > 1 then string.format("%s (x%d)", sData.Name, count) else sData.Name
-					end
-					equippedSquishyId = sId
-				end
-			end
-		end
-	end
-
-	for sId, count in pairs(session.BackpackCounts) do
-		if count > 0 and sId ~= equippedSquishyId then
-			local sData = SlimeData.ById[sId]
-			if sData then
-				local tool = SquishyBuilder.CreateSquishyBackpackTool(sData, 1)
-				tool.Name = if count > 1 then string.format("%s (x%d)", sData.Name, count) else sData.Name
-				tool.ToolTip = string.format("%s ($%d/s) - Click or Press E on a Base Pedestal to Place!", sData.Rarity, sData.IncomePerSec)
-				tool:SetAttribute("SquishyId", sId)
-
-				tool.Equipped:Connect(function()
-					session.EquippedId = sId
-					syncPlayer(player)
-				end)
-				tool.Unequipped:Connect(function()
-					if session.EquippedId == sId then
-						session.EquippedId = nil
-						syncPlayer(player)
-					end
-				end)
-
-				tool.Parent = backpack
+				child:Destroy()
 			end
 		end
 	end
@@ -1481,29 +1461,30 @@ local function tryCollectOrStealWorldItem(player: Player, eggId: string)
 	local itemWorldPos = eggModel:GetPivot().Position
 
 	-- CASE A: SHINING COLLECTIBLE SQUISHY (#36-#117 on Rooftops, Rainbow Staircase, Outer Mazes, Castle Walls & Obbies)
-	-- Automatic walk-over per-player pickup so ALL players in the server can collect them at the exact same time!
+	-- Permanent One-Time Per-Player Pickup: Once collected, it disappears for that player and can NEVER be farmed repeatedly!
 	if isShining then
+		if session.FoundEggs[eggId] then
+			return
+		end
 		local cdKey = tostring(player.UserId) .. "_" .. eggId
 		local now = os.clock()
-		if shiningPlayerCooldowns[cdKey] and (now - shiningPlayerCooldowns[cdKey]) < 4.0 then
+		if shiningPlayerCooldowns[cdKey] and (now - shiningPlayerCooldowns[cdKey]) < 2.0 then
 			return
 		end
 		shiningPlayerCooldowns[cdKey] = now
 
 		local comboCount, comboMult = advanceSquishFeverCombo(session)
-		local earnedCash = math.floor(slimeData.CoinReward * comboMult)
-		local isFirst = not session.FoundEggs[eggId]
+		local passMult = if session.OwnedPasses and session.OwnedPasses["2xCash"] then 2.0 else 1.0
+		local earnedCash = math.floor(slimeData.CoinReward * comboMult * passMult)
 		session.FoundEggs[eggId] = true
-		session.BackpackCounts[eggId] = (session.BackpackCounts[eggId] or 0) + 1
+		session.BackpackCounts[eggId] = 1
 		session.Coins += earnedCash
 		session.LifetimeCoins += earnedCash
 
-		-- If there is open space in the player's Fenced Hatchery Pen, release the newly found Squishy right into the pen!
-		local autoPlacedSlot = autoReleaseSquishyIntoPen(player, eggId)
 		refreshBackpackTools(player)
 		EggCapturedEvent:FireClient(player, {
 			SquishyId = eggId,
-			IsFirstDiscovery = isFirst,
+			IsFirstDiscovery = true,
 			CoinsEarned = earnedCash,
 			ComboCount = comboCount,
 			ComboMultiplier = comboMult,
@@ -1513,34 +1494,19 @@ local function tryCollectOrStealWorldItem(player: Player, eggId: string)
 		})
 		local stageFound, stageTotal = SlimeData.CountLevelProgress(session.FoundEggs, lvl)
 		local comboSuffix = if comboCount >= 2 then string.format(" 🔥 x%.1f COMBO!", comboMult) else ""
-		if autoPlacedSlot then
-			GuardianAlertEvent:FireClient(
-				player,
-				string.format(
-					"✨ Picked up %s! (+$%s Cash%s • Stage %d: %d/%d • Sent to Hatchery Pen!)",
-					slimeData.Name,
-					SlimeData.FormatNumber(earnedCash),
-					comboSuffix,
-					lvl,
-					stageFound,
-					stageTotal
-				)
+		GuardianAlertEvent:FireClient(
+			player,
+			string.format(
+				"✨ Found %s! (+$%s Cash%s • Stage %d: %d/%d • Index %d/117!)",
+				slimeData.Name,
+				SlimeData.FormatNumber(earnedCash),
+				comboSuffix,
+				lvl,
+				stageFound,
+				stageTotal,
+				SlimeData.CountFound(session.FoundEggs)
 			)
-		else
-			GuardianAlertEvent:FireClient(
-				player,
-				string.format(
-					"✨ Picked up %s! (+$%s Cash%s • Stage %d: %d/%d • Total %d/117!)",
-					slimeData.Name,
-					SlimeData.FormatNumber(earnedCash),
-					comboSuffix,
-					lvl,
-					stageFound,
-					stageTotal,
-					SlimeData.CountFound(session.FoundEggs)
-				)
-			)
-		end
+		)
 		syncPlayer(player)
 		return
 	end
@@ -1977,17 +1943,28 @@ RunService.Heartbeat:Connect(function(rawDt: number)
 		end
 
 		-- Automatic Walk-Over Pickup Proximity Sweep (6.5 studs — Zero Button Holding across all 8 Stages!)
+		local nearPrecisionPickup = false
 		for eggId, eggModel in pairs(world.WorldEggs) do
 			local shell = (eggModel:FindFirstChild("EggShell") or eggModel.PrimaryPart) :: BasePart?
 			if shell and shell.Transparency < 0.95 then
-				if (hrp.Position - shell.Position).Magnitude <= 6.5 then
+				local d = (hrp.Position - shell.Position).Magnitude
+				if d <= 14.0 and not session.FoundEggs[eggId] then
+					nearPrecisionPickup = true
+				end
+				if d <= 6.5 then
 					tryCollectOrStealWorldItem(player, eggId)
 				end
 			end
 		end
 
 		local plotModel = getPlotModel(session.PlotIndex)
-
+		local inPlotArea = false
+		if plotModel then
+			local plotPivot = plotModel:GetPivot().Position
+			if math.abs(hrp.Position.X - plotPivot.X) <= 34 and math.abs(hrp.Position.Z - plotPivot.Z) <= 28 then
+				inPlotArea = true
+			end
+		end
 
 		-- Discover which Treadmill Belt (Plot 1-4 OR Stage 1-8) the player is currently running on:
 		local activeBelt: BasePart? = nil
@@ -1995,7 +1972,7 @@ RunService.Heartbeat:Connect(function(rawDt: number)
 			local pBelt = plotModel:FindFirstChild("TreadmillBelt_" .. tostring(session.PlotIndex)) :: BasePart?
 			if pBelt then
 				local rel = pBelt.CFrame:PointToObjectSpace(hrp.Position)
-				if math.abs(rel.X) <= (pBelt.Size.X * 0.5 + 1.8) and math.abs(rel.Z) <= (pBelt.Size.Z * 0.5 + 1.8) and math.abs(hrp.Position.Y - pBelt.Position.Y) <= 7.0 then
+				if math.abs(rel.X) <= (pBelt.Size.X * 0.5 + 2.4) and math.abs(rel.Z) <= (pBelt.Size.Z * 0.5 + 2.4) and math.abs(hrp.Position.Y - pBelt.Position.Y) <= 7.5 then
 					activeBelt = pBelt
 				end
 			end
@@ -2007,7 +1984,7 @@ RunService.Heartbeat:Connect(function(rawDt: number)
 					local sBelt = levelsFolder:FindFirstChild("TreadmillBelt_Stage_" .. tostring(stageIdx), true) :: BasePart?
 					if sBelt then
 						local rel = sBelt.CFrame:PointToObjectSpace(hrp.Position)
-						if math.abs(rel.X) <= (sBelt.Size.X * 0.5 + 1.8) and math.abs(rel.Z) <= (sBelt.Size.Z * 0.5 + 1.8) and math.abs(hrp.Position.Y - sBelt.Position.Y) <= 7.0 then
+						if math.abs(rel.X) <= (sBelt.Size.X * 0.5 + 2.4) and math.abs(rel.Z) <= (sBelt.Size.Z * 0.5 + 2.4) and math.abs(hrp.Position.Y - sBelt.Position.Y) <= 7.5 then
 							activeBelt = sBelt
 							break
 						end
@@ -2016,10 +1993,24 @@ RunService.Heartbeat:Connect(function(rawDt: number)
 			end
 		end
 
+		-- Auto-Calibrated Precision Zone Check:
+		-- Automatically damp WalkSpeed when on a Treadmill, inside your Plot, on elevated Obbies/Staircases (Y > 4.5), or approaching an uncollected Squishy/Egg!
+		local inPrecisionZone = (activeBelt ~= nil) or inPlotArea or (hrp.Position.Y > 4.5) or nearPrecisionPickup
+		applyPlayerSpeed(player, inPrecisionZone)
+
 		if activeBelt then
 			char:SetAttribute("OnTreadmillBelt", true)
 			local beltTier = (activeBelt:GetAttribute("TreadmillTier") :: number?) or 1
 			char:SetAttribute("TreadmillAnimSpeed", 1.3 + (beltTier * 0.12))
+
+			-- Hybrid AFK Mode: If player is standing hands-free on the treadmill (not pressing movement keys), gently keep them centered on the belt!
+			local hum = char:FindFirstChildOfClass("Humanoid")
+			if hum and hum.MoveDirection.Magnitude < 0.1 then
+				local targetBeltPos = Vector3.new(activeBelt.Position.X, hrp.Position.Y, activeBelt.Position.Z)
+				if (Vector3.new(hrp.Position.X, 0, hrp.Position.Z) - Vector3.new(targetBeltPos.X, 0, targetBeltPos.Z)).Magnitude > 1.2 then
+					hrp.CFrame = hrp.CFrame:Lerp(CFrame.new(targetBeltPos) * (hrp.CFrame - hrp.Position), math.clamp(dt * 4.0, 0, 0.25))
+				end
+			end
 
 			if now - session.LastTreadmillStep >= 0.50 then
 				session.LastTreadmillStep = now
@@ -2030,7 +2021,7 @@ RunService.Heartbeat:Connect(function(rawDt: number)
 				-- Tick every 0.5s = 50% of per-second Speed gain
 				local gain = math.max(1, math.floor(basePerSec * 0.5 * rebirthMult * passMult))
 				session.SpeedStat += gain
-				applyPlayerSpeed(player)
+				applyPlayerSpeed(player, true)
 				updateSpeedUpgradePrompt(player)
 				syncPlayer(player)
 			end
@@ -2135,6 +2126,34 @@ end)
 -- Remote Events from HUD
 BuySpeedUpgradeEvent.OnServerEvent:Connect(function(player: Player)
 	upgradePlayerTreadmill(player)
+end)
+
+local lastTreadmillTapByPlayer: { [Player]: number } = {}
+TreadmillTapBoostEvent.OnServerEvent:Connect(function(player: Player)
+	local session = sessions[player]
+	if not session then
+		return
+	end
+	local char = player.Character
+	if not char or char:GetAttribute("OnTreadmillBelt") ~= true then
+		return
+	end
+	local now = os.clock()
+	if now - (lastTreadmillTapByPlayer[player] or 0) < 0.22 then
+		return
+	end
+	lastTreadmillTapByPlayer[player] = now
+
+	local tierIdx = math.clamp(session.SpeedLevel or 1, 1, #SlimeData.TreadmillTiers)
+	local tierData = SlimeData.TreadmillTiers[tierIdx] or SlimeData.TreadmillTiers[1]
+	local passMult = if session.OwnedPasses and session.OwnedPasses["2xSpeed"] then 2 else 1
+	local rebirthMult = 1 + (session.Rebirths * 0.5)
+	local tapGain = math.max(1, math.floor((tierData.SpeedPerSec or 1) * 0.45 * rebirthMult * passMult))
+	session.SpeedStat += tapGain
+	char:SetAttribute("TreadmillAnimSpeed", 2.35)
+	applyPlayerSpeed(player, true)
+	updateSpeedUpgradePrompt(player)
+	syncPlayer(player)
 end)
 
 RebirthRequestEvent.OnServerEvent:Connect(function(player: Player)

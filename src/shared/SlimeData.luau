@@ -1159,8 +1159,8 @@ for idx, slime in ipairs(SlimeData.Slimes) do
 	local totalInLvl = if lvlDef then lvlDef.EggCount else 4
 	local zCenter = if lvlDef then (lvlDef.ZStart - 116) else (-160 * (assignedLvl - 1) - 116)
 	local frac = if totalInLvl > 1 then (idxInLvl - 1) / (totalInLvl - 1) else 0.5
-	local xPos = -56 + frac * 112
-	local zOffset = if idxInLvl % 2 == 0 then -12 else 12
+	local xPos = -68 + frac * 136
+	local zOffset = if idxInLvl % 2 == 0 then -14 else 14
 	slime.Position = Vector3.new(xPos, 3.8, zCenter + zOffset)
 	slime.CoinsPerSec = math.max(slime.CoinsPerSec, math.floor(10 * (2.6 ^ (assignedLvl - 1)) * idxInLvl))
 	slime.Hint = string.format("Guarded by the Sleeping Boss in Stage %d (%s)! Walk over to Steal!", assignedLvl, if lvlDef then lvlDef.Name else ("Stage " .. assignedLvl))
@@ -1168,8 +1168,9 @@ end
 
 -- ============================================================================
 -- GENERATE 82 SHINING COLLECTIBLE SQUISHIES (#36 to #117) -> MAX = 117 TOTAL!
--- Distributed across all 8 Stages on House Rooftops, Giant Rainbow Staircase,
--- Outer Side Mazes, Castle Wall Battlements, and Themed Level Obby Obstacles!
+-- Distributed across all 8 Stages (Z < 0 — ZERO wild Squishies in the Safe Zone!)
+-- on Biome House Rooftops, Giant Rainbow Staircase, Outer Side Mazes,
+-- Castle Wall Battlements, and Themed Level Obby Obstacles!
 -- ============================================================================
 local shiningPalette = {
 	{ Color3.fromRGB(255, 95, 165), Color3.fromRGB(255, 235, 95) },
@@ -1212,39 +1213,39 @@ local function appendShiningSquishy(
 	table.insert(SlimeData.Slimes, entry)
 end
 
--- 1. HOUSE ROOFTOP SHINING SQUISHIES (16 Squishies: #36 to #51)
--- 8 on Safe Zone / Plot Houses + 8 on Biome Village Houses (1 in each Stage 1..8 at X = ±84, Z = zStart - 56)!
+-- 1. BIOME HOUSE ROOFTOP SHINING SQUISHIES (16 Squishies: #36 to #51)
+-- All 16 are inside Stages 1..8 (2 per Stage at X = ±114, Z = zStart - 56 & zStart - 94 — ZERO in Safe Zone!)
 local rooftopPlacements = {
-	-- Safe Zone Village Houses (4 South Boulevard Houses at Z = 166 + 4 Plot Houses at X = ±78)
-	{ Name = "Sunny Roof Mallow", Lvl = 1, Rarity = "Common", CPS = 12, Pos = Vector3.new(-88, 24.5, 166), Hint = "Jump onto the Golden Cottage Roof on the South Boulevard of the Safe Zone!" },
-	{ Name = "Sky Gables Kitty", Lvl = 1, Rarity = "Common", CPS = 14, Pos = Vector3.new(-30, 23.5, 166), Hint = "Bounce up the awning onto the Rose Villa Roof in the Safe Zone!" },
-	{ Name = "Mint Chimney Puff", Lvl = 1, Rarity = "Common", CPS = 16, Pos = Vector3.new(30, 23.5, 166), Hint = "Parkour onto the Mint Cottage Roof in the Safe Zone!" },
-	{ Name = "Cobalt Shingle Pup", Lvl = 1, Rarity = "Rare", CPS = 20, Pos = Vector3.new(88, 24.5, 166), Hint = "Climb the crates onto the Blue Manor Roof on the South Boulevard of the Safe Zone!" },
-	{ Name = "Ranch Gables Cow", Lvl = 1, Rarity = "Rare", CPS = 22, Pos = Vector3.new(-78, 21.5, 53), Hint = "Perched atop the Plot #1 Ranch House Roof!" },
-	{ Name = "Blossom Attic Axolotl", Lvl = 1, Rarity = "Rare", CPS = 24, Pos = Vector3.new(78, 21.5, 53), Hint = "Perched atop the Plot #2 Ranch House Roof!" },
-	{ Name = "Clover Ridge Frog", Lvl = 1, Rarity = "Rare", CPS = 26, Pos = Vector3.new(-78, 21.5, 117), Hint = "Perched atop the Plot #3 Ranch House Roof!" },
-	{ Name = "Honeycomb Loft Bear", Lvl = 1, Rarity = "Epic", CPS = 32, Pos = Vector3.new(78, 21.5, 117), Hint = "Perched atop the Plot #4 Ranch House Roof!" },
-	-- 8 Biome Village Parkour Houses (1 per Stage across all 8 Expanded Stages!)
-	{ Name = "Meadow Barn Loft", Lvl = 1, Rarity = "Rare", CPS = 45, Pos = Vector3.new(-84, 22.5, -56), Hint = "Jump onto the Red Meadow Barn Roof on the left of Stage 1!" },
-	{ Name = "Gingerbread Roof Mallow", Lvl = 2, Rarity = "Epic", CPS = 120, Pos = Vector3.new(-84, 22.5, -216), Hint = "Bounce onto the Pink Candy Bakery Roof in Stage 2!" },
-	{ Name = "Cabana Thatch Gecko", Lvl = 3, Rarity = "Epic", CPS = 380, Pos = Vector3.new(-84, 22.5, -376), Hint = "Jump onto the Coral Beach Cabana Roof in Stage 3!" },
-	{ Name = "Bamboo Dojo Crane", Lvl = 4, Rarity = "Epic", CPS = 980, Pos = Vector3.new(84, 22.5, -536), Hint = "Jump onto the Jade Bamboo Dojo Roof in Stage 4!" },
-	{ Name = "Crystal Observatory Owl", Lvl = 5, Rarity = "Legendary", CPS = 2_400, Pos = Vector3.new(-84, 22.5, -696), Hint = "Perched on the Amethyst Lodge Roof in Stage 5!" },
-	{ Name = "Sky Sanctum Pegasus", Lvl = 6, Rarity = "Legendary", CPS = 6_200, Pos = Vector3.new(84, 22.5, -856), Hint = "Perched on the Cloud Temple Villa Roof in Stage 6!" },
-	{ Name = "Magma Forge Wyvern", Lvl = 7, Rarity = "Mythic", CPS = 16_500, Pos = Vector3.new(-84, 22.5, -1016), Hint = "Perched on the Obsidian Forge House Roof in Stage 7!" },
-	{ Name = "Cosmic Citadel Astral Cat", Lvl = 8, Rarity = "Mythic", CPS = 45_000, Pos = Vector3.new(84, 22.5, -1176), Hint = "Perched on the Nebula Spire Manor Roof in Stage 8!" },
+	-- Right-Side Biome Village Houses across Stages 1..8 (X = +114, Z = zStart - 94)
+	{ Name = "Sunny Roof Mallow", Lvl = 1, Rarity = "Common", CPS = 18, Pos = Vector3.new(114, 22.5, -94), Hint = "Jump onto the Pink Meadow Cottage Roof on the right side of Stage 1!" },
+	{ Name = "Sky Gables Kitty", Lvl = 2, Rarity = "Rare", CPS = 65, Pos = Vector3.new(114, 22.5, -254), Hint = "Bounce up the crates onto the Candy Villa Roof on the right side of Stage 2!" },
+	{ Name = "Mint Chimney Puff", Lvl = 3, Rarity = "Rare", CPS = 190, Pos = Vector3.new(114, 22.5, -414), Hint = "Parkour onto the Coral Lagoon House Roof on the right side of Stage 3!" },
+	{ Name = "Cobalt Shingle Pup", Lvl = 4, Rarity = "Epic", CPS = 520, Pos = Vector3.new(114, 22.5, -574), Hint = "Climb the crates onto the Jade Pavilion Roof on the right side of Stage 4!" },
+	{ Name = "Ranch Gables Cow", Lvl = 5, Rarity = "Epic", CPS = 1_450, Pos = Vector3.new(114, 22.5, -734), Hint = "Perched atop the Violet Crystal Manor Roof on the right side of Stage 5!" },
+	{ Name = "Blossom Attic Axolotl", Lvl = 6, Rarity = "Legendary", CPS = 4_200, Pos = Vector3.new(114, 22.5, -894), Hint = "Perched atop the Cloud Spire Villa Roof on the right side of Stage 6!" },
+	{ Name = "Clover Ridge Frog", Lvl = 7, Rarity = "Legendary", CPS = 11_500, Pos = Vector3.new(114, 22.5, -1054), Hint = "Perched atop the Magma Bastion House Roof on the right side of Stage 7!" },
+	{ Name = "Honeycomb Loft Bear", Lvl = 8, Rarity = "Mythic", CPS = 32_000, Pos = Vector3.new(114, 22.5, -1214), Hint = "Perched atop the Astral Void Sanctuary Roof on the right side of Stage 8!" },
+	-- Left-Side & North Biome Village Parkour Houses across Stages 1..8 (X = ±114, Z = zStart - 56)
+	{ Name = "Meadow Barn Loft", Lvl = 1, Rarity = "Rare", CPS = 45, Pos = Vector3.new(-114, 22.5, -56), Hint = "Jump onto the Red Meadow Barn Roof on the left of Stage 1!" },
+	{ Name = "Gingerbread Roof Mallow", Lvl = 2, Rarity = "Epic", CPS = 120, Pos = Vector3.new(-114, 22.5, -216), Hint = "Bounce onto the Pink Candy Bakery Roof in Stage 2!" },
+	{ Name = "Cabana Thatch Gecko", Lvl = 3, Rarity = "Epic", CPS = 380, Pos = Vector3.new(-114, 22.5, -376), Hint = "Jump onto the Coral Beach Cabana Roof in Stage 3!" },
+	{ Name = "Bamboo Dojo Crane", Lvl = 4, Rarity = "Epic", CPS = 980, Pos = Vector3.new(114, 22.5, -536), Hint = "Jump onto the Jade Bamboo Dojo Roof in Stage 4!" },
+	{ Name = "Crystal Observatory Owl", Lvl = 5, Rarity = "Legendary", CPS = 2_400, Pos = Vector3.new(-114, 22.5, -696), Hint = "Perched on the Amethyst Lodge Roof in Stage 5!" },
+	{ Name = "Sky Sanctum Pegasus", Lvl = 6, Rarity = "Legendary", CPS = 6_200, Pos = Vector3.new(114, 22.5, -856), Hint = "Perched on the Cloud Temple Villa Roof in Stage 6!" },
+	{ Name = "Magma Forge Wyvern", Lvl = 7, Rarity = "Mythic", CPS = 16_500, Pos = Vector3.new(-114, 22.5, -1016), Hint = "Perched on the Obsidian Forge House Roof in Stage 7!" },
+	{ Name = "Cosmic Citadel Astral Cat", Lvl = 8, Rarity = "Mythic", CPS = 45_000, Pos = Vector3.new(114, 22.5, -1176), Hint = "Perched on the Nebula Spire Manor Roof in Stage 8!" },
 }
 for i, r in ipairs(rooftopPlacements) do
 	appendShiningSquishy(35 + i, r.Name, r.Lvl, r.Rarity, r.CPS, r.Pos, r.Hint, "Rooftop")
 end
 
 -- 2. GIANT RAINBOW DISAPPEARING STAIRCASE SQUISHIES (12 Squishies: #52 to #63)
--- Ascending from the dedicated Outer West Rainbow Plaza (X = -142, Z = 148) up 28 disappearing rainbow steps to the Sky Cloud Sanctuary (Z = 16)!
+-- Ascending inside Stage 1's Outer West Rainbow Sky Plaza (X = -236, Z = -22 to Z = -148 — completely out of the Safe Zone!)
 for i = 1, 12 do
 	local s = math.floor(i * 2.3)
 	local yHeight = if i == 12 then 51.5 else (1.8 + s * 1.75)
-	local zPos = if i == 12 then 16 else (148 - s * 4.5)
-	local xPos = if i == 12 then -142 else (-142 + math.sin(s * 0.25) * 3.5)
+	local zPos = if i == 12 then -148 else (-22 - s * 4.5)
+	local xPos = if i == 12 then -236 else (-236 + math.sin(s * 0.25) * 3.5)
 	local rarity = if i == 12 then "Mythic" elseif i >= 9 then "Legendary" elseif i >= 5 then "Epic" else "Rare"
 	local cps = math.floor(30 * (1.42 ^ i))
 	local nameList = {
@@ -1268,13 +1269,13 @@ for i = 1, 12 do
 		rarity,
 		cps,
 		Vector3.new(xPos, yHeight, zPos),
-		"Run up the Giant Rainbow Disappearing Staircase on the West Plaza before the steps fade out!",
+		"Run up Stage 1's Giant Rainbow Disappearing Staircase on the West Sky Plaza before the steps fade out!",
 		"RainbowStaircase"
 	)
 end
 
 -- 3. OUTER SIDE MAZES SHINING SQUISHIES (20 Squishies: #64 to #83)
--- Distributed across all 8 Stages inside the Left Outer Maze (X = -116 to -172) and Right Outer Maze (X = +116 to +172)!
+-- Distributed across all 8 Widened Stages inside the Left Outer Maze (X = -154 to -210) and Right Outer Maze (X = +154 to +210)!
 local mazeNames = {
 	"Hedge Labyrinth Sprout", "Clover Maze Mouse", "Bramble Secret Frog",
 	"Candy Cane Maze Bear", "Peppermint Turn Puff", "Licorice Dead-End Cat",
@@ -1293,7 +1294,7 @@ for i = 1, 20 do
 	mazeStageCounts[lvl] = (mazeStageCounts[lvl] or 0) + 1
 	local idxInBiome = mazeStageCounts[lvl]
 	local zBase = (SlimeData.Levels[lvl].ZStart - 28) - (idxInBiome - 1) * 38
-	local laneOffset = if idxInBiome % 2 == 1 then 130 else 156
+	local laneOffset = if idxInBiome % 2 == 1 then 168 else 194
 	local xPos = sideSign * laneOffset
 	local rarity = if lvl >= 7 then "Mythic" elseif lvl >= 5 then "Legendary" elseif lvl >= 3 then "Epic" else "Rare"
 	local cps = math.floor(20 * (2.2 ^ (lvl - 1)) * (1 + idxInBiome * 0.25))
@@ -1310,7 +1311,7 @@ for i = 1, 20 do
 end
 
 -- 4. CASTLE WALL BATTLEMENT SHINING SQUISHIES (19 Squishies: #84 to #102)
--- Perched along the crenellated Castle Wall walkways & corner watchtowers (X = ±108) across all 8 Stages!
+-- Perched along the widened Crenellated Castle Wall walkways & corner watchtowers (X = ±146) across all 8 Stages!
 local castleNames = {
 	"Rampart Watch Knight", "Battlement Gargoyle Puff", "Turret Crown Slime", "Drawbridge Guard Pup",
 	"Parapet Archer Kitty", "Citadel Banner Cow", "Keep Tower Dragonet", "Fortress Torch Boba",
@@ -1326,7 +1327,7 @@ for i = 1, 19 do
 	local isRight = (i % 2 == 1)
 	local sideSign = if isRight then 1 else -1
 	local zPos = (SlimeData.Levels[lvl].ZStart - 24) - (idxInBiome - 1) * 44
-	local xPos = sideSign * 108
+	local xPos = sideSign * 146
 	local yPos = if idxInBiome == 1 then 23.5 else 18.8
 	local rarity = if i == 19 or lvl >= 7 then "Mythic" elseif lvl >= 5 then "Legendary" elseif lvl >= 3 then "Epic" else "Rare"
 	local cps = math.floor(25 * (1.36 ^ i))
@@ -1343,7 +1344,7 @@ for i = 1, 19 do
 end
 
 -- 5. THEMED LEVEL OBBY OBSTACLE SHINING SQUISHIES (15 Squishies: #103 to #117)
--- Distributed across all 8 Stages perched on the Left-Side Elevated Obby platforms!
+-- Distributed across all 8 Stages perched on the Widened Left-Side Elevated Obby platforms (X = -83, -72)!
 local obbyNames = {
 	"Lilypad Hopper Squishy", "Log Beam Balancer",
 	"Wafer Bridge Sprinter", "Peppermint Spinner Ace",
@@ -1358,7 +1359,7 @@ for i = 1, 15 do
 	local lvl = math.clamp(math.ceil(i / 2), 1, 8)
 	local subIdx = ((i - 1) % 2) + 1
 	local zStart = SlimeData.Levels[lvl].ZStart
-	local xPos = -72 + subIdx * 11 -- X = -61, -50 (matches ObbyGoalPlatform_1 and ObbyGoalPlatform_2)
+	local xPos = -94 + subIdx * 11 -- X = -83, -72 (matches widened ObbyGoalPlatform_1 and ObbyGoalPlatform_2)
 	local yPos = 9.5 + subIdx * 2.8
 	local zPos = zStart - 26 - subIdx * 22 -- Z = zStart - 48, -70
 	local rarity = if lvl >= 7 then "Mythic" elseif lvl >= 5 then "Legendary" elseif lvl >= 3 then "Epic" else "Rare"
