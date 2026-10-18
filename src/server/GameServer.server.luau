@@ -73,6 +73,7 @@ local SetSpeedThrottleEvent = ensureRemoteEvent("SetSpeedThrottle")
 local SpinWheelRequestEvent = ensureRemoteEvent("SpinWheelRequest")
 local BuySpinCashEvent = ensureRemoteEvent("BuySpinCash")
 local BuyRobuxItemEvent = ensureRemoteEvent("BuyRobuxItem")
+local ClaimLikeFavoriteEvent = ensureRemoteEvent("ClaimLikeFavoriteReward")
 local OpenModalEvent = ensureRemoteEvent("OpenModal")
 local TreadmillTapBoostEvent = ensureRemoteEvent("TreadmillTapBoost")
 local GetInitialStateFunc = ensureRemoteFunction("GetInitialState")
@@ -115,6 +116,7 @@ export type PlayerSession = {
 	BonusSpins: number,
 	SessionStartTime: number,
 	ClaimedPlaytime: { [string]: boolean },
+	ClaimedLikeReward: boolean,
 	UnlockedHints: { [string]: boolean },
 	CollectedCoins: { [string]: boolean },
 	UnlockedGates: { [string]: boolean },
@@ -263,6 +265,7 @@ local function serializeSession(player: Player)
 		BonusSpins = session.BonusSpins or 0,
 		PlaytimeSeconds = math.floor(now - (session.SessionStartTime or now)),
 		ClaimedPlaytime = session.ClaimedPlaytime,
+		ClaimedLikeReward = session.ClaimedLikeReward == true,
 		UnlockedHints = session.UnlockedHints or {},
 		CollectedCoins = session.CollectedCoins or {},
 		UnlockedGates = session.UnlockedGates,
@@ -2238,6 +2241,23 @@ local function bindBiomeObstacles()
 						hrp.AssemblyLinearVelocity = Vector3.new(0, 42, knock)
 					end
 				end)
+			elseif desc.Name == "SpawnLikeFavoritePad" then
+				desc.CanTouch = true
+				local likePadCooldowns: { [number]: number } = {}
+				desc.Touched:Connect(function(hit: BasePart)
+					local char = hit.Parent
+					local player = if char then Players:GetPlayerFromCharacter(char) else nil
+					local session = if player then sessions[player] else nil
+					if not player or not session then
+						return
+					end
+					local now = os.clock()
+					if likePadCooldowns[player.UserId] and (now - likePadCooldowns[player.UserId]) < 6.0 then
+						return
+					end
+					likePadCooldowns[player.UserId] = now
+					OpenModalEvent:FireClient(player, "LikeFavorite")
+				end)
 			end
 		elseif desc:IsA("ProximityPrompt") then
 			if desc.Name == "SpinWheelPrompt" then
@@ -2251,6 +2271,10 @@ local function bindBiomeObstacles()
 			elseif desc.Name == "RobuxShopPrompt" then
 				desc.Triggered:Connect(function(player: Player)
 					OpenModalEvent:FireClient(player, "RobuxShop")
+				end)
+			elseif desc.Name == "LikeFavoritePrompt" then
+				desc.Triggered:Connect(function(player: Player)
+					OpenModalEvent:FireClient(player, "LikeFavorite")
 				end)
 			end
 		end
@@ -2808,6 +2832,67 @@ local function attachVIPRainbowTrail(player: Player)
 	end
 end
 
+-- Helper: Attaches overhead "💖 VIP SUPPORTER" Nametag Badge for players who Liked & Favorited the game!
+local function attachSupporterTag(player: Player)
+	local char = player.Character
+	local head = char and char:FindFirstChild("Head") :: BasePart?
+	if not head or head:FindFirstChild("SupporterOverheadBadge") then
+		return
+	end
+	local bb = Instance.new("BillboardGui")
+	bb.Name = "SupporterOverheadBadge"
+	bb.Size = UDim2.new(5.8, 0, 1.35, 0)
+	bb.StudsOffset = Vector3.new(0, 2.75, 0)
+	bb.AlwaysOnTop = true
+	bb.MaxDistance = 75
+	bb.Parent = head
+
+	local lbl = Instance.new("TextLabel")
+	lbl.Size = UDim2.fromScale(1, 1)
+	lbl.BackgroundTransparency = 1
+	lbl.Font = Enum.Font.FredokaOne
+	lbl.Text = "💖 VIP SUPPORTER ⭐"
+	lbl.TextColor3 = Color3.fromRGB(255, 115, 205)
+	lbl.TextScaled = true
+	lbl.Parent = bb
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.fromRGB(28, 12, 34)
+	stroke.Thickness = 2.5
+	stroke.Parent = lbl
+end
+
+-- Like & Favorite + Notify VIP Supporter Reward Handler (+$5,000 Cash, +2 Spins, +15 Speed, 60s Shield & Overhead Badge!)
+ClaimLikeFavoriteEvent.OnServerEvent:Connect(function(player: Player)
+	local session = sessions[player]
+	if not session then
+		return
+	end
+	if session.ClaimedLikeReward then
+		GuardianAlertEvent:FireClient(player, "💖 You already claimed your Like & Favorite VIP Supporter Rewards! Thank you for supporting!")
+		return
+	end
+	session.ClaimedLikeReward = true
+	local mult = if session.OwnedPasses and session.OwnedPasses["2xCash"] then 2 else 1
+	local rewardCash = 5000 * mult
+	session.Coins += rewardCash
+	session.LifetimeCoins += rewardCash
+	session.BonusSpins = (session.BonusSpins or 0) + 2
+	session.SpeedStat += 15
+	applyPlayerSpeed(player)
+	updateSpeedUpgradePrompt(player)
+	activateBossShield(player, 60)
+	attachSupporterTag(player)
+	GuardianAlertEvent:FireClient(
+		player,
+		string.format(
+			"💖 THANK YOU FOR LIKING & FAVORITING! Claimed +$%s Cash, +2 Lucky Spins, +15 Speed, 60s Shield & VIP SUPPORTER Tag!",
+			SlimeData.FormatNumber(rewardCash)
+		)
+	)
+	syncPlayer(player)
+end)
+
 -- Daily Login Streak Chest Handler
 ClaimDailyRewardEvent.OnServerEvent:Connect(function(player: Player)
 	local session = sessions[player]
@@ -3177,17 +3262,27 @@ BuyRobuxItemEvent.OnServerEvent:Connect(function(player: Player, itemKey: any)
 	pcall(function()
 		if GAMEPASS_IDS[itemKey] ~= nil then
 			local passId = GAMEPASS_IDS[itemKey]
-			if passId > 0 and not RunService:IsStudio() then
+			if passId > 0 then
 				MarketplaceService:PromptGamePassPurchase(player, passId)
-			else
+			elseif RunService:IsStudio() then
 				grantGamePassReward(player, itemKey)
+			else
+				GuardianAlertEvent:FireClient(
+					player,
+					"💎 Gamepass checkout coming soon! Claim +$5,000 Free Cash at the 💖 Like & Favorite Booth!"
+				)
 			end
 		elseif DEVPRODUCT_IDS[itemKey] ~= nil then
 			local prodId = DEVPRODUCT_IDS[itemKey]
-			if prodId > 0 and not RunService:IsStudio() then
+			if prodId > 0 then
 				MarketplaceService:PromptProductPurchase(player, prodId)
-			else
+			elseif RunService:IsStudio() then
 				grantDeveloperProductReward(player, itemKey)
+			else
+				GuardianAlertEvent:FireClient(
+					player,
+					"💎 Robux Pack checkout coming soon! Claim +$5,000 Free Cash at the 💖 Like & Favorite Booth!"
+				)
 			end
 		end
 	end)
@@ -3245,10 +3340,11 @@ local speedODS: any = nil
 local squishiesODS: any = nil
 if game.GameId > 0 then
 	pcall(function()
-		playerDataStore = DataStoreService:GetDataStore("StealMyEgg_117_v1")
-		coinsODS = DataStoreService:GetOrderedDataStore("StealMyEgg_GlobalCoins_v1")
-		speedODS = DataStoreService:GetOrderedDataStore("StealMyEgg_GlobalSpeed_v1")
-		squishiesODS = DataStoreService:GetOrderedDataStore("StealMyEgg_GlobalSquishies_v1")
+		-- Global Reset v22: Resets all legacy currency & old gameplay settings so every player starts brand new!
+		playerDataStore = DataStoreService:GetDataStore("FindMySquishy_GlobalReset_v22")
+		coinsODS = DataStoreService:GetOrderedDataStore("FindMySquishy_GlobalCoins_v22")
+		speedODS = DataStoreService:GetOrderedDataStore("FindMySquishy_GlobalSpeed_v22")
+		squishiesODS = DataStoreService:GetOrderedDataStore("FindMySquishy_GlobalSquishies_v22")
 	end)
 end
 
@@ -3275,6 +3371,7 @@ function savePlayerData(player: Player)
 			FenceLevel = session.FenceLevel or 1,
 			Rebirths = session.Rebirths,
 			DailyStreak = session.DailyStreak,
+			ClaimedLikeReward = session.ClaimedLikeReward == true,
 			OwnedPasses = session.OwnedPasses,
 			UnlockedHints = session.UnlockedHints,
 			CollectedCoins = session.CollectedCoins,
@@ -3443,8 +3540,8 @@ local function setupPlayer(player: Player)
 	savedGates["1"] = true
 
 	sessions[player] = {
-		Coins = if loadedData and type(loadedData.Coins) == "number" then loadedData.Coins else 100,
-		LifetimeCoins = if loadedData and type(loadedData.LifetimeCoins) == "number" then loadedData.LifetimeCoins else 100,
+		Coins = if loadedData and type(loadedData.Coins) == "number" then loadedData.Coins else 150,
+		LifetimeCoins = if loadedData and type(loadedData.LifetimeCoins) == "number" then loadedData.LifetimeCoins else 150,
 		SpeedStat = if loadedData and type(loadedData.SpeedStat) == "number" then loadedData.SpeedStat else 16,
 		SpeedLevel = if loadedData and type(loadedData.SpeedLevel) == "number" then loadedData.SpeedLevel else 1,
 		FenceLevel = if loadedData and type(loadedData.FenceLevel) == "number" then math.clamp(loadedData.FenceLevel, 1, 8) else 1,
@@ -3457,6 +3554,7 @@ local function setupPlayer(player: Player)
 		BonusSpins = 1,
 		SessionStartTime = os.clock(),
 		ClaimedPlaytime = {},
+		ClaimedLikeReward = if loadedData and loadedData.ClaimedLikeReward == true then true else false,
 		UnlockedHints = if loadedData and type(loadedData.UnlockedHints) == "table" then loadedData.UnlockedHints else {},
 		CollectedCoins = if loadedData and type(loadedData.CollectedCoins) == "table" then loadedData.CollectedCoins else {},
 		UnlockedGates = savedGates,
@@ -3481,6 +3579,17 @@ local function setupPlayer(player: Player)
 		Incubators = incubators,
 		Pedestals = {},
 	}
+
+	-- Check MarketplaceService GamePass ownership on join for any configured Gamepass IDs
+	for passKey, passId in pairs(GAMEPASS_IDS) do
+		if passId > 0 then
+			pcall(function()
+				if MarketplaceService:UserOwnsGamePassAsync(player.UserId, passId) then
+					sessions[player].OwnedPasses[passKey] = true
+				end
+			end)
+		end
+	end
 
 	local plotModelForResize = getPlotModel(assignedPlot)
 	if plotModelForResize then
@@ -3560,6 +3669,9 @@ local function setupPlayer(player: Player)
 			if s.OwnedPasses["VIP"] then
 				attachVIPRainbowTrail(player)
 			end
+			if s.ClaimedLikeReward then
+				attachSupporterTag(player)
+			end
 			if (s.BossShieldUntil or 0) > os.clock() then
 				activateBossShield(player, math.ceil(s.BossShieldUntil - os.clock()))
 			end
@@ -3601,8 +3713,13 @@ local function setupPlayer(player: Player)
 			if hrp then
 				hrp.CFrame = CFrame.new(Vector3.new(0, 4.5, 38), Vector3.new(0, 4.5, -55))
 			end
-			if sessions[player] and sessions[player].OwnedPasses["VIP"] then
-				attachVIPRainbowTrail(player)
+			if sessions[player] then
+				if sessions[player].OwnedPasses["VIP"] then
+					attachVIPRainbowTrail(player)
+				end
+				if sessions[player].ClaimedLikeReward then
+					attachSupporterTag(player)
+				end
 			end
 			applyPlayerSpeed(player)
 			refreshBackpackTools(player)

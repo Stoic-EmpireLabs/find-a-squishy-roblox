@@ -14,6 +14,8 @@
 	    of that Squishy that zooms and spins when you hover over it.
 ]]
 
+local AvatarEditorService = game:GetService("AvatarEditorService")
+local ExperienceNotificationService = game:GetService("ExperienceNotificationService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -45,6 +47,7 @@ local SetSpeedThrottleEvent = Remotes:WaitForChild("SetSpeedThrottle") :: Remote
 local SpinWheelRequestEvent = Remotes:WaitForChild("SpinWheelRequest") :: RemoteEvent
 local BuySpinCashEvent = Remotes:WaitForChild("BuySpinCash") :: RemoteEvent
 local BuyRobuxItemEvent = Remotes:WaitForChild("BuyRobuxItem") :: RemoteEvent
+local ClaimLikeFavoriteEvent = Remotes:WaitForChild("ClaimLikeFavoriteReward") :: RemoteEvent
 local OpenModalEvent = Remotes:WaitForChild("OpenModal") :: RemoteEvent
 local GetInitialStateFunc = Remotes:WaitForChild("GetInitialState") :: RemoteFunction
 
@@ -838,6 +841,23 @@ local function applyStateToUI(state: any)
 			end
 		end
 	end
+
+	-- Update Like & Favorite VIP Reward Button State
+	if ui.ClaimLikeFavRewardBtn then
+		if state.ClaimedLikeReward then
+			ui.ClaimLikeFavRewardBtn.Text = "✅ <b>VIP SUPPORTER REWARDS CLAIMED!</b>"
+			ui.ClaimLikeFavRewardBtn.BackgroundColor3 = Color3.fromRGB(65, 120, 95)
+		else
+			ui.ClaimLikeFavRewardBtn.Text = "🎁 <b>STEP 2: CLAIM +$5,000 + 2 SPINS + VIP TAG!</b>"
+			ui.ClaimLikeFavRewardBtn.BackgroundColor3 = Color3.fromRGB(55, 215, 115)
+		end
+	end
+	if ui.LikeFavHudBtn then
+		local cap = ui.LikeFavHudBtn:FindFirstChild("Caption") :: TextLabel?
+		if cap then
+			cap.Text = if state.ClaimedLikeReward then "<b>💖 VIP!</b>" else "<b>+$5K FREE!</b>"
+		end
+	end
 end
 
 StateSyncEvent.OnClientEvent:Connect(applyStateToUI)
@@ -847,12 +867,64 @@ OpenModalEvent.OnClientEvent:Connect(function(modalName: string)
 		ui.SpinModal.Visible = true
 		ui.ShopModal.Visible = false
 		ui.IndexModal.Visible = false
+		if ui.LikeFavoriteModal then
+			ui.LikeFavoriteModal.Visible = false
+		end
 	elseif modalName == "RobuxShop" then
 		ui.ShopModal.Visible = true
 		ui.SpinModal.Visible = false
 		ui.IndexModal.Visible = false
+		if ui.LikeFavoriteModal then
+			ui.LikeFavoriteModal.Visible = false
+		end
+	elseif modalName == "LikeFavorite" and ui.LikeFavoriteModal then
+		ui.LikeFavoriteModal.Visible = true
+		ui.SpinModal.Visible = false
+		ui.ShopModal.Visible = false
+		ui.IndexModal.Visible = false
 	end
 end)
+
+if ui.LikeFavHudBtn and ui.LikeFavoriteModal then
+	ui.LikeFavHudBtn.MouseButton1Click:Connect(function()
+		ui.LikeFavoriteModal.Visible = not ui.LikeFavoriteModal.Visible
+		if ui.LikeFavoriteModal.Visible then
+			ui.SpinModal.Visible = false
+			ui.ShopModal.Visible = false
+			ui.IndexModal.Visible = false
+		end
+	end)
+end
+if ui.LikeFavClose and ui.LikeFavoriteModal then
+	ui.LikeFavClose.MouseButton1Click:Connect(function()
+		ui.LikeFavoriteModal.Visible = false
+	end)
+end
+if ui.FavoriteNowBtn then
+	ui.FavoriteNowBtn.MouseButton1Click:Connect(function()
+		pcall(function()
+			AvatarEditorService:PromptSetFavorite(game.PlaceId, Enum.AvatarItemType.Asset, true)
+		end)
+		task.delay(0.8, function()
+			pcall(function()
+				if ExperienceNotificationService:CanPromptOptInAsync() then
+					ExperienceNotificationService:PromptOptIn()
+				end
+			end)
+		end)
+		showToast("⭐ Favorite & Notify Prompt Opened! Now click STEP 2 to claim +$5,000 Cash!", Color3.fromRGB(255, 195, 45))
+	end)
+end
+if ui.ClaimLikeFavRewardBtn then
+	ui.ClaimLikeFavRewardBtn.MouseButton1Click:Connect(function()
+		ClaimLikeFavoriteEvent:FireServer()
+		if ui.LikeFavoriteModal then
+			task.delay(0.35, function()
+				ui.LikeFavoriteModal.Visible = false
+			end)
+		end
+	end)
+end
 
 if ui.GuideToggleBtn and ui.HowToPlayModal then
 	ui.GuideToggleBtn.MouseButton1Click:Connect(function()
@@ -1178,6 +1250,18 @@ EggCapturedEvent.OnClientEvent:Connect(function(info: any)
 					),
 					Color3.fromRGB(45, 175, 85)
 				)
+				if not (latestState and latestState.ClaimedLikeReward) and not _G.ShownLikeFavReminderOnce then
+					local foundTotal = if latestState and type(latestState.FoundCount) == "number" then latestState.FoundCount else 0
+					local numId = tonumber((sData :: any).UnlockOrder or (sData :: any).NumericId or sData.Id) or 1
+					if numId <= 35 or foundTotal >= 2 then
+						_G.ShownLikeFavReminderOnce = true
+						task.delay(3.2, function()
+							if ui.LikeFavoriteModal and not (latestState and latestState.ClaimedLikeReward) then
+								ui.LikeFavoriteModal.Visible = true
+							end
+						end)
+					end
+				end
 			end
 		end
 	end

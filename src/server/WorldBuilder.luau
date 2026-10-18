@@ -1754,6 +1754,111 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	end
 
 	createAttachmentPrompt(vipPad, "RobuxShopPrompt", "Open VIP & Gamepass Shop", "🛒 2x Cash • VIP Crown • +2 Carry Eggs", Vector3.new(0, 3.2, 0), 18)
+
+	-- 5. 💖 Like & ⭐ Favorite + 🔔 Notify VIP Reward Shrine (Outer East Plaza at X = 162, Z = 172 + Spawn Welcome Kiosk at X = 24, Z = 86!)
+	local likeBooth = Instance.new("Model")
+	likeBooth.Name = "LikeFavoriteRewardBooth"
+	likeBooth.Parent = hubFolder
+
+	local likePad = buildGlowingNeonCircle(
+		likeBooth,
+		"LikeFavoritePad",
+		Vector3.new(162, 0.35, 172),
+		13,
+		Color3.fromRGB(235, 75, 145),
+		Color3.fromRGB(255, 215, 65)
+	)
+	likeBooth.PrimaryPart = likePad
+
+	for _, zSide in ipairs({ -5.2, 5.2 }) do
+		makePart({
+			Name = "LikeShrinePillar",
+			Size = Vector3.new(2.0, 9.5, 2.0),
+			Position = Vector3.new(164.2, 4.75, 172 + zSide),
+			Color = Color3.fromRGB(225, 85, 145),
+			Material = Enum.Material.SmoothPlastic,
+			Parent = likeBooth,
+		})
+	end
+
+	-- 3D Golden Star & Pink Heart Trophy on Pedestal
+	makePart({
+		Name = "LikeTrophyPedestal",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(3.2, 4.2, 4.2),
+		CFrame = CFrame.new(162, 1.8, 172) * CFrame.Angles(0, 0, math.rad(90)),
+		Color = Color3.fromRGB(52, 44, 68),
+		Material = Enum.Material.Cobblestone,
+		Parent = likeBooth,
+	})
+	makePart({
+		Name = "LikeTrophyHeartCore",
+		Shape = Enum.PartType.Ball,
+		Size = Vector3.new(4.2, 4.2, 4.2),
+		Position = Vector3.new(162, 5.5, 172),
+		Color = Color3.fromRGB(255, 85, 155),
+		Material = Enum.Material.SmoothPlastic,
+		Parent = likeBooth,
+	})
+
+	local likeHeader = makePart({
+		Name = "LikeFavoriteSign",
+		Size = Vector3.new(1.2, 3.6, 14.5),
+		Position = Vector3.new(164.2, 10.8, 172),
+		Color = Color3.fromRGB(225, 65, 135),
+		Material = Enum.Material.SmoothPlastic,
+		Parent = likeBooth,
+	})
+	createSurfaceSign(
+		likeHeader,
+		"💖 👍 LIKE & ⭐ FAVORITE REWARD!\nClaim FREE +$5,000 Cash • +2 Spins • +15 Speed • 💖 Supporter Tag!",
+		Color3.fromRGB(255, 245, 110),
+		Color3.fromRGB(48, 16, 36),
+		{ Enum.NormalId.Left, Enum.NormalId.Right },
+		160
+	)
+	createAttachmentPrompt(
+		likePad,
+		"LikeFavoritePrompt",
+		"⭐ Favorite & Claim VIP Gift! (+$5,000 + 2 Spins)",
+		"💖 👍 Like & ⭐ Favorite Reward",
+		Vector3.new(0, 3.2, 0),
+		16
+	)
+
+	-- Spawn Plaza Quick-Access Like & Favorite Stand right beside the Central Highway at X = 26, Z = 86!
+	local spawnLikeStand = buildGlowingNeonCircle(
+		likeBooth,
+		"SpawnLikeFavoritePad",
+		Vector3.new(26, 0.35, 86),
+		8.5,
+		Color3.fromRGB(235, 75, 145),
+		Color3.fromRGB(255, 215, 65)
+	)
+	local spawnLikeSign = makePart({
+		Name = "SpawnLikeFavoriteBoard",
+		Size = Vector3.new(9.5, 3.4, 1.0),
+		Position = Vector3.new(26, 5.2, 86),
+		Color = Color3.fromRGB(225, 65, 135),
+		Material = Enum.Material.SmoothPlastic,
+		Parent = likeBooth,
+	})
+	createSurfaceSign(
+		spawnLikeSign,
+		"👍 LIKE & ⭐ FAVORITE GAME!\nFREE +$5,000 Cash + 2 Spins + 💖 VIP Tag!",
+		Color3.fromRGB(255, 245, 110),
+		Color3.fromRGB(48, 16, 36),
+		{ Enum.NormalId.Front, Enum.NormalId.Back },
+		140
+	)
+	createAttachmentPrompt(
+		spawnLikeStand,
+		"LikeFavoritePrompt",
+		"⭐ Favorite & Claim Free $5,000 Gift!",
+		"💖 👍 Like & ⭐ Favorite Reward",
+		Vector3.new(0, 3.0, 0),
+		15
+	)
 end
 
 -- Helper: Builds an authentic "Find The Squishies" Multi-Tiered Stepped Dirt-and-Grass Cliff Hill (`full_frame_09.png`, `full_frame_12.png`)
@@ -3041,8 +3146,8 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 		{ Index = 4, Center = Vector3.new(94, 0, 136), Color = Color3.fromRGB(215, 175, 88), Roof = Color3.fromRGB(165, 64, 52), FaceDir = -1 },
 	}
 
-	local plotW = 58
-	local plotD = 44
+	local plotW = 64
+	local plotD = 56
 
 	for _, cfg in ipairs(plotConfigs) do
 		local plotModel = Instance.new("Model")
@@ -3111,14 +3216,28 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 		)
 
 		-- 1. Giant 18-Stud Green Dino-Jaw Speed Treadmill
-		local treadCenter = cfg.Center + Vector3.new(-cfg.FaceDir * 9, 0.5, -10.5)
+		local treadCenter = cfg.Center + Vector3.new(-cfg.FaceDir * 9, 0.5, -13.5)
 		buildDinoJawTreadmill(plotModel, treadCenter, cfg.FaceDir, cfg.Index)
 
-		-- 2. Grounded Matte Cash Collector Circle
+		-- Front Apron X-coordinate: 8.5 studs cleanly OUTSIDE the Hatchery Fence front wall (cfg.Center.X + FaceDir * 27.0)
+		local apronX = cfg.Center.X + cfg.FaceDir * 27.0
+
+		-- 2. Grounded Matte Speed Upgrade Circle (Outside Fence, North End beside Treadmill: Z = -20.0)
+		local upgStand = buildGlowingNeonCircle(
+			plotModel,
+			"SpeedUpgradeStand",
+			Vector3.new(apronX, 0.7, cfg.Center.Z - 20.0),
+			6.2,
+			Color3.fromRGB(65, 185, 225),
+			Color3.fromRGB(165, 105, 225)
+		)
+		createAttachmentPrompt(upgStand, "UpgradeSpeedPrompt", "Upgrade Treadmill (+Speed)", "🦖 Cost: $50", Vector3.new(0, 2.5, 0), 14)
+
+		-- 3. Grounded Matte Cash Collector Circle (Outside Fence, North-Center Apron: Z = -9.0, 11 studs from SpeedUpgradeStand)
 		local collectPad = buildGlowingNeonCircle(
 			plotModel,
 			"CollectCashPad",
-			cfg.Center + Vector3.new(cfg.FaceDir * 21, 0.6, -14.0),
+			Vector3.new(apronX, 0.6, cfg.Center.Z - 9.0),
 			7.4,
 			Color3.fromRGB(65, 215, 105),
 			Color3.fromRGB(225, 195, 75)
@@ -3131,17 +3250,6 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 			UDim2.new(6.5, 0, 1.6, 0),
 			42
 		)
-
-		-- 3. Grounded Matte Speed Upgrade Circle (Attachment-based ProximityPrompt!)
-		local upgStand = buildGlowingNeonCircle(
-			plotModel,
-			"SpeedUpgradeStand",
-			cfg.Center + Vector3.new(cfg.FaceDir * 21, 0.7, 14.0),
-			6.2,
-			Color3.fromRGB(65, 185, 225),
-			Color3.fromRGB(165, 105, 225)
-		)
-		createAttachmentPrompt(upgStand, "UpgradeSpeedPrompt", "Upgrade Treadmill (+Speed)", "🦖 Cost: $50", Vector3.new(0, 2.5, 0), 14)
 
 		-- 4. Fenced Brainrot Hatchery & Roaming Ranch Pen (`HatcheryPen` — Walk-In Auto-Drop, Hatch Timer 00:05 -> Live Roaming & Growing Brainrots!)
 		local penCenter = cfg.Center + Vector3.new(cfg.FaceDir * 6.5, 0.55, 5.0)
@@ -3214,8 +3322,8 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 			150
 		)
 
-		-- 5.1 🌱 LEFT SIDE OF FENCE ENTRANCE: Grow & Level Up Brainrot Stand (`GrowSquishyStand`, Lv. 1 -> Lv. 15)
-		local growStandPos = penCenter + Vector3.new(cfg.FaceDir * (penW * 0.5 + 2.6), 0.15, -6.8)
+		-- 5.1 🌱 OUTSIDE FENCE (Center-South Apron, Z = cfg.Center.Z + 12.5): Grow & Level Up Brainrot Stand (`GrowSquishyStand`, Lv. 1 -> Lv. 15)
+		local growStandPos = Vector3.new(apronX, penCenter.Y + 0.15, penCenter.Z + 7.5)
 		local growStand = buildGlowingNeonCircle(
 			hatcheryPen,
 			"GrowSquishyStand",
@@ -3266,8 +3374,8 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 			14
 		)
 
-		-- 5.2 🧱 RIGHT SIDE OF FENCE ENTRANCE: Upgrade Fence Size Stand (`UpgradeFenceStand`, Lv. 1 -> Lv. 8)
-		local fenceStandPos = penCenter + Vector3.new(cfg.FaceDir * (penW * 0.5 + 2.6), 0.15, 6.8)
+		-- 5.2 🧱 OUTSIDE FENCE (Far-South Apron, Z = cfg.Center.Z + 24.5, 12 studs from GrowSquishyStand): Upgrade Fence Size Stand (`UpgradeFenceStand`, Lv. 1 -> Lv. 8)
+		local fenceStandPos = Vector3.new(apronX, penCenter.Y + 0.15, penCenter.Z + 19.5)
 		local fenceStand = buildGlowingNeonCircle(
 			hatcheryPen,
 			"UpgradeFenceStand",
@@ -3465,8 +3573,9 @@ function WorldBuilder.ResizePlayerFencePen(plotModel: Model, fenceLevel: number)
 		end
 	end
 
-	-- Keep the Front Entrance Archway, Left `GrowSquishyStand` (Lv.1->15), and Right `UpgradeFenceStand` (Lv.1->8) aligned with the front gate!
+	-- Keep the Front Entrance Archway aligned with the front gate, and keep `GrowSquishyStand` & `UpgradeFenceStand` 8.5 studs OUTSIDE the fence with 12-stud Z spacing!
 	local frontX = penCenter.X + faceDir * (penW * 0.5)
+	local apronX = frontX + faceDir * 8.5
 	local post1 = hatcheryPen:FindFirstChild("HatcheryGatePost_1") :: BasePart?
 	local post2 = hatcheryPen:FindFirstChild("HatcheryGatePost_2") :: BasePart?
 	local gateArch = hatcheryPen:FindFirstChild("HatcheryGateArch") :: BasePart?
@@ -3482,7 +3591,7 @@ function WorldBuilder.ResizePlayerFencePen(plotModel: Model, fenceLevel: number)
 
 	local growStand = hatcheryPen:FindFirstChild("GrowSquishyStand") :: BasePart?
 	if growStand then
-		local gPos = Vector3.new(frontX + faceDir * 2.6, penCenter.Y + 0.15, penCenter.Z - 6.8)
+		local gPos = Vector3.new(apronX, penCenter.Y + 0.15, baseCenter.Z + 7.5)
 		local delta = gPos - growStand.Position
 		growStand.Position = gPos
 		for _, child in ipairs(growStand:GetChildren()) do
@@ -3494,7 +3603,7 @@ function WorldBuilder.ResizePlayerFencePen(plotModel: Model, fenceLevel: number)
 
 	local fenceStand = hatcheryPen:FindFirstChild("UpgradeFenceStand") :: BasePart?
 	if fenceStand then
-		local fPos = Vector3.new(frontX + faceDir * 2.6, penCenter.Y + 0.15, penCenter.Z + 6.8)
+		local fPos = Vector3.new(apronX, penCenter.Y + 0.15, baseCenter.Z + 19.5)
 		local delta = fPos - fenceStand.Position
 		fenceStand.Position = fPos
 		for _, child in ipairs(fenceStand:GetChildren()) do

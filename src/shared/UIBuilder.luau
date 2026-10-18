@@ -2005,6 +2005,107 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	addTextSizeConstraint(treadmillTurboBtn, 12, 22)
 	bindHoverAndClickTween(treadmillTurboBtn, turboBtnSize, Color3.fromRGB(255, 185, 35))
 
+	-- 9. 💖 LIKE & ⭐ FAVORITE HUD BUTTON + REWARD MODAL
+	local likeFavHudSize = UDim2.fromScale(0.115, 0.048)
+	local likeFavHudBtn = Instance.new("TextButton")
+	likeFavHudBtn.Name = "LikeFavHudBtn"
+	likeFavHudBtn.Size = likeFavHudSize
+	likeFavHudBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+	likeFavHudBtn.Position = UDim2.fromScale(0.928, 0.145)
+	likeFavHudBtn.BackgroundColor3 = Color3.fromRGB(235, 65, 145)
+	likeFavHudBtn.AutoButtonColor = false
+	likeFavHudBtn.Font = Enum.Font.FredokaOne
+	likeFavHudBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	likeFavHudBtn.Text = "💖 <b>LIKE & FAV (+$5K!)</b>"
+	likeFavHudBtn.Parent = screenGui
+	addCorner(likeFavHudBtn, 12)
+	addStroke(likeFavHudBtn, Color3.fromRGB(255, 235, 85), 2.5)
+	addTextSizeConstraint(likeFavHudBtn, 10, 18)
+	bindHoverAndClickTween(likeFavHudBtn, likeFavHudSize, Color3.fromRGB(235, 65, 145))
+
+	local likeFavoriteModal = Instance.new("Frame")
+	likeFavoriteModal.Name = "LikeFavoriteModal"
+	likeFavoriteModal.Size = UDim2.fromScale(0.46, 0.54)
+	likeFavoriteModal.Position = UDim2.fromScale(0.5, 0.50)
+	likeFavoriteModal.AnchorPoint = Vector2.new(0.5, 0.5)
+	likeFavoriteModal.BackgroundColor3 = Color3.fromRGB(26, 20, 44)
+	likeFavoriteModal.Visible = false
+	likeFavoriteModal.Parent = screenGui
+	addCorner(likeFavoriteModal, 18)
+	addStroke(likeFavoriteModal, Color3.fromRGB(255, 105, 185), 3.2)
+	addAspectRatio(likeFavoriteModal, 1.48)
+
+	local lfTitle = Instance.new("TextLabel")
+	lfTitle.Size = UDim2.fromScale(0.84, 0.15)
+	lfTitle.Position = UDim2.fromScale(0.04, 0.03)
+	lfTitle.BackgroundTransparency = 1
+	lfTitle.Font = Enum.Font.FredokaOne
+	lfTitle.TextColor3 = Color3.fromRGB(255, 235, 95)
+	lfTitle.Text = "💖 <b>👍 LIKE & ⭐ FAVORITE VIP GIFT!</b> 💖"
+	lfTitle.Parent = likeFavoriteModal
+	addTextSizeConstraint(lfTitle, 14, 28)
+
+	local lfCloseSize = UDim2.fromScale(0.085, 0.12)
+	local likeFavClose = Instance.new("TextButton")
+	likeFavClose.Name = "CloseLikeFavBtn"
+	likeFavClose.Size = lfCloseSize
+	likeFavClose.Position = UDim2.fromScale(0.935, 0.09)
+	likeFavClose.BackgroundColor3 = Color3.fromRGB(225, 58, 72)
+	likeFavClose.AutoButtonColor = false
+	likeFavClose.Font = Enum.Font.FredokaOne
+	likeFavClose.TextColor3 = Color3.fromRGB(255, 255, 255)
+	likeFavClose.Text = "<b>X</b>"
+	likeFavClose.Parent = likeFavoriteModal
+	addCorner(likeFavClose, 10)
+	addTextSizeConstraint(likeFavClose, 12, 22)
+	bindHoverAndClickTween(likeFavClose, lfCloseSize, Color3.fromRGB(225, 58, 72))
+
+	local lfDesc = Instance.new("TextLabel")
+	lfDesc.Size = UDim2.fromScale(0.90, 0.30)
+	lfDesc.Position = UDim2.fromScale(0.05, 0.20)
+	lfDesc.BackgroundColor3 = Color3.fromRGB(38, 28, 62)
+	lfDesc.Font = Enum.Font.FredokaOne
+	lfDesc.TextColor3 = Color3.fromRGB(245, 248, 255)
+	lfDesc.Text = "🌟 <b>Support Find My Squishy & Unlock Exclusive VIP Perks:</b>\n💰 <font color='#65FF8F'>+$5,000 Bonus Cash</font>  •  🎡 <font color='#FFE865'>+2 Free Wheel Spins</font>\n⚡ <font color='#75E8FF'>+15 Speed Power</font>  •  💖 <font color='#FF95E8'>'VIP SUPPORTER' Overhead Tag</font>  •  🛡️ <font color='#FFE865'>60s Boss Shield!</font>"
+	lfDesc.Parent = likeFavoriteModal
+	addCorner(lfDesc, 12)
+	addStroke(lfDesc, Color3.fromRGB(255, 215, 75), 2.0)
+	addTextSizeConstraint(lfDesc, 11, 19)
+
+	local favBtnSize = UDim2.fromScale(0.88, 0.17)
+	local favoriteNowBtn = Instance.new("TextButton")
+	favoriteNowBtn.Name = "FavoriteNowBtn"
+	favoriteNowBtn.Size = favBtnSize
+	favoriteNowBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+	favoriteNowBtn.Position = UDim2.fromScale(0.50, 0.62)
+	favoriteNowBtn.BackgroundColor3 = Color3.fromRGB(255, 185, 42)
+	favoriteNowBtn.AutoButtonColor = false
+	favoriteNowBtn.Font = Enum.Font.FredokaOne
+	favoriteNowBtn.TextColor3 = Color3.fromRGB(20, 24, 38)
+	favoriteNowBtn.Text = "⭐ <b>STEP 1: CLICK TO FAVORITE & 🔔 NOTIFY GAME!</b>"
+	favoriteNowBtn.Parent = likeFavoriteModal
+	addCorner(favoriteNowBtn, 12)
+	addStroke(favoriteNowBtn, Color3.fromRGB(255, 255, 255), 2.4)
+	addTextSizeConstraint(favoriteNowBtn, 12, 22)
+	bindHoverAndClickTween(favoriteNowBtn, favBtnSize, Color3.fromRGB(255, 185, 42))
+
+	local claimLfSize = UDim2.fromScale(0.88, 0.18)
+	local claimLikeFavRewardBtn = Instance.new("TextButton")
+	claimLikeFavRewardBtn.Name = "ClaimLikeFavRewardBtn"
+	claimLikeFavRewardBtn.Size = claimLfSize
+	claimLikeFavRewardBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+	claimLikeFavRewardBtn.Position = UDim2.fromScale(0.50, 0.84)
+	claimLikeFavRewardBtn.BackgroundColor3 = Color3.fromRGB(65, 225, 115)
+	claimLikeFavRewardBtn.AutoButtonColor = false
+	claimLikeFavRewardBtn.Font = Enum.Font.FredokaOne
+	claimLikeFavRewardBtn.TextColor3 = Color3.fromRGB(16, 22, 34)
+	claimLikeFavRewardBtn.Text = "🎁 <b>STEP 2: 👍 LIKE GAME & CLAIM +$5,000 + 2 SPINS + 💖 VIP TAG!</b>"
+	claimLikeFavRewardBtn.Parent = likeFavoriteModal
+	addCorner(claimLikeFavRewardBtn, 12)
+	addStroke(claimLikeFavRewardBtn, Color3.fromRGB(255, 255, 255), 2.4)
+	addTextSizeConstraint(claimLikeFavRewardBtn, 12, 22)
+	bindHoverAndClickTween(claimLikeFavRewardBtn, claimLfSize, Color3.fromRGB(65, 225, 115))
+
 	return {
 		ScreenGui = screenGui,
 		TopContainer = topContainer,
@@ -2067,6 +2168,11 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		BuySpinRobuxBtn = buySpinRobuxBtn,
 		PlaytimeButtons = playtimeButtons,
 		ClaimDailyModalBtn = claimDailyModalBtn,
+		LikeFavHudBtn = likeFavHudBtn,
+		LikeFavoriteModal = likeFavoriteModal,
+		LikeFavClose = likeFavClose,
+		FavoriteNowBtn = favoriteNowBtn,
+		ClaimLikeFavRewardBtn = claimLikeFavRewardBtn,
 		YouFoundPopup = youFoundPopup,
 		YfBadge = yfBadge,
 		YfRarityLbl = yfRarityLbl,
