@@ -2002,16 +2002,7 @@ local function buildFindTheSquishiesTownStreet(hubFolder: Folder, obstaclesFolde
 		end
 	end
 
-	-- 3. Iconic Red Shipping Container next to the South-West Townhouse (`fts_frame_15.png`) + Stacked Crate Archway (`fts_frame_12.png`)!
-	makePart({
-		Name = "RedShippingContainer",
-		Size = Vector3.new(11, 9.5, 22),
-		Position = Vector3.new(-148, 4.75, 198),
-		Color = Color3.fromRGB(215, 58, 62),
-		Material = Enum.Material.Plastic,
-		Parent = townFolder,
-	})
-	buildStackedCrateArchBridge(townFolder, Vector3.new(-72, 0, 198), 0)
+	-- (Removed RedShippingContainer and Safe Zone crate stack so zero random boxes clutter the Safe Zone Hub!)
 
 	-- 4. Town Bus Stop Glass Shelter on the South Boulevard (`full_frame_24.png`)
 	local busPos = Vector3.new(72, 0, 194)
@@ -3522,7 +3513,7 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 		local treadCenter = cfg.Center + Vector3.new(-cfg.FaceDir * 9, 0.5, -10.5)
 		buildDinoJawTreadmill(plotModel, treadCenter, cfg.FaceDir, cfg.Index)
 
-		-- 2. Newer Concentric Glowing Green Cash Collector Circle + Chest
+		-- 2. Newer Concentric Glowing Green Cash Collector Circle (Clean pad with zero blocky chest box clutter!)
 		local collectPad = buildGlowingNeonCircle(
 			plotModel,
 			"CollectCashPad",
@@ -3531,7 +3522,6 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 			Color3.fromRGB(65, 250, 115),
 			Color3.fromRGB(255, 235, 85)
 		)
-		placePrebuiltAsset("CashChest", 1, plotModel, collectPad.Position + Vector3.new(0, 0.45, 0), if cfg.FaceDir > 0 then 90 else -90, 3.8, false)
 		createBillboardText(
 			collectPad,
 			"💰 COLLECT $0\n(Step Here)",
