@@ -5,6 +5,7 @@
 -- and Colossal Sleeping/Chasing Monster Bosses!
 
 local SlimeData = require(script.Parent.SlimeData)
+local PrebuiltLoader = require(script.Parent.PrebuiltLoader)
 
 local SquishyBuilder = {}
 
@@ -215,10 +216,138 @@ local function attachCollectiblePopGlow(
 	end
 end
 
--- Builds unmistakable 3D Brainrot Sculptures for all 35 Hatchable Brainrots (#1-#35):
--- Tralalero Shark in Blue Sneakers, Bombardiro Twin-Propeller Bomber Croc, Tung Tung Wooden Log + Baseball Bat,
--- Lirili Cactus Elephant in Sandals, Patapim Forest Troll, Cappuccino Katana Cup, Chimpanzini Banana Monkey,
--- La Vaca Saturno Cow, Ballerina Tutu Cup, Frigo Fridge Camel, Gusini Rocket Goose, Orangutini Pineapple, Boneca Tire Frog, etc.
+-- Builds big expressive cartoon eyes (white sclera + black pupils + brows) and open mouth/teeth/beak
+local function addBrainrotEyesAndMouth(
+	headPart: BasePart,
+	model: Instance,
+	scale: number,
+	anchored: boolean,
+	expressionType: string?
+): { BasePart }
+	local isAnchored = anchored
+	local expr = expressionType or "Wide"
+	local headCF = headPart.CFrame
+	local parts: { BasePart } = {}
+
+	local function attachPart(p: Part): Part
+		p.Anchored = isAnchored
+		if not isAnchored then
+			weldTo(headPart, p)
+		end
+		table.insert(parts, p)
+		return p
+	end
+
+	local eyeSize = Vector3.new(0.55 * scale, 0.65 * scale, 0.45 * scale)
+	local pupilSize = Vector3.new(0.28 * scale, 0.35 * scale, 0.32 * scale)
+	local eyeSpacing = if expr == "Derp" then 0.62 * scale else 0.48 * scale
+	local eyeY = 0.24 * scale
+	local eyeZ = -headPart.Size.Z * 0.48
+
+	for _, side in ipairs({ -1, 1 }) do
+		-- Sclera (White eye ball)
+		local sclera = attachPart(makePart({
+			Name = "BrainrotEyeWhite_" .. side,
+			Shape = Enum.PartType.Ball,
+			Material = Enum.Material.SmoothPlastic,
+			Color = Color3.fromRGB(255, 255, 255),
+			Size = eyeSize,
+			CFrame = headCF * CFrame.new(side * eyeSpacing, eyeY, eyeZ),
+			Parent = model,
+		}))
+
+		-- Pupil
+		local pupilOffset = if expr == "Derp" then (if side == -1 then Vector3.new(-0.08 * scale, 0, -0.12 * scale) else Vector3.new(0.08 * scale, -0.05 * scale, -0.12 * scale))
+			elseif expr == "Fierce" then Vector3.new(-side * 0.05 * scale, -0.03 * scale, -0.12 * scale)
+			else Vector3.new(0, 0, -0.12 * scale)
+
+		attachPart(makePart({
+			Name = "BrainrotPupil_" .. side,
+			Shape = Enum.PartType.Ball,
+			Material = Enum.Material.SmoothPlastic,
+			Color = Color3.fromRGB(15, 15, 22),
+			Size = pupilSize,
+			CFrame = sclera.CFrame * CFrame.new(pupilOffset),
+			Parent = model,
+		}))
+
+		-- Glint / shine
+		attachPart(makePart({
+			Name = "BrainrotEyeShine_" .. side,
+			Shape = Enum.PartType.Ball,
+			Material = Enum.Material.Neon,
+			Color = Color3.fromRGB(255, 255, 255),
+			Size = Vector3.new(0.12 * scale, 0.12 * scale, 0.12 * scale),
+			CFrame = sclera.CFrame * CFrame.new(0.08 * scale, 0.12 * scale, -0.18 * scale),
+			Parent = model,
+		}))
+
+		-- Brow (furrowed or wide)
+		local browRot = if expr == "Fierce" then math.rad(side * 28)
+			elseif expr == "Derp" then math.rad(-side * 18)
+			else math.rad(side * 12)
+		attachPart(makePart({
+			Name = "BrainrotBrow_" .. side,
+			Color = Color3.fromRGB(35, 35, 45),
+			Material = Enum.Material.SmoothPlastic,
+			Size = Vector3.new(0.52 * scale, 0.14 * scale, 0.16 * scale),
+			CFrame = headCF * CFrame.new(side * eyeSpacing, eyeY + 0.36 * scale, eyeZ - 0.04 * scale) * CFrame.Angles(0, 0, browRot),
+			Parent = model,
+		}))
+	end
+
+	-- Mouth
+	if expr == "Fierce" or expr == "Grin" then
+		local mouth = attachPart(makePart({
+			Name = "BrainrotMouthInterior",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(50, 15, 20),
+			Material = Enum.Material.SmoothPlastic,
+			Size = Vector3.new(0.72 * scale, 0.45 * scale, 0.35 * scale),
+			CFrame = headCF * CFrame.new(0, -0.22 * scale, eyeZ - 0.04 * scale),
+			Parent = model,
+		}))
+		attachPart(makePart({
+			Name = "BrainrotTeethTop",
+			Color = Color3.fromRGB(255, 255, 255),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(0.55 * scale, 0.14 * scale, 0.22 * scale),
+			CFrame = mouth.CFrame * CFrame.new(0, 0.14 * scale, -0.06 * scale),
+			Parent = model,
+		}))
+		attachPart(makePart({
+			Name = "BrainrotTeethBottom",
+			Color = Color3.fromRGB(255, 255, 255),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(0.48 * scale, 0.12 * scale, 0.2 * scale),
+			CFrame = mouth.CFrame * CFrame.new(0, -0.14 * scale, -0.06 * scale),
+			Parent = model,
+		}))
+	elseif expr == "OpenMouth" or expr == "Derp" or expr == "Wide" then
+		attachPart(makePart({
+			Name = "BrainrotDerpMouth",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(60, 15, 25),
+			Material = Enum.Material.SmoothPlastic,
+			Size = Vector3.new(0.85 * scale, 0.52 * scale, 0.38 * scale),
+			CFrame = headCF * CFrame.new(0, -0.24 * scale, eyeZ - 0.02 * scale),
+			Parent = model,
+		}))
+		attachPart(makePart({
+			Name = "BrainrotTongue",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(255, 95, 120),
+			Material = Enum.Material.SmoothPlastic,
+			Size = Vector3.new(0.45 * scale, 0.22 * scale, 0.3 * scale),
+			CFrame = headCF * CFrame.new(0, -0.32 * scale, eyeZ - 0.12 * scale),
+			Parent = model,
+		}))
+	end
+
+	return parts
+end
+
+-- Builds unmistakable distinct 3D Brainrot Character Sculptures for all 35 Brainrots (#1 to #35)
 local function addBrainrotFeatures(
 	body: BasePart,
 	model: Instance,
@@ -230,7 +359,6 @@ local function addBrainrotFeatures(
 	local center = body.CFrame
 	local numId = tonumber(slimeDef.Id) or 1
 	local nameLower = string.lower(slimeDef.Name or "")
-	local bType = (slimeDef :: any).BrainrotType or ""
 
 	local function attach(p: Part): Part
 		p.Anchored = anchored
@@ -240,148 +368,612 @@ local function addBrainrotFeatures(
 		return p
 	end
 
-	-- Determine archetype from BrainrotType, Name, or ID (#1-#35)
-	local archetype = bType
-	if archetype == "" then
-		if string.find(nameLower, "tralal") or string.find(nameLower, "trulim") or numId == 1 or numId == 12 or numId == 31 then
-			archetype = "Tralalero"
-		elseif string.find(nameLower, "bombard") or string.find(nameLower, "crocod") or numId == 9 or numId == 27 or numId == 32 then
-			archetype = "Bombardiro"
-		elseif string.find(nameLower, "tung") or string.find(nameLower, "sahur") or numId == 13 or numId == 28 or numId == 34 then
-			archetype = "TungTung"
-		elseif string.find(nameLower, "liril") or string.find(nameLower, "cacto") or numId == 2 or numId == 24 then
-			archetype = "Lirili"
-		elseif string.find(nameLower, "patapim") or string.find(nameLower, "bicus") or numId == 4 or numId == 22 then
-			archetype = "Patapim"
-		elseif string.find(nameLower, "assassin") or string.find(nameLower, "cappuccin") and not string.find(nameLower, "ballerina") or numId == 14 then
-			archetype = "Cappuccino"
-		elseif string.find(nameLower, "chimpanz") or string.find(nameLower, "banan") or numId == 7 then
-			archetype = "Chimpanzini"
-		elseif string.find(nameLower, "saturn") or string.find(nameLower, "vaca") or numId == 21 or numId == 33 then
-			archetype = "Saturno"
-		elseif string.find(nameLower, "ballerina") or numId == 5 then
-			archetype = "Ballerina"
-		elseif string.find(nameLower, "frigo") or string.find(nameLower, "camel") or numId == 8 then
-			archetype = "Frigo"
-		elseif string.find(nameLower, "gusini") or string.find(nameLower, "bombomb") or numId == 10 or numId == 26 then
-			archetype = "Gusini"
-		elseif string.find(nameLower, "orangut") or string.find(nameLower, "ananas") or numId == 16 then
-			archetype = "Orangutini"
-		elseif string.find(nameLower, "boneca") or string.find(nameLower, "ambalabu") or numId == 15 then
-			archetype = "Boneca"
-		elseif string.find(nameLower, "glorbo") or string.find(nameLower, "burbal") or numId == 6 or numId == 11 then
-			archetype = "Glorbo"
-		elseif string.find(nameLower, "trippi") or string.find(nameLower, "crab") or numId == 3 or numId == 25 then
-			archetype = "Trippi"
-		elseif string.find(nameLower, "giraf") or string.find(nameLower, "talpa") or numId == 19 or numId == 23 then
-			archetype = "Girafa"
-		elseif string.find(nameLower, "skibidi") or string.find(nameLower, "garam") or string.find(nameLower, "madu") or numId == 17 or numId == 18 or numId == 29 then
-			archetype = "Skibidi"
-		elseif string.find(nameLower, "maxwell") or numId == 20 then
-			archetype = "Maxwell"
+	local targetId = numId
+	if targetId < 1 or targetId > 35 then
+		if string.find(nameLower, "tralal") then targetId = if string.find(nameLower, "cosmic") then 35 else 1
+		elseif string.find(nameLower, "liril") then targetId = 2
+		elseif string.find(nameLower, "trippi") then targetId = 3
+		elseif string.find(nameLower, "burbal") then targetId = 4
+		elseif string.find(nameLower, "assassin") or (string.find(nameLower, "cappuccin") and not string.find(nameLower, "ballerina")) then targetId = 5
+		elseif string.find(nameLower, "ballerina") then targetId = 6
+		elseif string.find(nameLower, "chimpanz") or string.find(nameLower, "banan") then targetId = 7
+		elseif string.find(nameLower, "frigo") then targetId = 8
+		elseif string.find(nameLower, "tung") then targetId = 9
+		elseif string.find(nameLower, "bombard") then targetId = if string.find(nameLower, "inferno") then 30 else 10
+		elseif string.find(nameLower, "gusini") or string.find(nameLower, "bombomb") then targetId = 11
+		elseif string.find(nameLower, "glorbo") or string.find(nameLower, "fruttodr") then targetId = 12
+		elseif string.find(nameLower, "patapim") then targetId = 13
+		elseif string.find(nameLower, "orangut") or string.find(nameLower, "ananas") then targetId = 14
+		elseif string.find(nameLower, "boneca") or string.find(nameLower, "ambalabu") then targetId = 15
+		elseif string.find(nameLower, "trulim") then targetId = 16
+		elseif string.find(nameLower, "giraf") or string.find(nameLower, "celestre") then targetId = 17
+		elseif string.find(nameLower, "bicus") then targetId = 18
+		elseif string.find(nameLower, "garam") then targetId = 19
+		elseif string.find(nameLower, "maxwell") then targetId = 20
+		elseif string.find(nameLower, "saturn") or string.find(nameLower, "vaca") then targetId = 21
+		elseif string.find(nameLower, "cacto") or string.find(nameLower, "hipo") then targetId = 22
+		elseif string.find(nameLower, "blueberrin") or string.find(nameLower, "octopuss") then targetId = 23
+		elseif string.find(nameLower, "crabracadabra") then targetId = 24
+		elseif string.find(nameLower, "chicleteira") or string.find(nameLower, "bicicleteira") then targetId = 25
+		elseif string.find(nameLower, "spijun") or string.find(nameLower, "golub") then targetId = 26
+		elseif string.find(nameLower, "tigrr") or string.find(nameLower, "waterm") then targetId = 27
+		elseif string.find(nameLower, "zibra") then targetId = 28
+		elseif string.find(nameLower, "graipussi") or string.find(nameLower, "medussi") then targetId = 29
+		elseif string.find(nameLower, "inferno") then targetId = 30
+		elseif string.find(nameLower, "gattatino") or string.find(nameLower, "neonino") then targetId = 31
+		elseif string.find(nameLower, "matteo") then targetId = 32
+		elseif string.find(nameLower, "udin") then targetId = 33
+		elseif string.find(nameLower, "skibidi") then targetId = 34
+		elseif string.find(nameLower, "cosmic") then targetId = 35
 		else
-			local pool = {
-				"Tralalero", "Lirili", "Trippi", "Patapim", "Ballerina",
-				"Glorbo", "Chimpanzini", "Frigo", "Bombardiro", "Gusini",
-				"TungTung", "Cappuccino", "Boneca", "Orangutini", "Saturno",
-			}
-			archetype = pool[((numId - 1) % #pool) + 1]
+			targetId = ((numId - 1) % 35) + 1
 		end
 	end
 
-	if archetype == "Tralalero" then
-		-- Shark Dorsal Fin, Shark Snout + Teeth, Tail Fin, and 3 Iconic Blue Nike Sneakers!
+	if targetId == 1 then
+		-- #1: Tralalero Tralala (Sleek Blue Great-White Shark in 3 Blue Nike Sneakers)
 		attach(makePart({
-			Name = "SharkSnout",
-			Shape = Enum.PartType.Ball,
-			Color = slimeDef.Color,
-			Size = Vector3.new(radius * 1.15, radius * 0.72, radius * 0.95),
-			CFrame = center * CFrame.new(0, -0.05 * scale, -radius * 0.95),
+			Name = "SharkTorso",
+			Color = Color3.fromRGB(45, 145, 245),
+			Size = Vector3.new(2.4 * scale, 2.1 * scale, 5.2 * scale),
+			CFrame = center,
 			Parent = model,
 		}))
 		attach(makePart({
+			Name = "SharkBelly",
+			Color = Color3.fromRGB(245, 250, 255),
+			Size = Vector3.new(2.1 * scale, 0.65 * scale, 4.6 * scale),
+			CFrame = center * CFrame.new(0, -0.75 * scale, 0),
+			Parent = model,
+		}))
+		local snout = attach(makePart({
+			Name = "SharkSnout",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(45, 145, 245),
+			Size = Vector3.new(2.0 * scale, 1.4 * scale, 2.2 * scale),
+			CFrame = center * CFrame.new(0, -0.05 * scale, -2.6 * scale),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "SharkJaw",
+			Color = Color3.fromRGB(245, 250, 255),
+			Size = Vector3.new(1.8 * scale, 0.42 * scale, 1.9 * scale),
+			CFrame = center * CFrame.new(0, -0.58 * scale, -2.3 * scale) * CFrame.Angles(math.rad(18), 0, 0),
+			Parent = model,
+		}))
+		for _, side in ipairs({ -1, 1 }) do
+			attach(makePart({
+				Name = "SharkTeeth_" .. side,
+				Color = Color3.fromRGB(255, 255, 255),
+				Material = Enum.Material.Neon,
+				Size = Vector3.new(0.75 * scale, 0.16 * scale, 0.25 * scale),
+				CFrame = center * CFrame.new(side * 0.45 * scale, -0.42 * scale, -2.75 * scale),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "PectoralFin_" .. side,
+				Color = Color3.fromRGB(45, 145, 245),
+				Size = Vector3.new(1.6 * scale, 0.26 * scale, 1.1 * scale),
+				CFrame = center * CFrame.new(side * 1.65 * scale, -0.35 * scale, -0.5 * scale) * CFrame.Angles(0, math.rad(-side * 22), math.rad(-side * 25)),
+				Parent = model,
+			}))
+		end
+		attach(makePart({
 			Name = "SharkDorsalFin",
-			Color = slimeDef.Color,
-			Size = Vector3.new(0.38 * scale, radius * 1.15, radius * 0.95),
-			CFrame = center * CFrame.new(0, radius * 1.05, 0.15 * scale) * CFrame.Angles(math.rad(-22), 0, 0),
+			Color = Color3.fromRGB(45, 145, 245),
+			Size = Vector3.new(0.38 * scale, 2.1 * scale, 1.8 * scale),
+			CFrame = center * CFrame.new(0, 1.65 * scale, 0.2 * scale) * CFrame.Angles(math.rad(-25), 0, 0),
 			Parent = model,
 		}))
 		attach(makePart({
 			Name = "SharkTailFin",
-			Color = slimeDef.Color,
-			Size = Vector3.new(0.35 * scale, radius * 1.1, radius * 0.85),
-			CFrame = center * CFrame.new(0, 0.1 * scale, radius * 1.08) * CFrame.Angles(math.rad(18), 0, 0),
+			Color = Color3.fromRGB(45, 145, 245),
+			Size = Vector3.new(0.35 * scale, 2.2 * scale, 1.4 * scale),
+			CFrame = center * CFrame.new(0, 0.4 * scale, 2.8 * scale) * CFrame.Angles(math.rad(22), 0, 0),
 			Parent = model,
 		}))
-		-- 3 Blue Sneakers (Left, Right, Rear Tail Leg)
+		addBrainrotEyesAndMouth(snout, model, scale, anchored, "Fierce")
 		local sneakerOffsets = {
-			Vector3.new(-radius * 0.68, -radius * 0.85, -radius * 0.35),
-			Vector3.new(radius * 0.68, -radius * 0.85, -radius * 0.35),
-			Vector3.new(0, -radius * 0.85, radius * 0.65),
+			Vector3.new(-1.15 * scale, -1.25 * scale, -0.6 * scale),
+			Vector3.new(1.15 * scale, -1.25 * scale, -0.6 * scale),
+			Vector3.new(0, -1.25 * scale, 1.7 * scale),
 		}
 		for idx, off in ipairs(sneakerOffsets) do
 			local shoe = attach(makePart({
-				Name = "BlueSneaker_" .. idx,
+				Name = "BlueNikeSneaker_" .. idx,
 				Color = Color3.fromRGB(28, 125, 255),
-				Size = Vector3.new(0.82 * scale, 0.52 * scale, 1.35 * scale),
+				Size = Vector3.new(0.95 * scale, 0.62 * scale, 1.65 * scale),
 				CFrame = center * CFrame.new(off),
 				Parent = model,
 			}))
 			attach(makePart({
-				Name = "SneakerSole_" .. idx,
+				Name = "NikeSole_" .. idx,
 				Color = Color3.fromRGB(255, 255, 255),
 				Material = Enum.Material.Neon,
-				Size = Vector3.new(0.88 * scale, 0.22 * scale, 1.42 * scale),
-				CFrame = shoe.CFrame * CFrame.new(0, -0.24 * scale, 0),
-				Parent = model,
-			}))
-		end
-	elseif archetype == "Bombardiro" then
-		-- Alligator Snout + Twin Bomber Airplane Wings + Twin Propellers + Bomb Belly!
-		attach(makePart({
-			Name = "CrocSnout",
-			Color = slimeDef.Color,
-			Size = Vector3.new(radius * 1.1, radius * 0.58, radius * 1.35),
-			CFrame = center * CFrame.new(0, -0.12 * scale, -radius * 1.05),
-			Parent = model,
-		}))
-		attach(makePart({
-			Name = "BomberWings",
-			Color = Color3.fromRGB(145, 158, 142),
-			Material = Enum.Material.Metal,
-			Size = Vector3.new(radius * 3.6, 0.28 * scale, radius * 1.05),
-			CFrame = center * CFrame.new(0, 0.18 * scale, 0),
-			Parent = model,
-		}))
-		for _, side in ipairs({ -1, 1 }) do
-			local engine = attach(makePart({
-				Name = "WingEngine_" .. side,
-				Shape = Enum.PartType.Cylinder,
-				Color = Color3.fromRGB(75, 82, 90),
-				Material = Enum.Material.Metal,
-				Size = Vector3.new(1.15 * scale, 0.72 * scale, 0.72 * scale),
-				CFrame = center * CFrame.new(side * radius * 1.25, 0.05 * scale, -0.35 * scale) * CFrame.Angles(0, math.rad(90), 0),
+				Size = Vector3.new(1.02 * scale, 0.24 * scale, 1.75 * scale),
+				CFrame = shoe.CFrame * CFrame.new(0, -0.25 * scale, 0),
 				Parent = model,
 			}))
 			attach(makePart({
-				Name = "PropellerBlade_" .. side,
-				Color = Color3.fromRGB(255, 225, 75),
+				Name = "NikeSwoosh_" .. idx,
+				Color = Color3.fromRGB(255, 255, 255),
 				Material = Enum.Material.Neon,
-				Size = Vector3.new(1.35 * scale, 0.18 * scale, 0.14 * scale),
-				CFrame = engine.CFrame * CFrame.new(0.62 * scale, 0, 0) * CFrame.Angles(math.rad(35), math.rad(90), 0),
+				Size = Vector3.new(0.12 * scale, 0.22 * scale, 0.85 * scale),
+				CFrame = shoe.CFrame * CFrame.new((if off.X <= 0 then -0.48 * scale else 0.48 * scale), 0.08 * scale, 0) * CFrame.Angles(0, 0, math.rad(15)),
 				Parent = model,
 			}))
 		end
-	elseif archetype == "TungTung" then
-		-- Wooden Log Crown Ring + Held Wooden Baseball Bat!
-		body.Material = Enum.Material.Wood
+
+	elseif targetId == 2 then
+		-- #2: Lirili Larila (Prickly Cactus Elephant in Desert Sandals)
 		attach(makePart({
-			Name = "LogTopBark",
+			Name = "CactusElephantBody",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(68, 178, 78),
+			Size = Vector3.new(3.0 * scale, 2.8 * scale, 3.6 * scale),
+			CFrame = center,
+			Parent = model,
+		}))
+		for i = 0, 7 do
+			local ang = math.rad(i * 45)
+			attach(makePart({
+				Name = "CactusSpine_" .. i,
+				Color = Color3.fromRGB(255, 255, 255),
+				Material = Enum.Material.Neon,
+				Size = Vector3.new(0.18 * scale, 0.55 * scale, 0.18 * scale),
+				CFrame = center * CFrame.Angles(0, ang, 0) * CFrame.new(0, 1.25 * scale, -1.35 * scale) * CFrame.Angles(math.rad(30), 0, 0),
+				Parent = model,
+			}))
+		end
+		local elHead = attach(makePart({
+			Name = "ElephantHead",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(68, 178, 78),
+			Size = Vector3.new(2.4 * scale, 2.2 * scale, 2.2 * scale),
+			CFrame = center * CFrame.new(0, 0.3 * scale, -1.8 * scale),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "ElephantTrunk",
 			Shape = Enum.PartType.Cylinder,
-			Color = Color3.fromRGB(198, 152, 96),
+			Color = Color3.fromRGB(68, 178, 78),
+			Size = Vector3.new(2.4 * scale, 0.65 * scale, 0.65 * scale),
+			CFrame = center * CFrame.new(0, -0.1 * scale, -2.8 * scale) * CFrame.Angles(math.rad(35), math.rad(90), 0),
+			Parent = model,
+		}))
+		for _, side in ipairs({ -1, 1 }) do
+			attach(makePart({
+				Name = "FloppyEar_" .. side,
+				Shape = Enum.PartType.Ball,
+				Color = Color3.fromRGB(75, 195, 88),
+				Size = Vector3.new(0.38 * scale, 2.2 * scale, 1.8 * scale),
+				CFrame = center * CFrame.new(side * 1.8 * scale, 0.5 * scale, -1.6 * scale),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "IvoryTusk_" .. side,
+				Color = Color3.fromRGB(255, 252, 235),
+				Material = Enum.Material.Neon,
+				Size = Vector3.new(0.28 * scale, 0.28 * scale, 1.25 * scale),
+				CFrame = center * CFrame.new(side * 0.65 * scale, -0.35 * scale, -2.6 * scale) * CFrame.Angles(math.rad(-18), 0, 0),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "ElephantLeg_" .. side,
+				Shape = Enum.PartType.Cylinder,
+				Color = Color3.fromRGB(68, 178, 78),
+				Size = Vector3.new(1.4 * scale, 0.95 * scale, 0.95 * scale),
+				CFrame = center * CFrame.new(side * 1.1 * scale, -0.85 * scale, -0.8 * scale) * CFrame.Angles(math.rad(90), 0, 0),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "DesertSandal_" .. side,
+				Color = Color3.fromRGB(142, 86, 44),
+				Material = Enum.Material.Wood,
+				Size = Vector3.new(1.15 * scale, 0.38 * scale, 1.75 * scale),
+				CFrame = center * CFrame.new(side * 1.1 * scale, -1.35 * scale, -0.8 * scale),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "SandalStrap_" .. side,
+				Color = Color3.fromRGB(85, 48, 25),
+				Size = Vector3.new(1.22 * scale, 0.16 * scale, 0.45 * scale),
+				CFrame = center * CFrame.new(side * 1.1 * scale, -1.15 * scale, -0.8 * scale),
+				Parent = model,
+			}))
+		end
+		addBrainrotEyesAndMouth(elHead, model, scale, anchored, "Derp")
+
+	elseif targetId == 3 then
+		-- #3: Trippi Troppi (Coral Shrimp/Cat Hybrid with Pincers & Whiskers)
+		attach(makePart({
+			Name = "ShrimpBody",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(255, 85, 75),
+			Size = Vector3.new(2.6 * scale, 2.0 * scale, 4.2 * scale),
+			CFrame = center,
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "ShrimpTailFan",
+			Color = Color3.fromRGB(255, 120, 105),
+			Size = Vector3.new(1.8 * scale, 0.28 * scale, 1.6 * scale),
+			CFrame = center * CFrame.new(0, 0.45 * scale, 2.3 * scale) * CFrame.Angles(math.rad(28), 0, 0),
+			Parent = model,
+		}))
+		local catHead = attach(makePart({
+			Name = "ShrimpCatHead",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(255, 110, 95),
+			Size = Vector3.new(2.2 * scale, 2.0 * scale, 2.2 * scale),
+			CFrame = center * CFrame.new(0, 0.2 * scale, -1.8 * scale),
+			Parent = model,
+		}))
+		for _, side in ipairs({ -1, 1 }) do
+			attach(makePart({
+				Name = "CatEar_" .. side,
+				Color = Color3.fromRGB(255, 85, 75),
+				Size = Vector3.new(0.55 * scale, 0.75 * scale, 0.45 * scale),
+				CFrame = catHead.CFrame * CFrame.new(side * 0.72 * scale, 1.05 * scale, 0) * CFrame.Angles(0, 0, math.rad(-side * 20)),
+				Parent = model,
+			}))
+			local pincer = attach(makePart({
+				Name = "GiantPincer_" .. side,
+				Color = Color3.fromRGB(235, 45, 45),
+				Size = Vector3.new(0.85 * scale, 1.45 * scale, 1.85 * scale),
+				CFrame = center * CFrame.new(side * 1.75 * scale, 0.1 * scale, -1.8 * scale) * CFrame.Angles(0, math.rad(side * 25), 0),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "PincerTip_" .. side,
+				Color = Color3.fromRGB(255, 135, 125),
+				Size = Vector3.new(0.42 * scale, 0.55 * scale, 1.15 * scale),
+				CFrame = pincer.CFrame * CFrame.new(0, 0.35 * scale, -0.85 * scale) * CFrame.Angles(math.rad(-25), 0, 0),
+				Parent = model,
+			}))
+			for legIdx = 1, 3 do
+				attach(makePart({
+					Name = "ShrimpLeg_" .. side .. "_" .. legIdx,
+					Color = Color3.fromRGB(255, 110, 95),
+					Size = Vector3.new(0.28 * scale, 0.95 * scale, 0.28 * scale),
+					CFrame = center * CFrame.new(side * 1.35 * scale, -0.75 * scale, (-0.6 + legIdx * 0.7) * scale) * CFrame.Angles(0, 0, math.rad(side * 35)),
+					Parent = model,
+				}))
+			end
+		end
+		addBrainrotEyesAndMouth(catHead, model, scale, anchored, "Wide")
+
+	elseif targetId == 4 then
+		-- #4: Burbaloni Luliloli (Coconut Capybara — Round Fuzzy Coconut Shell + Capybara Snout)
+		attach(makePart({
+			Name = "CoconutShell",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(112, 75, 48),
+			Material = Enum.Material.Slate,
+			Size = Vector3.new(3.2 * scale, 3.0 * scale, 3.4 * scale),
+			CFrame = center,
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "CoconutFiberRing",
+			Shape = Enum.PartType.Cylinder,
+			Color = Color3.fromRGB(168, 125, 82),
 			Material = Enum.Material.WoodPlanks,
-			Size = Vector3.new(0.45 * scale, radius * 1.55, radius * 1.55),
-			CFrame = center * CFrame.new(0, radius * 0.84, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			Size = Vector3.new(0.55 * scale, 3.3 * scale, 3.3 * scale),
+			CFrame = center * CFrame.Angles(0, 0, math.rad(90)),
+			Parent = model,
+		}))
+		local capyHead = attach(makePart({
+			Name = "CapybaraSnout",
+			Color = Color3.fromRGB(145, 98, 62),
+			Size = Vector3.new(1.8 * scale, 1.5 * scale, 2.0 * scale),
+			CFrame = center * CFrame.new(0, -0.15 * scale, -1.9 * scale),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "CapyNose",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(35, 25, 20),
+			Size = Vector3.new(0.45 * scale, 0.35 * scale, 0.35 * scale),
+			CFrame = capyHead.CFrame * CFrame.new(0, -0.15 * scale, -1.05 * scale),
+			Parent = model,
+		}))
+		for _, side in ipairs({ -1, 1 }) do
+			attach(makePart({
+				Name = "CapyEar_" .. side,
+				Shape = Enum.PartType.Ball,
+				Color = Color3.fromRGB(115, 78, 48),
+				Size = Vector3.new(0.45 * scale, 0.55 * scale, 0.35 * scale),
+				CFrame = capyHead.CFrame * CFrame.new(side * 0.75 * scale, 0.8 * scale, 0.3 * scale),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "CapyFootFront_" .. side,
+				Shape = Enum.PartType.Ball,
+				Color = Color3.fromRGB(98, 65, 38),
+				Size = Vector3.new(0.75 * scale, 0.55 * scale, 1.15 * scale),
+				CFrame = center * CFrame.new(side * 1.1 * scale, -1.35 * scale, -1.1 * scale),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "CapyFootBack_" .. side,
+				Shape = Enum.PartType.Ball,
+				Color = Color3.fromRGB(98, 65, 38),
+				Size = Vector3.new(0.75 * scale, 0.55 * scale, 1.15 * scale),
+				CFrame = center * CFrame.new(side * 1.1 * scale, -1.35 * scale, 1.1 * scale),
+				Parent = model,
+			}))
+		end
+		addBrainrotEyesAndMouth(capyHead, model, scale, anchored, "Derp")
+
+	elseif targetId == 5 then
+		-- #5: Cappuccino Assassino (Porcelain Coffee Cup Ninja with Headband & Dual Katanas)
+		local cup = attach(makePart({
+			Name = "CoffeeCupBody",
+			Shape = Enum.PartType.Cylinder,
+			Color = Color3.fromRGB(250, 250, 252),
+			Size = Vector3.new(3.4 * scale, 3.0 * scale, 3.0 * scale),
+			CFrame = center * CFrame.Angles(0, 0, math.rad(90)),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "CupHandle",
+			Color = Color3.fromRGB(250, 250, 252),
+			Size = Vector3.new(0.45 * scale, 1.65 * scale, 0.95 * scale),
+			CFrame = center * CFrame.new(-1.65 * scale, 0, 0),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "CappuccinoFoamDome",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(215, 170, 120),
+			Size = Vector3.new(2.7 * scale, 0.85 * scale, 2.7 * scale),
+			CFrame = center * CFrame.new(0, 1.55 * scale, 0),
+			Parent = model,
+		}))
+		local headband = attach(makePart({
+			Name = "NinjaHeadband",
+			Color = Color3.fromRGB(25, 25, 28),
+			Size = Vector3.new(3.05 * scale, 0.65 * scale, 3.05 * scale),
+			CFrame = center * CFrame.new(0, 0.75 * scale, 0),
+			Parent = model,
+		}))
+		for _, side in ipairs({ -1, 1 }) do
+			attach(makePart({
+				Name = "HeadbandTie_" .. side,
+				Color = Color3.fromRGB(225, 35, 45),
+				Material = Enum.Material.Neon,
+				Size = Vector3.new(0.22 * scale, 1.45 * scale, 0.35 * scale),
+				CFrame = center * CFrame.new(side * 0.45 * scale, 0.45 * scale, 1.7 * scale) * CFrame.Angles(math.rad(-25), 0, math.rad(side * 18)),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "CrossedKatana_" .. side,
+				Color = Color3.fromRGB(220, 235, 255),
+				Material = Enum.Material.Metal,
+				Size = Vector3.new(0.18 * scale, 3.8 * scale, 0.28 * scale),
+				CFrame = center * CFrame.new(0, 0.65 * scale, 1.55 * scale) * CFrame.Angles(0, 0, math.rad(side * 38)),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "NinjaLeg_" .. side,
+				Color = Color3.fromRGB(25, 25, 28),
+				Size = Vector3.new(0.65 * scale, 0.85 * scale, 0.85 * scale),
+				CFrame = center * CFrame.new(side * 0.75 * scale, -1.85 * scale, 0),
+				Parent = model,
+			}))
+		end
+		addBrainrotEyesAndMouth(headband, model, scale, anchored, "Fierce")
+
+	elseif targetId == 6 then
+		-- #6: Ballerina Cappuccina (Teacup Ballerina in Pink Tutu & Pointe Slippers)
+		local cupHead = attach(makePart({
+			Name = "TeacupHead",
+			Shape = Enum.PartType.Cylinder,
+			Color = Color3.fromRGB(252, 250, 252),
+			Size = Vector3.new(1.8 * scale, 2.2 * scale, 2.2 * scale),
+			CFrame = center * CFrame.new(0, 1.35 * scale, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "CupRimGold",
+			Shape = Enum.PartType.Cylinder,
+			Color = Color3.fromRGB(255, 215, 65),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(0.25 * scale, 2.3 * scale, 2.3 * scale),
+			CFrame = center * CFrame.new(0, 2.2 * scale, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "SlenderTorso",
+			Color = Color3.fromRGB(255, 170, 215),
+			Size = Vector3.new(1.2 * scale, 1.8 * scale, 1.2 * scale),
+			CFrame = center * CFrame.new(0, 0.1 * scale, 0),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "PinkTutuSkirt",
+			Shape = Enum.PartType.Cylinder,
+			Color = Color3.fromRGB(255, 125, 205),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(0.45 * scale, 5.2 * scale, 5.2 * scale),
+			CFrame = center * CFrame.new(0, -0.45 * scale, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			Parent = model,
+		}))
+		for _, side in ipairs({ -1, 1 }) do
+			attach(makePart({
+				Name = "BalletArm_" .. side,
+				Color = Color3.fromRGB(255, 220, 210),
+				Size = Vector3.new(0.35 * scale, 1.65 * scale, 0.35 * scale),
+				CFrame = center * CFrame.new(side * 1.15 * scale, 0.75 * scale, 0) * CFrame.Angles(0, 0, math.rad(-side * 45)),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "PointeSlipper_" .. side,
+				Color = Color3.fromRGB(255, 135, 195),
+				Material = Enum.Material.Neon,
+				Size = Vector3.new(0.45 * scale, 0.85 * scale, 0.95 * scale),
+				CFrame = center * CFrame.new(side * 0.55 * scale, -1.45 * scale, 0),
+				Parent = model,
+			}))
+		end
+		addBrainrotEyesAndMouth(cupHead, model, scale, anchored, "Wide")
+
+	elseif targetId == 7 then
+		-- #7: Chimpanzini Bananini (Chimpanzee emerging from 4 Peeled Yellow Banana Flaps)
+		attach(makePart({
+			Name = "BananaBase",
+			Color = Color3.fromRGB(255, 225, 45),
+			Size = Vector3.new(2.4 * scale, 2.6 * scale, 2.4 * scale),
+			CFrame = center * CFrame.new(0, -0.6 * scale, 0),
+			Parent = model,
+		}))
+		for p = 0, 3 do
+			local ang = math.rad(p * 90 + 45)
+			attach(makePart({
+				Name = "BananaPeel_" .. p,
+				Color = Color3.fromRGB(255, 225, 45),
+				Material = Enum.Material.Neon,
+				Size = Vector3.new(1.15 * scale, 2.2 * scale, 0.35 * scale),
+				CFrame = center * CFrame.Angles(0, ang, 0) * CFrame.new(0, -0.35 * scale, -1.65 * scale) * CFrame.Angles(math.rad(-38), 0, 0),
+				Parent = model,
+			}))
+		end
+		attach(makePart({
+			Name = "ChimpTorso",
+			Color = Color3.fromRGB(115, 75, 42),
+			Size = Vector3.new(2.0 * scale, 1.8 * scale, 1.8 * scale),
+			CFrame = center * CFrame.new(0, 0.65 * scale, 0),
+			Parent = model,
+		}))
+		local chimpHead = attach(makePart({
+			Name = "ChimpHead",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(115, 75, 42),
+			Size = Vector3.new(1.8 * scale, 1.8 * scale, 1.8 * scale),
+			CFrame = center * CFrame.new(0, 1.65 * scale, 0),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "TanMuzzle",
+			Color = Color3.fromRGB(215, 175, 135),
+			Size = Vector3.new(1.2 * scale, 0.75 * scale, 0.95 * scale),
+			CFrame = chimpHead.CFrame * CFrame.new(0, -0.3 * scale, -0.75 * scale),
+			Parent = model,
+		}))
+		for _, side in ipairs({ -1, 1 }) do
+			attach(makePart({
+				Name = "MonkeyEar_" .. side,
+				Shape = Enum.PartType.Ball,
+				Color = Color3.fromRGB(155, 105, 65),
+				Size = Vector3.new(0.35 * scale, 0.95 * scale, 0.95 * scale),
+				CFrame = chimpHead.CFrame * CFrame.new(side * 1.05 * scale, 0.2 * scale, 0),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "ChimpArm_" .. side,
+				Color = Color3.fromRGB(115, 75, 42),
+				Size = Vector3.new(0.55 * scale, 1.45 * scale, 0.55 * scale),
+				CFrame = center * CFrame.new(side * 1.35 * scale, 0.45 * scale, -0.45 * scale) * CFrame.Angles(math.rad(25), 0, math.rad(-side * 25)),
+				Parent = model,
+			}))
+		end
+		addBrainrotEyesAndMouth(chimpHead, model, scale, anchored, "Grin")
+
+	elseif targetId == 8 then
+		-- #8: Frigo Camelo (Stainless Steel Refrigerator Camel in Boots)
+		attach(makePart({
+			Name = "FridgeBody",
+			Color = Color3.fromRGB(215, 228, 240),
+			Material = Enum.Material.Metal,
+			Size = Vector3.new(2.8 * scale, 4.2 * scale, 2.4 * scale),
+			CFrame = center,
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "ChromeHandleTop",
+			Color = Color3.fromRGB(240, 245, 255),
+			Material = Enum.Material.Metal,
+			Size = Vector3.new(0.22 * scale, 1.25 * scale, 0.28 * scale),
+			CFrame = center * CFrame.new(1.15 * scale, 1.1 * scale, -1.35 * scale),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "ChromeHandleBottom",
+			Color = Color3.fromRGB(240, 245, 255),
+			Material = Enum.Material.Metal,
+			Size = Vector3.new(0.22 * scale, 1.25 * scale, 0.28 * scale),
+			CFrame = center * CFrame.new(1.15 * scale, -0.9 * scale, -1.35 * scale),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "IceDispenser",
+			Color = Color3.fromRGB(65, 185, 245),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(0.85 * scale, 0.95 * scale, 0.22 * scale),
+			CFrame = center * CFrame.new(-0.45 * scale, 0.85 * scale, -1.32 * scale),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "CamelHump",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(205, 155, 95),
+			Size = Vector3.new(1.8 * scale, 1.6 * scale, 1.8 * scale),
+			CFrame = center * CFrame.new(0, 2.65 * scale, 0.5 * scale),
+			Parent = model,
+		}))
+		local camelHead = attach(makePart({
+			Name = "CamelHead",
+			Color = Color3.fromRGB(210, 165, 110),
+			Size = Vector3.new(1.4 * scale, 1.6 * scale, 2.2 * scale),
+			CFrame = center * CFrame.new(0, 3.2 * scale, -0.8 * scale),
+			Parent = model,
+		}))
+		for _, side in ipairs({ -1, 1 }) do
+			attach(makePart({
+				Name = "CamelBootFront_" .. side,
+				Color = Color3.fromRGB(95, 55, 32),
+				Size = Vector3.new(0.85 * scale, 0.85 * scale, 1.35 * scale),
+				CFrame = center * CFrame.new(side * 1.05 * scale, -2.45 * scale, -0.75 * scale),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "CamelBootBack_" .. side,
+				Color = Color3.fromRGB(95, 55, 32),
+				Size = Vector3.new(0.85 * scale, 0.85 * scale, 1.35 * scale),
+				CFrame = center * CFrame.new(side * 1.05 * scale, -2.45 * scale, 0.75 * scale),
+				Parent = model,
+			}))
+		end
+		addBrainrotEyesAndMouth(camelHead, model, scale, anchored, "Derp")
+
+	elseif targetId == 9 then
+		-- #9: Tung Tung Tung Sahur (Tall Carved Wooden Log with Wooden Baseball Bat)
+		local logBody = attach(makePart({
+			Name = "WoodenLogBody",
+			Shape = Enum.PartType.Cylinder,
+			Color = Color3.fromRGB(162, 106, 56),
+			Material = Enum.Material.Wood,
+			Size = Vector3.new(5.2 * scale, 2.5 * scale, 2.5 * scale),
+			CFrame = center * CFrame.Angles(0, 0, math.rad(90)),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "LogTopRing",
+			Shape = Enum.PartType.Cylinder,
+			Color = Color3.fromRGB(215, 178, 128),
+			Material = Enum.Material.WoodPlanks,
+			Size = Vector3.new(0.45 * scale, 2.55 * scale, 2.55 * scale),
+			CFrame = center * CFrame.new(0, 2.5 * scale, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "LogBottomRing",
+			Shape = Enum.PartType.Cylinder,
+			Color = Color3.fromRGB(215, 178, 128),
+			Material = Enum.Material.WoodPlanks,
+			Size = Vector3.new(0.45 * scale, 2.55 * scale, 2.55 * scale),
+			CFrame = center * CFrame.new(0, -2.5 * scale, 0) * CFrame.Angles(0, 0, math.rad(90)),
 			Parent = model,
 		}))
 		attach(makePart({
@@ -389,206 +981,1345 @@ local function addBrainrotFeatures(
 			Shape = Enum.PartType.Cylinder,
 			Color = Color3.fromRGB(168, 108, 52),
 			Material = Enum.Material.Wood,
-			Size = Vector3.new(radius * 2.15, 0.58 * scale, 0.58 * scale),
-			CFrame = center * CFrame.new(radius * 1.12, 0.25 * scale, -0.45 * scale) * CFrame.Angles(math.rad(25), 0, math.rad(72)),
-			Parent = model,
-		}))
-	elseif archetype == "Lirili" then
-		-- Cactus Elephant Ears, Curved Trunk, White Tusks & Desert Sandals!
-		attach(makePart({
-			Name = "ElephantTrunk",
-			Shape = Enum.PartType.Cylinder,
-			Color = slimeDef.Color,
-			Size = Vector3.new(radius * 1.25, 0.58 * scale, 0.58 * scale),
-			CFrame = center * CFrame.new(0, -0.15 * scale, -radius * 1.05) * CFrame.Angles(math.rad(25), math.rad(90), 0),
+			Size = Vector3.new(3.2 * scale, 0.55 * scale, 0.55 * scale),
+			CFrame = center * CFrame.new(1.85 * scale, 0.35 * scale, -0.65 * scale) * CFrame.Angles(math.rad(25), 0, math.rad(72)),
 			Parent = model,
 		}))
 		for _, side in ipairs({ -1, 1 }) do
 			attach(makePart({
-				Name = "CactusEar_" .. side,
-				Shape = Enum.PartType.Ball,
-				Color = Color3.fromRGB(68, 185, 82),
-				Size = Vector3.new(0.42 * scale, 1.45 * scale, 1.15 * scale),
-				CFrame = center * CFrame.new(side * radius * 1.05, 0.22 * scale, -0.1 * scale),
-				Parent = model,
-			}))
-			attach(makePart({
-				Name = "IvoryTusk_" .. side,
-				Color = Color3.fromRGB(255, 252, 235),
-				Material = Enum.Material.Neon,
-				Size = Vector3.new(0.28 * scale, 0.28 * scale, 0.92 * scale),
-				CFrame = center * CFrame.new(side * 0.52 * scale, -0.25 * scale, -radius * 1.05),
-				Parent = model,
-			}))
-			attach(makePart({
-				Name = "DesertSandal_" .. side,
-				Color = Color3.fromRGB(142, 86, 44),
-				Material = Enum.Material.Wood,
-				Size = Vector3.new(0.88 * scale, 0.35 * scale, 1.38 * scale),
-				CFrame = center * CFrame.new(side * radius * 0.58, -radius * 0.88, -0.15 * scale),
-				Parent = model,
-			}))
-		end
-	elseif archetype == "Cappuccino" or archetype == "Ballerina" then
-		-- Porcelain Coffee Cup Rim, Frothy Foam Top, Handle, and Twin Katanas or Pink Tutu!
-		attach(makePart({
-			Name = "CoffeeCupRim",
-			Shape = Enum.PartType.Cylinder,
-			Color = Color3.fromRGB(250, 248, 242),
-			Size = Vector3.new(0.42 * scale, radius * 1.85, radius * 1.85),
-			CFrame = center * CFrame.new(0, radius * 0.78, 0) * CFrame.Angles(0, 0, math.rad(90)),
-			Parent = model,
-		}))
-		attach(makePart({
-			Name = "CappuccinoFoam",
-			Shape = Enum.PartType.Ball,
-			Color = Color3.fromRGB(215, 165, 115),
-			Size = Vector3.new(radius * 1.55, 0.65 * scale, radius * 1.55),
-			CFrame = center * CFrame.new(0, radius * 0.92, 0),
-			Parent = model,
-		}))
-		if archetype == "Ballerina" then
-			attach(makePart({
-				Name = "PinkTutuSkirt",
+				Name = "WoodenArm_" .. side,
 				Shape = Enum.PartType.Cylinder,
-				Color = Color3.fromRGB(255, 135, 205),
-				Material = Enum.Material.Neon,
-				Size = Vector3.new(0.38 * scale, radius * 2.55, radius * 2.55),
-				CFrame = center * CFrame.new(0, -radius * 0.35, 0) * CFrame.Angles(0, 0, math.rad(90)),
+				Color = Color3.fromRGB(152, 98, 48),
+				Material = Enum.Material.Wood,
+				Size = Vector3.new(1.8 * scale, 0.45 * scale, 0.45 * scale),
+				CFrame = center * CFrame.new(side * 1.55 * scale, 0.65 * scale, 0) * CFrame.Angles(0, 0, math.rad(side * 35)),
 				Parent = model,
 			}))
-		else
-			for _, side in ipairs({ -1, 1 }) do
-				attach(makePart({
-					Name = "KatanaBlade_" .. side,
-					Color = Color3.fromRGB(210, 235, 255),
-					Material = Enum.Material.Neon,
-					Size = Vector3.new(0.18 * scale, radius * 2.25, 0.28 * scale),
-					CFrame = center * CFrame.new(0, 0.35 * scale, radius * 0.92) * CFrame.Angles(0, 0, math.rad(side * 38)),
-					Parent = model,
-				}))
-			end
-		end
-	elseif archetype == "Chimpanzini" then
-		-- 4 Yellow Banana Peel Petals around waist + Monkey Ears!
-		for p = 0, 3 do
-			local ang = math.rad(p * 90 + 45)
 			attach(makePart({
-				Name = "BananaPeel_" .. p,
-				Color = Color3.fromRGB(255, 225, 55),
-				Material = Enum.Material.Neon,
-				Size = Vector3.new(0.85 * scale, radius * 1.15, 0.32 * scale),
-				CFrame = center * CFrame.Angles(0, ang, 0) * CFrame.new(0, -radius * 0.25, -radius * 0.95) * CFrame.Angles(math.rad(-32), 0, 0),
+				Name = "WoodenLeg_" .. side,
+				Shape = Enum.PartType.Cylinder,
+				Color = Color3.fromRGB(152, 98, 48),
+				Material = Enum.Material.Wood,
+				Size = Vector3.new(1.4 * scale, 0.55 * scale, 0.55 * scale),
+				CFrame = center * CFrame.new(side * 0.75 * scale, -2.95 * scale, 0) * CFrame.Angles(math.rad(90), 0, 0),
 				Parent = model,
 			}))
 		end
-		for _, side in ipairs({ -1, 1 }) do
-			attach(makePart({
-				Name = "MonkeyEar_" .. side,
-				Shape = Enum.PartType.Ball,
-				Color = Color3.fromRGB(138, 86, 48),
-				Size = Vector3.new(0.35 * scale, 0.92 * scale, 0.92 * scale),
-				CFrame = center * CFrame.new(side * radius * 0.98, 0.28 * scale, 0),
-				Parent = model,
-			}))
-		end
-	elseif archetype == "Saturno" then
-		-- La Vaca Saturno Saturnita: Cow Horns + Glowing Tilted Planetary Saturn Ring!
+		addBrainrotEyesAndMouth(logBody, model, scale, anchored, "OpenMouth")
+
+	elseif targetId == 10 then
+		-- #10: Bombardiro Crocodilo (Olive Military Bomber Alligator + Twin Propellers + Bomb)
 		attach(makePart({
-			Name = "SaturnPlanetaryRing",
-			Shape = Enum.PartType.Cylinder,
-			Color = Color3.fromRGB(255, 215, 85),
-			Material = Enum.Material.Neon,
-			Size = Vector3.new(0.28 * scale, radius * 3.1, radius * 3.1),
-			CFrame = center * CFrame.Angles(math.rad(18), 0, math.rad(72)),
+			Name = "BomberFuselage",
+			Color = Color3.fromRGB(85, 135, 72),
+			Size = Vector3.new(2.6 * scale, 2.0 * scale, 5.8 * scale),
+			CFrame = center,
 			Parent = model,
 		}))
-		for _, side in ipairs({ -1, 1 }) do
-			attach(makePart({
-				Name = "SaturnHorn_" .. side,
-				Color = Color3.fromRGB(255, 240, 145),
-				Material = Enum.Material.Neon,
-				Size = Vector3.new(0.42 * scale, 1.05 * scale, 0.42 * scale),
-				CFrame = center * CFrame.new(side * radius * 0.58, radius * 0.92, 0) * CFrame.Angles(0, 0, math.rad(-side * 24)),
-				Parent = model,
-			}))
-		end
-	elseif archetype == "Frigo" then
-		-- Fridge Camel: Twin Humps + Metallic Refrigerator Door & Handle!
+		local crocSnout = attach(makePart({
+			Name = "CrocSnout",
+			Color = Color3.fromRGB(85, 135, 72),
+			Size = Vector3.new(2.2 * scale, 0.85 * scale, 2.8 * scale),
+			CFrame = center * CFrame.new(0, -0.15 * scale, -3.2 * scale),
+			Parent = model,
+		}))
 		attach(makePart({
-			Name = "FridgeDoorFront",
-			Color = Color3.fromRGB(225, 235, 245),
+			Name = "CockpitCanopy",
+			Color = Color3.fromRGB(120, 220, 255),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(1.6 * scale, 0.75 * scale, 2.2 * scale),
+			CFrame = center * CFrame.new(0, 1.15 * scale, -0.8 * scale),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "BomberWings",
+			Color = Color3.fromRGB(92, 142, 78),
 			Material = Enum.Material.Metal,
-			Size = Vector3.new(radius * 1.25, radius * 1.35, 0.35 * scale),
-			CFrame = center * CFrame.new(0, -0.1 * scale, -radius * 0.88),
+			Size = Vector3.new(8.8 * scale, 0.35 * scale, 2.2 * scale),
+			CFrame = center * CFrame.new(0, 0.25 * scale, 0),
 			Parent = model,
 		}))
+		for _, side in ipairs({ -1, 1 }) do
+			local eng = attach(makePart({
+				Name = "WingEngine_" .. side,
+				Shape = Enum.PartType.Cylinder,
+				Color = Color3.fromRGB(55, 62, 68),
+				Material = Enum.Material.Metal,
+				Size = Vector3.new(2.0 * scale, 1.05 * scale, 1.05 * scale),
+				CFrame = center * CFrame.new(side * 2.6 * scale, 0.15 * scale, -0.5 * scale) * CFrame.Angles(0, math.rad(90), 0),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "PropellerBlade_" .. side,
+				Color = Color3.fromRGB(255, 225, 75),
+				Material = Enum.Material.Neon,
+				Size = Vector3.new(2.4 * scale, 0.28 * scale, 0.22 * scale),
+				CFrame = eng.CFrame * CFrame.new(1.15 * scale, 0, 0) * CFrame.Angles(math.rad(45), math.rad(90), 0),
+				Parent = model,
+			}))
+		end
 		attach(makePart({
-			Name = "FridgeHandle",
-			Color = Color3.fromRGB(85, 225, 255),
-			Material = Enum.Material.Neon,
-			Size = Vector3.new(0.22 * scale, radius * 0.95, 0.25 * scale),
-			CFrame = center * CFrame.new(radius * 0.45, -0.1 * scale, -radius * 1.05),
-			Parent = model,
-		}))
-	elseif archetype == "Gusini" then
-		-- Bombombini Gusini: Orange Duck/Goose Bill + Jet Wings + Twin Rockets!
-		attach(makePart({
-			Name = "GooseBill",
-			Color = Color3.fromRGB(255, 155, 35),
-			Material = Enum.Material.Neon,
-			Size = Vector3.new(0.95 * scale, 0.38 * scale, 1.15 * scale),
-			CFrame = center * CFrame.new(0, -0.05 * scale, -radius * 1.05),
-			Parent = model,
-		}))
-		attach(makePart({
-			Name = "GooseJetWings",
-			Color = Color3.fromRGB(235, 240, 248),
-			Size = Vector3.new(radius * 3.2, 0.26 * scale, radius * 0.92),
-			CFrame = center * CFrame.new(0, 0.12 * scale, 0),
-			Parent = model,
-		}))
-	elseif archetype == "Boneca" then
-		-- Boneca Ambalabu: Black Rubber Tire Ring around body + Top Frog Eyes!
-		attach(makePart({
-			Name = "RubberTireTread",
+			Name = "UnderbellyBomb",
 			Shape = Enum.PartType.Cylinder,
-			Color = Color3.fromRGB(32, 34, 38),
-			Material = Enum.Material.Slate,
-			Size = Vector3.new(0.95 * scale, radius * 2.35, radius * 2.35),
-			CFrame = center * CFrame.Angles(0, 0, math.rad(90)),
+			Color = Color3.fromRGB(35, 38, 42),
+			Material = Enum.Material.Metal,
+			Size = Vector3.new(2.4 * scale, 0.95 * scale, 0.95 * scale),
+			CFrame = center * CFrame.new(0, -1.25 * scale, 0) * CFrame.Angles(0, math.rad(90), 0),
 			Parent = model,
 		}))
-	elseif archetype == "Orangutini" then
-		-- Orangutini Ananasini: Spiky Green Pineapple Crown + Golden Arms!
+		attach(makePart({
+			Name = "TailFin",
+			Color = Color3.fromRGB(85, 135, 72),
+			Size = Vector3.new(0.35 * scale, 2.1 * scale, 1.6 * scale),
+			CFrame = center * CFrame.new(0, 1.25 * scale, 2.6 * scale) * CFrame.Angles(math.rad(22), 0, 0),
+			Parent = model,
+		}))
+		addBrainrotEyesAndMouth(crocSnout, model, scale, anchored, "Fierce")
+
+	elseif targetId == 11 then
+		-- #11: Bombombini Gusini (White Fighter-Jet Goose with Twin Under-Wing Rockets)
+		attach(makePart({
+			Name = "GooseBody",
+			Color = Color3.fromRGB(250, 252, 255),
+			Size = Vector3.new(2.2 * scale, 1.8 * scale, 3.4 * scale),
+			CFrame = center,
+			Parent = model,
+		}))
+		local gooseHead = attach(makePart({
+			Name = "GooseHead",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(250, 252, 255),
+			Size = Vector3.new(1.4 * scale, 1.4 * scale, 1.6 * scale),
+			CFrame = center * CFrame.new(0, 1.85 * scale, -1.8 * scale),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "GooseNeck",
+			Shape = Enum.PartType.Cylinder,
+			Color = Color3.fromRGB(250, 252, 255),
+			Size = Vector3.new(1.8 * scale, 0.7 * scale, 0.7 * scale),
+			CFrame = center * CFrame.new(0, 0.95 * scale, -1.35 * scale) * CFrame.Angles(0, 0, math.rad(90)),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "OrangeBill",
+			Color = Color3.fromRGB(255, 140, 25),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(0.95 * scale, 0.38 * scale, 1.35 * scale),
+			CFrame = gooseHead.CFrame * CFrame.new(0, -0.2 * scale, -1.15 * scale),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "SweptJetWings",
+			Color = Color3.fromRGB(235, 240, 248),
+			Size = Vector3.new(7.6 * scale, 0.28 * scale, 2.0 * scale),
+			CFrame = center * CFrame.new(0, 0.25 * scale, 0),
+			Parent = model,
+		}))
+		for _, side in ipairs({ -1, 1 }) do
+			local missile = attach(makePart({
+				Name = "Missile_" .. side,
+				Shape = Enum.PartType.Cylinder,
+				Color = Color3.fromRGB(180, 185, 195),
+				Material = Enum.Material.Metal,
+				Size = Vector3.new(2.2 * scale, 0.45 * scale, 0.45 * scale),
+				CFrame = center * CFrame.new(side * 2.4 * scale, -0.25 * scale, 0) * CFrame.Angles(0, math.rad(90), 0),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "MissileWarhead_" .. side,
+				Shape = Enum.PartType.Ball,
+				Color = Color3.fromRGB(255, 45, 45),
+				Material = Enum.Material.Neon,
+				Size = Vector3.new(0.55 * scale, 0.55 * scale, 0.55 * scale),
+				CFrame = missile.CFrame * CFrame.new(1.15 * scale, 0, 0),
+				Parent = model,
+			}))
+		end
+		addBrainrotEyesAndMouth(gooseHead, model, scale, anchored, "Fierce")
+
+	elseif targetId == 12 then
+		-- #12: Glorbo Fruttodrillo (Watermelon Swamp Alligator + Seeds)
+		local gatorTorso = attach(makePart({
+			Name = "WatermelonGatorTorso",
+			Color = Color3.fromRGB(38, 125, 52),
+			Size = Vector3.new(2.6 * scale, 1.8 * scale, 5.6 * scale),
+			CFrame = center,
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "WatermelonBelly",
+			Color = Color3.fromRGB(255, 65, 95),
+			Size = Vector3.new(2.2 * scale, 0.55 * scale, 5.0 * scale),
+			CFrame = center * CFrame.new(0, -0.65 * scale, 0),
+			Parent = model,
+		}))
+		local gatorSnout = attach(makePart({
+			Name = "WatermelonSnout",
+			Color = Color3.fromRGB(38, 125, 52),
+			Size = Vector3.new(2.1 * scale, 0.8 * scale, 2.6 * scale),
+			CFrame = center * CFrame.new(0, -0.15 * scale, -3.2 * scale),
+			Parent = model,
+		}))
+		for s = -2, 2 do
+			attach(makePart({
+				Name = "WatermelonSeed_" .. s,
+				Shape = Enum.PartType.Ball,
+				Color = Color3.fromRGB(25, 25, 28),
+				Size = Vector3.new(0.18 * scale, 0.18 * scale, 0.18 * scale),
+				CFrame = center * CFrame.new(s * 0.45 * scale, -0.68 * scale, -s * 0.8 * scale),
+				Parent = model,
+			}))
+		end
+		for _, side in ipairs({ -1, 1 }) do
+			attach(makePart({
+				Name = "GatorClaw_" .. side,
+				Color = Color3.fromRGB(38, 125, 52),
+				Size = Vector3.new(1.15 * scale, 0.45 * scale, 1.45 * scale),
+				CFrame = center * CFrame.new(side * 1.55 * scale, -0.75 * scale, -0.8 * scale),
+				Parent = model,
+			}))
+		end
+		addBrainrotEyesAndMouth(gatorSnout, model, scale, anchored, "Fierce")
+
+	elseif targetId == 13 then
+		-- #13: Brr Brr Patapim (Mossy Forest Troll + 2 Enormous Stomping Feet)
+		local trollTorso = attach(makePart({
+			Name = "MossyTrollTorso",
+			Color = Color3.fromRGB(118, 92, 58),
+			Size = Vector3.new(2.8 * scale, 2.8 * scale, 2.6 * scale),
+			CFrame = center,
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "TreeCanopyHair",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(48, 142, 56),
+			Size = Vector3.new(3.4 * scale, 2.2 * scale, 3.2 * scale),
+			CFrame = center * CFrame.new(0, 1.85 * scale, 0),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "ProboscisNose",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(142, 108, 68),
+			Size = Vector3.new(0.75 * scale, 1.55 * scale, 0.75 * scale),
+			CFrame = center * CFrame.new(0, -0.15 * scale, -1.65 * scale) * CFrame.Angles(math.rad(22), 0, 0),
+			Parent = model,
+		}))
+		for _, side in ipairs({ -1, 1 }) do
+			attach(makePart({
+				Name = "GiantStompingFoot_" .. side,
+				Color = Color3.fromRGB(118, 92, 58),
+				Size = Vector3.new(1.35 * scale, 0.65 * scale, 2.4 * scale),
+				CFrame = center * CFrame.new(side * 1.05 * scale, -1.35 * scale, -0.6 * scale),
+				Parent = model,
+			}))
+		end
+		addBrainrotEyesAndMouth(trollTorso, model, scale, anchored, "Derp")
+
+	elseif targetId == 14 then
+		-- #14: Orangutini Ananasini (Golden Diamond Pineapple Orangutan)
+		local pineTorso = attach(makePart({
+			Name = "PineappleTorso",
+			Color = Color3.fromRGB(245, 192, 42),
+			Material = Enum.Material.DiamondPlate,
+			Size = Vector3.new(2.8 * scale, 3.6 * scale, 2.8 * scale),
+			CFrame = center,
+			Parent = model,
+		}))
 		for leaf = 0, 5 do
 			local ang = math.rad(leaf * 60)
 			attach(makePart({
-				Name = "PineappleLeaf_" .. leaf,
-				Color = Color3.fromRGB(55, 215, 85),
+				Name = "PineCrownLeaf_" .. leaf,
+				Color = Color3.fromRGB(45, 195, 65),
 				Material = Enum.Material.Neon,
-				Size = Vector3.new(0.45 * scale, 1.35 * scale, 0.28 * scale),
-				CFrame = center * CFrame.Angles(0, ang, 0) * CFrame.new(0, radius * 1.05, -0.35 * scale) * CFrame.Angles(math.rad(-28), 0, 0),
+				Size = Vector3.new(0.45 * scale, 1.85 * scale, 0.32 * scale),
+				CFrame = center * CFrame.Angles(0, ang, 0) * CFrame.new(0, 2.2 * scale, -0.45 * scale) * CFrame.Angles(math.rad(-32), 0, 0),
 				Parent = model,
 			}))
 		end
-	else
-		-- Patapim / Glorbo / Trippi / Girafa / Maxwell / Skibidi: Bulbous Brainrot Crest + Glowing Halo Horns & Stomping Feet!
-		attach(makePart({
-			Name = "BrainrotCrest",
+		local apeHead = attach(makePart({
+			Name = "OrangutanHead",
 			Shape = Enum.PartType.Ball,
-			Color = slimeDef.SecondaryColor,
-			Material = Enum.Material.Neon,
-			Size = Vector3.new(radius * 1.05, 0.75 * scale, radius * 1.05),
-			CFrame = center * CFrame.new(0, radius * 0.92, 0),
+			Color = Color3.fromRGB(215, 95, 35),
+			Size = Vector3.new(2.2 * scale, 1.9 * scale, 2.0 * scale),
+			CFrame = center * CFrame.new(0, 0.65 * scale, -1.2 * scale),
 			Parent = model,
 		}))
 		for _, side in ipairs({ -1, 1 }) do
 			attach(makePart({
-				Name = "BrainrotStompFoot_" .. side,
-				Color = slimeDef.SecondaryColor,
-				Size = Vector3.new(0.85 * scale, 0.45 * scale, 1.25 * scale),
-				CFrame = center * CFrame.new(side * radius * 0.62, -radius * 0.86, -0.2 * scale),
+				Name = "ApeArm_" .. side,
+				Color = Color3.fromRGB(215, 95, 35),
+				Size = Vector3.new(0.65 * scale, 2.4 * scale, 0.65 * scale),
+				CFrame = center * CFrame.new(side * 1.85 * scale, -0.35 * scale, 0) * CFrame.Angles(0, 0, math.rad(-side * 28)),
+				Parent = model,
+			}))
+		end
+		addBrainrotEyesAndMouth(apeHead, model, scale, anchored, "Grin")
+
+	elseif targetId == 15 then
+		-- #15: Boneca Ambalabu (Black Rubber Car Tire Torso with Green Frog Head & Legs)
+		attach(makePart({
+			Name = "RubberTireTorso",
+			Shape = Enum.PartType.Cylinder,
+			Color = Color3.fromRGB(32, 35, 42),
+			Material = Enum.Material.Slate,
+			Size = Vector3.new(1.6 * scale, 4.2 * scale, 4.2 * scale),
+			CFrame = center * CFrame.Angles(0, 0, math.rad(90)),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "SilverWheelRim",
+			Shape = Enum.PartType.Cylinder,
+			Color = Color3.fromRGB(200, 205, 215),
+			Material = Enum.Material.Metal,
+			Size = Vector3.new(1.65 * scale, 2.4 * scale, 2.4 * scale),
+			CFrame = center * CFrame.Angles(0, 0, math.rad(90)),
+			Parent = model,
+		}))
+		local frogHead = attach(makePart({
+			Name = "GreenFrogHead",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(60, 210, 75),
+			Size = Vector3.new(2.4 * scale, 1.8 * scale, 2.2 * scale),
+			CFrame = center * CFrame.new(0, 2.2 * scale, 0),
+			Parent = model,
+		}))
+		for _, side in ipairs({ -1, 1 }) do
+			attach(makePart({
+				Name = "FrogLeg_" .. side,
+				Color = Color3.fromRGB(60, 210, 75),
+				Size = Vector3.new(0.55 * scale, 2.2 * scale, 0.75 * scale),
+				CFrame = center * CFrame.new(side * 1.65 * scale, -0.65 * scale, 0) * CFrame.Angles(0, 0, math.rad(-side * 25)),
+				Parent = model,
+			}))
+		end
+		addBrainrotEyesAndMouth(frogHead, model, scale, anchored, "Wide")
+
+	elseif targetId == 16 then
+		-- #16: Trulimero Trulicina (Cat-Headed Swimming Fish with Fins & Whiskers)
+		attach(makePart({
+			Name = "IridescentFishBody",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(55, 190, 245),
+			Size = Vector3.new(2.2 * scale, 2.0 * scale, 4.6 * scale),
+			CFrame = center,
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "FishTailCaudal",
+			Color = Color3.fromRGB(85, 225, 255),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(0.32 * scale, 2.2 * scale, 1.6 * scale),
+			CFrame = center * CFrame.new(0, 0.35 * scale, 2.4 * scale) * CFrame.Angles(math.rad(22), 0, 0),
+			Parent = model,
+		}))
+		local catHead = attach(makePart({
+			Name = "TrulimeroCatHead",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(240, 240, 250),
+			Size = Vector3.new(2.2 * scale, 2.0 * scale, 2.2 * scale),
+			CFrame = center * CFrame.new(0, 0.15 * scale, -1.9 * scale),
+			Parent = model,
+		}))
+		for _, side in ipairs({ -1, 1 }) do
+			attach(makePart({
+				Name = "PerkedCatEar_" .. side,
+				Color = Color3.fromRGB(240, 240, 250),
+				Size = Vector3.new(0.55 * scale, 0.75 * scale, 0.35 * scale),
+				CFrame = catHead.CFrame * CFrame.new(side * 0.75 * scale, 1.05 * scale, 0) * CFrame.Angles(0, 0, math.rad(-side * 22)),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "FishPectoralFin_" .. side,
+				Color = Color3.fromRGB(85, 225, 255),
+				Material = Enum.Material.Neon,
+				Size = Vector3.new(1.4 * scale, 0.25 * scale, 0.95 * scale),
+				CFrame = center * CFrame.new(side * 1.35 * scale, -0.35 * scale, -0.45 * scale) * CFrame.Angles(0, math.rad(-side * 25), math.rad(-side * 25)),
+				Parent = model,
+			}))
+		end
+		addBrainrotEyesAndMouth(catHead, model, scale, anchored, "Wide")
+
+	elseif targetId == 17 then
+		-- #17: Girafa Celestre (Cosmic Star-Spotted Astronaut Giraffe)
+		attach(makePart({
+			Name = "CosmicGiraffeBody",
+			Color = Color3.fromRGB(35, 45, 115),
+			Size = Vector3.new(2.4 * scale, 2.4 * scale, 3.6 * scale),
+			CFrame = center,
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "GiraffeNeck",
+			Shape = Enum.PartType.Cylinder,
+			Color = Color3.fromRGB(35, 45, 115),
+			Size = Vector3.new(4.8 * scale, 0.85 * scale, 0.85 * scale),
+			CFrame = center * CFrame.new(0, 2.6 * scale, -1.2 * scale) * CFrame.Angles(0, 0, math.rad(90)),
+			Parent = model,
+		}))
+		local girHead = attach(makePart({
+			Name = "GiraffeHead",
+			Color = Color3.fromRGB(35, 45, 115),
+			Size = Vector3.new(1.4 * scale, 1.4 * scale, 1.8 * scale),
+			CFrame = center * CFrame.new(0, 4.8 * scale, -1.5 * scale),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "AstronautVisor",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(255, 225, 90),
+			Material = Enum.Material.Glass,
+			Transparency = 0.45,
+			Size = Vector3.new(2.4 * scale, 2.4 * scale, 2.4 * scale),
+			CFrame = girHead.CFrame,
+			Parent = model,
+		}))
+		for _, side in ipairs({ -1, 1 }) do
+			attach(makePart({
+				Name = "OssiconeHorn_" .. side,
+				Shape = Enum.PartType.Cylinder,
+				Color = Color3.fromRGB(255, 215, 65),
+				Material = Enum.Material.Neon,
+				Size = Vector3.new(0.85 * scale, 0.22 * scale, 0.22 * scale),
+				CFrame = girHead.CFrame * CFrame.new(side * 0.45 * scale, 0.95 * scale, 0) * CFrame.Angles(0, 0, math.rad(90)),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "GiraffeLegFront_" .. side,
+				Color = Color3.fromRGB(35, 45, 115),
+				Size = Vector3.new(0.55 * scale, 2.4 * scale, 0.55 * scale),
+				CFrame = center * CFrame.new(side * 0.95 * scale, -1.85 * scale, -1.1 * scale),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "GiraffeLegBack_" .. side,
+				Color = Color3.fromRGB(35, 45, 115),
+				Size = Vector3.new(0.55 * scale, 2.4 * scale, 0.55 * scale),
+				CFrame = center * CFrame.new(side * 0.95 * scale, -1.85 * scale, 1.1 * scale),
+				Parent = model,
+			}))
+		end
+		addBrainrotEyesAndMouth(girHead, model, scale, anchored, "Wide")
+
+	elseif targetId == 18 then
+		-- #18: Bri Bri Bicus Dicus (Roman Centurion Bird in Golden Galea Helmet & Red Cape)
+		local birdBody = attach(makePart({
+			Name = "CenturionBirdBody",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(245, 245, 250),
+			Size = Vector3.new(2.4 * scale, 2.8 * scale, 2.4 * scale),
+			CFrame = center,
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "RomanArmorCuirass",
+			Color = Color3.fromRGB(235, 185, 45),
+			Material = Enum.Material.Metal,
+			Size = Vector3.new(2.45 * scale, 1.85 * scale, 2.45 * scale),
+			CFrame = center * CFrame.new(0, -0.2 * scale, 0),
+			Parent = model,
+		}))
+		local bicusHead = attach(makePart({
+			Name = "CenturionHead",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(245, 245, 250),
+			Size = Vector3.new(1.8 * scale, 1.8 * scale, 1.8 * scale),
+			CFrame = center * CFrame.new(0, 1.65 * scale, 0),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "GaleaCrestPlume",
+			Color = Color3.fromRGB(215, 35, 45),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(0.35 * scale, 1.65 * scale, 2.4 * scale),
+			CFrame = bicusHead.CFrame * CFrame.new(0, 1.25 * scale, 0),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "RomanEagleBeak",
+			Color = Color3.fromRGB(255, 195, 35),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(0.65 * scale, 0.55 * scale, 1.15 * scale),
+			CFrame = bicusHead.CFrame * CFrame.new(0, -0.2 * scale, -0.95 * scale),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "CrimsonCape",
+			Color = Color3.fromRGB(195, 25, 35),
+			Size = Vector3.new(2.2 * scale, 2.8 * scale, 0.35 * scale),
+			CFrame = center * CFrame.new(0, -0.25 * scale, 1.35 * scale) * CFrame.Angles(math.rad(15), 0, 0),
+			Parent = model,
+		}))
+		addBrainrotEyesAndMouth(bicusHead, model, scale, anchored, "Fierce")
+
+	elseif targetId == 19 then
+		-- #19: Garamaraman (Tall Salt-and-Honey Shaker Duo Character)
+		local jarBody = attach(makePart({
+			Name = "HoneyJarBody",
+			Shape = Enum.PartType.Cylinder,
+			Color = Color3.fromRGB(245, 235, 215),
+			Size = Vector3.new(4.2 * scale, 2.6 * scale, 2.6 * scale),
+			CFrame = center * CFrame.Angles(0, 0, math.rad(90)),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "HoneyDrips",
+			Color = Color3.fromRGB(255, 185, 35),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(2.65 * scale, 1.85 * scale, 2.65 * scale),
+			CFrame = center * CFrame.new(0, 0.65 * scale, 0),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "SilverShakerCap",
+			Shape = Enum.PartType.Cylinder,
+			Color = Color3.fromRGB(215, 220, 230),
+			Material = Enum.Material.Metal,
+			Size = Vector3.new(0.55 * scale, 2.4 * scale, 2.4 * scale),
+			CFrame = center * CFrame.new(0, 2.2 * scale, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "CompanionMiniShaker",
+			Shape = Enum.PartType.Cylinder,
+			Color = Color3.fromRGB(240, 245, 255),
+			Size = Vector3.new(2.2 * scale, 1.4 * scale, 1.4 * scale),
+			CFrame = center * CFrame.new(1.65 * scale, -0.65 * scale, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			Parent = model,
+		}))
+		addBrainrotEyesAndMouth(jarBody, model, scale, anchored, "OpenMouth")
+
+	elseif targetId == 20 then
+		-- #20: Maxwell The Spinning Cat (Sleek Black-and-White Tuxedo Loaf Cat)
+		local catLoaf = attach(makePart({
+			Name = "MaxwellLoafBody",
+			Color = Color3.fromRGB(25, 25, 28),
+			Size = Vector3.new(2.2 * scale, 1.9 * scale, 3.8 * scale),
+			CFrame = center,
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "WhiteChestBib",
+			Color = Color3.fromRGB(250, 250, 255),
+			Size = Vector3.new(1.65 * scale, 1.25 * scale, 2.2 * scale),
+			CFrame = center * CFrame.new(0, -0.35 * scale, -0.9 * scale),
+			Parent = model,
+		}))
+		local maxwellHead = attach(makePart({
+			Name = "MaxwellHead",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(25, 25, 28),
+			Size = Vector3.new(2.0 * scale, 1.8 * scale, 1.8 * scale),
+			CFrame = center * CFrame.new(0, 0.45 * scale, -1.85 * scale),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "WhiteMuzzle",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(250, 250, 255),
+			Size = Vector3.new(1.1 * scale, 0.65 * scale, 0.85 * scale),
+			CFrame = maxwellHead.CFrame * CFrame.new(0, -0.35 * scale, -0.75 * scale),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "CurlingTail",
+			Shape = Enum.PartType.Cylinder,
+			Color = Color3.fromRGB(25, 25, 28),
+			Size = Vector3.new(2.2 * scale, 0.38 * scale, 0.38 * scale),
+			CFrame = center * CFrame.new(0, 0.85 * scale, 2.2 * scale) * CFrame.Angles(math.rad(45), 0, math.rad(90)),
+			Parent = model,
+		}))
+		for _, side in ipairs({ -1, 1 }) do
+			attach(makePart({
+				Name = "MaxwellEar_" .. side,
+				Color = Color3.fromRGB(25, 25, 28),
+				Size = Vector3.new(0.55 * scale, 0.75 * scale, 0.35 * scale),
+				CFrame = maxwellHead.CFrame * CFrame.new(side * 0.65 * scale, 0.95 * scale, 0) * CFrame.Angles(0, 0, math.rad(-side * 22)),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "WhitePawFront_" .. side,
+				Shape = Enum.PartType.Ball,
+				Color = Color3.fromRGB(250, 250, 255),
+				Size = Vector3.new(0.65 * scale, 0.45 * scale, 0.85 * scale),
+				CFrame = center * CFrame.new(side * 0.75 * scale, -0.95 * scale, -1.4 * scale),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "WhitePawBack_" .. side,
+				Shape = Enum.PartType.Ball,
+				Color = Color3.fromRGB(250, 250, 255),
+				Size = Vector3.new(0.65 * scale, 0.45 * scale, 0.85 * scale),
+				CFrame = center * CFrame.new(side * 0.75 * scale, -0.95 * scale, 1.4 * scale),
+				Parent = model,
+			}))
+		end
+		addBrainrotEyesAndMouth(maxwellHead, model, scale, anchored, "Wide")
+
+	elseif targetId == 21 then
+		-- #21: La Vaca Saturno Saturnita (Spotted Dairy Cow inside Saturn Ring + Human Sneakers)
+		attach(makePart({
+			Name = "DairyCowBody",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(245, 245, 250),
+			Size = Vector3.new(2.8 * scale, 2.4 * scale, 3.4 * scale),
+			CFrame = center,
+			Parent = model,
+		}))
+		for spot = 1, 4 do
+			attach(makePart({
+				Name = "CowSpot_" .. spot,
+				Shape = Enum.PartType.Ball,
+				Color = Color3.fromRGB(25, 25, 28),
+				Size = Vector3.new(0.85 * scale, 0.85 * scale, 0.85 * scale),
+				CFrame = center * CFrame.new((spot % 2 == 0 and 1 or -1) * 1.15 * scale, 0.45 * scale, (spot > 2 and 0.8 or -0.8) * scale),
+				Parent = model,
+			}))
+		end
+		attach(makePart({
+			Name = "SaturnPlanetaryRing",
+			Shape = Enum.PartType.Cylinder,
+			Color = Color3.fromRGB(255, 220, 85),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(0.35 * scale, 7.6 * scale, 7.6 * scale),
+			CFrame = center * CFrame.Angles(math.rad(18), 0, math.rad(72)),
+			Parent = model,
+		}))
+		local cowHead = attach(makePart({
+			Name = "CowHead",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(245, 245, 250),
+			Size = Vector3.new(1.8 * scale, 1.8 * scale, 1.8 * scale),
+			CFrame = center * CFrame.new(0, 0.65 * scale, -1.8 * scale),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "BovineSnout",
+			Color = Color3.fromRGB(255, 175, 195),
+			Size = Vector3.new(1.2 * scale, 0.75 * scale, 0.95 * scale),
+			CFrame = cowHead.CFrame * CFrame.new(0, -0.35 * scale, -0.75 * scale),
+			Parent = model,
+		}))
+		for _, side in ipairs({ -1, 1 }) do
+			attach(makePart({
+				Name = "GoldenHorn_" .. side,
+				Color = Color3.fromRGB(255, 215, 65),
+				Material = Enum.Material.Neon,
+				Size = Vector3.new(0.35 * scale, 0.85 * scale, 0.35 * scale),
+				CFrame = cowHead.CFrame * CFrame.new(side * 0.65 * scale, 0.95 * scale, 0) * CFrame.Angles(0, 0, math.rad(-side * 25)),
+				Parent = model,
+			}))
+			local shoe = attach(makePart({
+				Name = "GiantHumanSneaker_" .. side,
+				Color = Color3.fromRGB(235, 45, 45),
+				Size = Vector3.new(1.2 * scale, 0.7 * scale, 2.2 * scale),
+				CFrame = center * CFrame.new(side * 1.15 * scale, -1.45 * scale, -0.35 * scale),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "SneakerSole_" .. side,
+				Color = Color3.fromRGB(255, 255, 255),
+				Material = Enum.Material.Neon,
+				Size = Vector3.new(1.28 * scale, 0.25 * scale, 2.3 * scale),
+				CFrame = shoe.CFrame * CFrame.new(0, -0.25 * scale, 0),
+				Parent = model,
+			}))
+		end
+		addBrainrotEyesAndMouth(cowHead, model, scale, anchored, "Wide")
+
+	elseif targetId == 22 then
+		-- #22: Il Cacto Hipopotamo (Giant Desert Cactus Hippo with Wide Jaws & Sandals)
+		attach(makePart({
+			Name = "CactusHippoBody",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(58, 165, 68),
+			Size = Vector3.new(3.6 * scale, 2.8 * scale, 4.4 * scale),
+			CFrame = center,
+			Parent = model,
+		}))
+		local hippoJaws = attach(makePart({
+			Name = "HippoJaws",
+			Color = Color3.fromRGB(58, 165, 68),
+			Size = Vector3.new(2.6 * scale, 1.6 * scale, 2.8 * scale),
+			CFrame = center * CFrame.new(0, 0.15 * scale, -2.6 * scale),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "HippoTeethPegs",
+			Color = Color3.fromRGB(255, 255, 255),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(2.2 * scale, 0.25 * scale, 0.35 * scale),
+			CFrame = hippoJaws.CFrame * CFrame.new(0, -0.45 * scale, -1.25 * scale),
+			Parent = model,
+		}))
+		for _, side in ipairs({ -1, 1 }) do
+			attach(makePart({
+				Name = "HippoSandal_" .. side,
+				Color = Color3.fromRGB(135, 78, 38),
+				Material = Enum.Material.Wood,
+				Size = Vector3.new(1.35 * scale, 0.45 * scale, 1.85 * scale),
+				CFrame = center * CFrame.new(side * 1.35 * scale, -1.35 * scale, -0.95 * scale),
+				Parent = model,
+			}))
+		end
+		addBrainrotEyesAndMouth(hippoJaws, model, scale, anchored, "OpenMouth")
+
+	elseif targetId == 23 then
+		-- #23: Blueberrinni Octopussini (Round Blue Berry Octopus + 8 Tentacles)
+		local berryHead = attach(makePart({
+			Name = "BerryOctoHead",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(45, 95, 225),
+			Size = Vector3.new(3.0 * scale, 3.0 * scale, 3.0 * scale),
+			CFrame = center,
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "BerryCalyxCrown",
+			Color = Color3.fromRGB(65, 195, 65),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(1.2 * scale, 0.35 * scale, 1.2 * scale),
+			CFrame = center * CFrame.new(0, 1.6 * scale, 0),
+			Parent = model,
+		}))
+		for t = 0, 7 do
+			local ang = math.rad(t * 45)
+			attach(makePart({
+				Name = "BlueTentacle_" .. t,
+				Shape = Enum.PartType.Ball,
+				Color = Color3.fromRGB(45, 95, 225),
+				Size = Vector3.new(0.75 * scale, 0.75 * scale, 1.85 * scale),
+				CFrame = center * CFrame.Angles(0, ang, 0) * CFrame.new(0, -1.25 * scale, -1.85 * scale) * CFrame.Angles(math.rad(28), 0, 0),
+				Parent = model,
+			}))
+		end
+		addBrainrotEyesAndMouth(berryHead, model, scale, anchored, "Wide")
+
+	elseif targetId == 24 then
+		-- #24: Chef Crabracadabra (Red King Crab Chef with Tall Toque Hat & Spatula)
+		local crabBody = attach(makePart({
+			Name = "CrabShell",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(225, 45, 45),
+			Size = Vector3.new(3.2 * scale, 1.8 * scale, 2.8 * scale),
+			CFrame = center,
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "ChefToqueHat",
+			Shape = Enum.PartType.Cylinder,
+			Color = Color3.fromRGB(255, 255, 255),
+			Size = Vector3.new(1.8 * scale, 1.6 * scale, 1.6 * scale),
+			CFrame = center * CFrame.new(0, 1.65 * scale, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "LeftClawPincer",
+			Color = Color3.fromRGB(245, 55, 55),
+			Size = Vector3.new(0.85 * scale, 1.45 * scale, 1.65 * scale),
+			CFrame = center * CFrame.new(-2.1 * scale, 0.1 * scale, -1.2 * scale),
+			Parent = model,
+		}))
+		local rightClaw = attach(makePart({
+			Name = "RightClawHoldingSpatula",
+			Color = Color3.fromRGB(245, 55, 55),
+			Size = Vector3.new(0.85 * scale, 1.45 * scale, 1.65 * scale),
+			CFrame = center * CFrame.new(2.1 * scale, 0.1 * scale, -1.2 * scale),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "CookingSpatula",
+			Color = Color3.fromRGB(220, 225, 235),
+			Material = Enum.Material.Metal,
+			Size = Vector3.new(0.25 * scale, 2.6 * scale, 0.65 * scale),
+			CFrame = rightClaw.CFrame * CFrame.new(0, 1.1 * scale, -0.45 * scale) * CFrame.Angles(math.rad(35), 0, 0),
+			Parent = model,
+		}))
+		addBrainrotEyesAndMouth(crabBody, model, scale, anchored, "Grin")
+
+	elseif targetId == 25 then
+		-- #25: Chicleteira Bicicleteira (Pink Bubblegum Machine on Bicycle Frame)
+		local globe = attach(makePart({
+			Name = "GumballGlobe",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(255, 120, 185),
+			Size = Vector3.new(2.4 * scale, 2.4 * scale, 2.4 * scale),
+			CFrame = center * CFrame.new(0, 1.15 * scale, 0),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "GumballBase",
+			Color = Color3.fromRGB(225, 35, 45),
+			Size = Vector3.new(1.8 * scale, 1.2 * scale, 1.8 * scale),
+			CFrame = center * CFrame.new(0, -0.2 * scale, 0),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "BicycleFrame",
+			Color = Color3.fromRGB(55, 185, 255),
+			Material = Enum.Material.Metal,
+			Size = Vector3.new(0.28 * scale, 1.8 * scale, 3.6 * scale),
+			CFrame = center * CFrame.new(0, -0.95 * scale, 0),
+			Parent = model,
+		}))
+		for _, wheelZ in ipairs({ -1.6, 1.6 }) do
+			attach(makePart({
+				Name = "BikeWheel_" .. tostring(wheelZ),
+				Shape = Enum.PartType.Cylinder,
+				Color = Color3.fromRGB(35, 38, 42),
+				Material = Enum.Material.Slate,
+				Size = Vector3.new(0.35 * scale, 2.2 * scale, 2.2 * scale),
+				CFrame = center * CFrame.new(0, -1.65 * scale, wheelZ * scale) * CFrame.Angles(0, 0, math.rad(90)),
+				Parent = model,
+			}))
+		end
+		addBrainrotEyesAndMouth(globe, model, scale, anchored, "Wide")
+
+	elseif targetId == 26 then
+		-- #26: Spijuniro Golubiro (Trenchcoat Spy Pigeon + Sunglasses & Camera)
+		local pigeonBody = attach(makePart({
+			Name = "TrenchcoatBody",
+			Color = Color3.fromRGB(195, 165, 125),
+			Size = Vector3.new(2.2 * scale, 2.6 * scale, 2.2 * scale),
+			CFrame = center,
+			Parent = model,
+		}))
+		local pHead = attach(makePart({
+			Name = "PigeonHead",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(145, 135, 165),
+			Size = Vector3.new(1.6 * scale, 1.6 * scale, 1.8 * scale),
+			CFrame = center * CFrame.new(0, 1.85 * scale, -0.45 * scale),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "OrangeBeak",
+			Color = Color3.fromRGB(255, 140, 35),
+			Size = Vector3.new(0.55 * scale, 0.45 * scale, 0.95 * scale),
+			CFrame = pHead.CFrame * CFrame.new(0, -0.2 * scale, -1.05 * scale),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "SpyFedora",
+			Color = Color3.fromRGB(40, 40, 48),
+			Size = Vector3.new(2.2 * scale, 0.55 * scale, 2.4 * scale),
+			CFrame = pHead.CFrame * CFrame.new(0, 0.85 * scale, 0),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "DarkSunglasses",
+			Color = Color3.fromRGB(15, 15, 20),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(1.4 * scale, 0.35 * scale, 0.25 * scale),
+			CFrame = pHead.CFrame * CFrame.new(0, 0.15 * scale, -0.92 * scale),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "SpyCamera",
+			Color = Color3.fromRGB(45, 50, 58),
+			Material = Enum.Material.Metal,
+			Size = Vector3.new(0.85 * scale, 0.65 * scale, 0.45 * scale),
+			CFrame = center * CFrame.new(0, 0.25 * scale, -1.25 * scale),
+			Parent = model,
+		}))
+		addBrainrotEyesAndMouth(pHead, model, scale, anchored, "Fierce")
+
+	elseif targetId == 27 then
+		-- #27: Tigrrullini Watermellini (Orange Tiger Head & Limbs + Watermelon Rind Torso)
+		attach(makePart({
+			Name = "WatermelonRindTorso",
+			Color = Color3.fromRGB(45, 145, 55),
+			Size = Vector3.new(2.8 * scale, 2.4 * scale, 4.4 * scale),
+			CFrame = center,
+			Parent = model,
+		}))
+		for stripe = -2, 2 do
+			attach(makePart({
+				Name = "LimeStripe_" .. stripe,
+				Color = Color3.fromRGB(125, 235, 95),
+				Size = Vector3.new(2.85 * scale, 0.25 * scale, 0.45 * scale),
+				CFrame = center * CFrame.new(0, 0.85 * scale, stripe * 0.9 * scale),
+				Parent = model,
+			}))
+		end
+		local tigerHead = attach(makePart({
+			Name = "TigerHead",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(255, 125, 25),
+			Size = Vector3.new(2.4 * scale, 2.2 * scale, 2.2 * scale),
+			CFrame = center * CFrame.new(0, 0.45 * scale, -2.2 * scale),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "WhiteTigerMuzzle",
+			Color = Color3.fromRGB(250, 250, 255),
+			Size = Vector3.new(1.4 * scale, 0.85 * scale, 1.15 * scale),
+			CFrame = tigerHead.CFrame * CFrame.new(0, -0.35 * scale, -0.85 * scale),
+			Parent = model,
+		}))
+		for _, side in ipairs({ -1, 1 }) do
+			attach(makePart({
+				Name = "SaberFang_" .. side,
+				Color = Color3.fromRGB(255, 255, 255),
+				Material = Enum.Material.Neon,
+				Size = Vector3.new(0.22 * scale, 0.65 * scale, 0.22 * scale),
+				CFrame = tigerHead.CFrame * CFrame.new(side * 0.45 * scale, -0.65 * scale, -1.15 * scale),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "TigerPawFront_" .. side,
+				Color = Color3.fromRGB(255, 125, 25),
+				Size = Vector3.new(0.75 * scale, 1.25 * scale, 1.15 * scale),
+				CFrame = center * CFrame.new(side * 1.25 * scale, -1.05 * scale, -1.2 * scale),
+				Parent = model,
+			}))
+		end
+		addBrainrotEyesAndMouth(tigerHead, model, scale, anchored, "Fierce")
+
+	elseif targetId == 28 then
+		-- #28: Zibra Zubra Zibralini (Striped Zebra Monster with Neon Mohawk)
+		local zebraBody = attach(makePart({
+			Name = "ZebraTorso",
+			Color = Color3.fromRGB(245, 245, 250),
+			Size = Vector3.new(2.4 * scale, 2.6 * scale, 3.8 * scale),
+			CFrame = center,
+			Parent = model,
+		}))
+		for s = -3, 3 do
+			attach(makePart({
+				Name = "BlackZebraStripe_" .. s,
+				Color = Color3.fromRGB(25, 25, 28),
+				Size = Vector3.new(2.45 * scale, 0.25 * scale, 0.35 * scale),
+				CFrame = center * CFrame.new(0, 0.45 * scale, s * 0.55 * scale),
+				Parent = model,
+			}))
+		end
+		local zHead = attach(makePart({
+			Name = "ZebraHead",
+			Color = Color3.fromRGB(245, 245, 250),
+			Size = Vector3.new(1.6 * scale, 1.8 * scale, 2.4 * scale),
+			CFrame = center * CFrame.new(0, 1.45 * scale, -1.8 * scale),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "NeonPunkMohawk",
+			Color = Color3.fromRGB(255, 45, 185),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(0.35 * scale, 1.45 * scale, 3.2 * scale),
+			CFrame = center * CFrame.new(0, 2.35 * scale, -0.6 * scale),
+			Parent = model,
+		}))
+		addBrainrotEyesAndMouth(zHead, model, scale, anchored, "Fierce")
+
+	elseif targetId == 29 then
+		-- #29: Graipussi Medussi (Purple Grape-Cluster Medusa with Vine Tentacles)
+		local grapeCenter = attach(makePart({
+			Name = "GrapeClusterCenter",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(135, 45, 185),
+			Size = Vector3.new(2.8 * scale, 2.8 * scale, 2.8 * scale),
+			CFrame = center,
+			Parent = model,
+		}))
+		for g = 1, 6 do
+			local ang = math.rad(g * 60)
+			attach(makePart({
+				Name = "OuterGrape_" .. g,
+				Shape = Enum.PartType.Ball,
+				Color = Color3.fromRGB(115, 35, 165),
+				Size = Vector3.new(1.35 * scale, 1.35 * scale, 1.35 * scale),
+				CFrame = center * CFrame.Angles(0, ang, 0) * CFrame.new(0, 0.45 * scale, -1.45 * scale),
+				Parent = model,
+			}))
+		end
+		local medusaFace = attach(makePart({
+			Name = "MedusaFace",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(165, 85, 215),
+			Size = Vector3.new(1.8 * scale, 1.8 * scale, 1.8 * scale),
+			CFrame = center * CFrame.new(0, 0.45 * scale, -1.45 * scale),
+			Parent = model,
+		}))
+		for v = 1, 5 do
+			local ang = math.rad(v * 72)
+			attach(makePart({
+				Name = "VineSnakeHair_" .. v,
+				Shape = Enum.PartType.Cylinder,
+				Color = Color3.fromRGB(55, 175, 75),
+				Material = Enum.Material.Neon,
+				Size = Vector3.new(2.2 * scale, 0.35 * scale, 0.35 * scale),
+				CFrame = medusaFace.CFrame * CFrame.Angles(0, ang, 0) * CFrame.new(0, 1.25 * scale, -0.85 * scale) * CFrame.Angles(math.rad(45), 0, 0),
+				Parent = model,
+			}))
+		end
+		addBrainrotEyesAndMouth(medusaFace, model, scale, anchored, "Fierce")
+
+	elseif targetId == 30 then
+		-- #30: Inferno Bombardiro Rex (Magma Twin-Jet Bomber Dragon/Croc)
+		attach(makePart({
+			Name = "VolcanicFuselage",
+			Color = Color3.fromRGB(35, 25, 28),
+			Material = Enum.Material.Slate,
+			Size = Vector3.new(2.8 * scale, 2.2 * scale, 6.2 * scale),
+			CFrame = center,
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "MagmaCrackVein",
+			Color = Color3.fromRGB(255, 105, 25),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(2.85 * scale, 0.35 * scale, 5.8 * scale),
+			CFrame = center * CFrame.new(0, 0.15 * scale, 0),
+			Parent = model,
+		}))
+		local rexHead = attach(makePart({
+			Name = "InfernoRexSnout",
+			Color = Color3.fromRGB(35, 25, 28),
+			Size = Vector3.new(2.4 * scale, 1.05 * scale, 3.2 * scale),
+			CFrame = center * CFrame.new(0, -0.15 * scale, -3.4 * scale),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "InfernoWings",
+			Color = Color3.fromRGB(45, 30, 32),
+			Size = Vector3.new(9.2 * scale, 0.45 * scale, 2.6 * scale),
+			CFrame = center * CFrame.new(0, 0.35 * scale, 0),
+			Parent = model,
+		}))
+		for _, side in ipairs({ -1, 1 }) do
+			local jetEng = attach(makePart({
+				Name = "JetTurbine_" .. side,
+				Shape = Enum.PartType.Cylinder,
+				Color = Color3.fromRGB(45, 45, 52),
+				Material = Enum.Material.Metal,
+				Size = Vector3.new(2.4 * scale, 1.15 * scale, 1.15 * scale),
+				CFrame = center * CFrame.new(side * 2.8 * scale, 0.25 * scale, -0.45 * scale) * CFrame.Angles(0, math.rad(90), 0),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "FlameExhaust_" .. side,
+				Shape = Enum.PartType.Ball,
+				Color = Color3.fromRGB(255, 95, 25),
+				Material = Enum.Material.Neon,
+				Size = Vector3.new(1.05 * scale, 1.05 * scale, 1.85 * scale),
+				CFrame = jetEng.CFrame * CFrame.new(-1.65 * scale, 0, 0),
+				Parent = model,
+			}))
+		end
+		addBrainrotEyesAndMouth(rexHead, model, scale, anchored, "Fierce")
+
+	elseif targetId == 31 then
+		-- #31: Gattatino Neonino (Glowing Neon Cyber-Cat with Laser Visor & Twin Tails)
+		attach(makePart({
+			Name = "CyberCatBody",
+			Color = Color3.fromRGB(38, 42, 52),
+			Size = Vector3.new(2.2 * scale, 1.9 * scale, 3.8 * scale),
+			CFrame = center,
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "CyanCircuitStrip",
+			Color = Color3.fromRGB(45, 235, 255),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(2.25 * scale, 0.25 * scale, 3.4 * scale),
+			CFrame = center * CFrame.new(0, 0.35 * scale, 0),
+			Parent = model,
+		}))
+		local cyberHead = attach(makePart({
+			Name = "CyberHead",
+			Color = Color3.fromRGB(38, 42, 52),
+			Size = Vector3.new(2.0 * scale, 1.8 * scale, 1.8 * scale),
+			CFrame = center * CFrame.new(0, 0.45 * scale, -1.85 * scale),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "LaserVisor",
+			Color = Color3.fromRGB(255, 45, 165),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(1.85 * scale, 0.45 * scale, 0.28 * scale),
+			CFrame = cyberHead.CFrame * CFrame.new(0, 0.15 * scale, -0.92 * scale),
+			Parent = model,
+		}))
+		for _, side in ipairs({ -1, 1 }) do
+			attach(makePart({
+				Name = "CyberTail_" .. side,
+				Shape = Enum.PartType.Cylinder,
+				Color = Color3.fromRGB(45, 235, 255),
+				Material = Enum.Material.Neon,
+				Size = Vector3.new(2.4 * scale, 0.32 * scale, 0.32 * scale),
+				CFrame = center * CFrame.new(side * 0.45 * scale, 0.95 * scale, 2.2 * scale) * CFrame.Angles(math.rad(45), 0, math.rad(side * 18)),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "CyberEar_" .. side,
+				Color = Color3.fromRGB(200, 215, 230),
+				Material = Enum.Material.Metal,
+				Size = Vector3.new(0.45 * scale, 0.75 * scale, 0.35 * scale),
+				CFrame = cyberHead.CFrame * CFrame.new(side * 0.65 * scale, 0.95 * scale, 0),
+				Parent = model,
+			}))
+		end
+		addBrainrotEyesAndMouth(cyberHead, model, scale, anchored, "Fierce")
+
+	elseif targetId == 32 then
+		-- #32: Matteo The Wise (Bearded Wise Forest Elder with Wizard Hat & Glowing Staff)
+		local elderTorso = attach(makePart({
+			Name = "ElderRobeTorso",
+			Color = Color3.fromRGB(65, 88, 55),
+			Size = Vector3.new(2.4 * scale, 3.4 * scale, 2.4 * scale),
+			CFrame = center,
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "FlowingWhiteBeard",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(245, 245, 250),
+			Size = Vector3.new(1.65 * scale, 2.4 * scale, 1.25 * scale),
+			CFrame = center * CFrame.new(0, 0.35 * scale, -1.35 * scale),
+			Parent = model,
+		}))
+		local elderHead = attach(makePart({
+			Name = "ElderHead",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(245, 215, 185),
+			Size = Vector3.new(1.6 * scale, 1.6 * scale, 1.6 * scale),
+			CFrame = center * CFrame.new(0, 1.85 * scale, 0),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "WizardHatBrim",
+			Shape = Enum.PartType.Cylinder,
+			Color = Color3.fromRGB(45, 58, 75),
+			Size = Vector3.new(0.35 * scale, 3.2 * scale, 3.2 * scale),
+			CFrame = elderHead.CFrame * CFrame.new(0, 0.75 * scale, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "WizardHatCone",
+			Color = Color3.fromRGB(45, 58, 75),
+			Size = Vector3.new(1.6 * scale, 2.2 * scale, 1.6 * scale),
+			CFrame = elderHead.CFrame * CFrame.new(0, 1.85 * scale, -0.2 * scale) * CFrame.Angles(math.rad(-15), 0, 0),
+			Parent = model,
+		}))
+		local staff = attach(makePart({
+			Name = "CelestialStaff",
+			Shape = Enum.PartType.Cylinder,
+			Color = Color3.fromRGB(135, 92, 55),
+			Material = Enum.Material.Wood,
+			Size = Vector3.new(4.6 * scale, 0.35 * scale, 0.35 * scale),
+			CFrame = center * CFrame.new(1.65 * scale, 0.25 * scale, -0.65 * scale) * CFrame.Angles(0, 0, math.rad(90)),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "CelestialOrb",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(85, 245, 255),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(0.85 * scale, 0.85 * scale, 0.85 * scale),
+			CFrame = staff.CFrame * CFrame.new(-2.35 * scale, 0, 0),
+			Parent = model,
+		}))
+		addBrainrotEyesAndMouth(elderHead, model, scale, anchored, "Wide")
+
+	elseif targetId == 33 then
+		-- #33: Udin Din Din Dun (Citrus Strongman Flexing Biceps)
+		local citrusBody = attach(makePart({
+			Name = "CitrusStrongmanBody",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(255, 135, 25),
+			Size = Vector3.new(3.4 * scale, 3.2 * scale, 3.4 * scale),
+			CFrame = center,
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "CitrusStem",
+			Color = Color3.fromRGB(55, 175, 45),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(0.35 * scale, 0.75 * scale, 0.35 * scale),
+			CFrame = center * CFrame.new(0, 1.75 * scale, 0),
+			Parent = model,
+		}))
+		for _, side in ipairs({ -1, 1 }) do
+			local bicep = attach(makePart({
+				Name = "FlexingBicep_" .. side,
+				Shape = Enum.PartType.Ball,
+				Color = Color3.fromRGB(255, 135, 25),
+				Size = Vector3.new(1.35 * scale, 1.55 * scale, 1.35 * scale),
+				CFrame = center * CFrame.new(side * 2.1 * scale, 0.85 * scale, 0),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "ForearmFist_" .. side,
+				Shape = Enum.PartType.Ball,
+				Color = Color3.fromRGB(255, 135, 25),
+				Size = Vector3.new(1.15 * scale, 1.15 * scale, 1.15 * scale),
+				CFrame = bicep.CFrame * CFrame.new(side * 0.45 * scale, 1.15 * scale, 0),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "StrongmanBoot_" .. side,
+				Color = Color3.fromRGB(35, 35, 42),
+				Size = Vector3.new(1.05 * scale, 0.75 * scale, 1.65 * scale),
+				CFrame = center * CFrame.new(side * 1.1 * scale, -1.65 * scale, 0),
+				Parent = model,
+			}))
+		end
+		addBrainrotEyesAndMouth(citrusBody, model, scale, anchored, "OpenMouth")
+
+	elseif targetId == 34 then
+		-- #34: Skibidi Cyber Titan (Cyber Mech + Shoulder Subwoofers + Core Reactor)
+		local mechTorso = attach(makePart({
+			Name = "CyberMechTorso",
+			Color = Color3.fromRGB(45, 50, 60),
+			Material = Enum.Material.Metal,
+			Size = Vector3.new(3.4 * scale, 3.8 * scale, 2.4 * scale),
+			CFrame = center,
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "ChestCoreReactor",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(85, 240, 255),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(1.4 * scale, 1.4 * scale, 0.8 * scale),
+			CFrame = center * CFrame.new(0, 0.35 * scale, -1.25 * scale),
+			Parent = model,
+		}))
+		local cameraHead = attach(makePart({
+			Name = "CCTVCameraHead",
+			Color = Color3.fromRGB(35, 38, 48),
+			Material = Enum.Material.Metal,
+			Size = Vector3.new(1.8 * scale, 1.4 * scale, 2.2 * scale),
+			CFrame = center * CFrame.new(0, 2.4 * scale, -0.45 * scale),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "ScanningOpticLens",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(255, 35, 45),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(0.85 * scale, 0.85 * scale, 0.45 * scale),
+			CFrame = cameraHead.CFrame * CFrame.new(0, 0, -1.15 * scale),
+			Parent = model,
+		}))
+		for _, side in ipairs({ -1, 1 }) do
+			local speakerBox = attach(makePart({
+				Name = "SpeakerCabinet_" .. side,
+				Color = Color3.fromRGB(25, 28, 35),
+				Material = Enum.Material.Metal,
+				Size = Vector3.new(1.6 * scale, 2.6 * scale, 1.8 * scale),
+				CFrame = center * CFrame.new(side * 2.6 * scale, 1.65 * scale, 0),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "SubwooferCone_" .. side,
+				Shape = Enum.PartType.Cylinder,
+				Color = Color3.fromRGB(15, 18, 22),
+				Size = Vector3.new(0.25 * scale, 1.25 * scale, 1.25 * scale),
+				CFrame = speakerBox.CFrame * CFrame.new(0, 0, -0.92 * scale) * CFrame.Angles(0, math.rad(90), 0),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "MechLeg_" .. side,
+				Color = Color3.fromRGB(45, 50, 60),
+				Material = Enum.Material.Metal,
+				Size = Vector3.new(1.2 * scale, 2.2 * scale, 1.4 * scale),
+				CFrame = center * CFrame.new(side * 1.35 * scale, -2.4 * scale, 0),
+				Parent = model,
+			}))
+		end
+
+	elseif targetId == 35 then
+		-- #35: Cosmic Tralalero God (Galaxy Shark in 3 Neon Rainbow Sneakers + Cosmic Wings)
+		attach(makePart({
+			Name = "GalaxySharkTorso",
+			Color = Color3.fromRGB(75, 45, 175),
+			Size = Vector3.new(2.6 * scale, 2.3 * scale, 5.6 * scale),
+			CFrame = center,
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "NebulaBelly",
+			Color = Color3.fromRGB(115, 245, 255),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(2.3 * scale, 0.75 * scale, 5.0 * scale),
+			CFrame = center * CFrame.new(0, -0.85 * scale, 0),
+			Parent = model,
+		}))
+		local divineSnout = attach(makePart({
+			Name = "DivineSnout",
+			Shape = Enum.PartType.Ball,
+			Color = Color3.fromRGB(75, 45, 175),
+			Size = Vector3.new(2.2 * scale, 1.6 * scale, 2.4 * scale),
+			CFrame = center * CFrame.new(0, -0.05 * scale, -2.8 * scale),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "DivineGoldenCrown",
+			Shape = Enum.PartType.Cylinder,
+			Color = Color3.fromRGB(255, 225, 45),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(0.55 * scale, 2.6 * scale, 2.6 * scale),
+			CFrame = center * CFrame.new(0, 2.2 * scale, -0.8 * scale) * CFrame.Angles(0, 0, math.rad(90)),
+			Parent = model,
+		}))
+		for _, side in ipairs({ -1, 1 }) do
+			attach(makePart({
+				Name = "CosmicCelestialWing_" .. side,
+				Color = Color3.fromRGB(165, 125, 255),
+				Material = Enum.Material.Glass,
+				Transparency = 0.25,
+				Size = Vector3.new(3.8 * scale, 0.35 * scale, 1.8 * scale),
+				CFrame = center * CFrame.new(side * 2.8 * scale, 0.45 * scale, -0.45 * scale) * CFrame.Angles(0, math.rad(-side * 25), math.rad(-side * 28)),
+				Parent = model,
+			}))
+		end
+		attach(makePart({
+			Name = "DivineDorsalFin",
+			Color = Color3.fromRGB(115, 245, 255),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(0.45 * scale, 2.6 * scale, 2.2 * scale),
+			CFrame = center * CFrame.new(0, 1.95 * scale, 0.35 * scale) * CFrame.Angles(math.rad(-25), 0, 0),
+			Parent = model,
+		}))
+		attach(makePart({
+			Name = "DivineTailFin",
+			Color = Color3.fromRGB(115, 245, 255),
+			Material = Enum.Material.Neon,
+			Size = Vector3.new(0.42 * scale, 2.6 * scale, 1.8 * scale),
+			CFrame = center * CFrame.new(0, 0.55 * scale, 3.2 * scale) * CFrame.Angles(math.rad(22), 0, 0),
+			Parent = model,
+		}))
+		addBrainrotEyesAndMouth(divineSnout, model, scale, anchored, "Fierce")
+		local sneakerOffsets = {
+			Vector3.new(-1.25 * scale, -1.35 * scale, -0.65 * scale),
+			Vector3.new(1.25 * scale, -1.35 * scale, -0.65 * scale),
+			Vector3.new(0, -1.35 * scale, 1.85 * scale),
+		}
+		for idx, off in ipairs(sneakerOffsets) do
+			local shoe = attach(makePart({
+				Name = "RainbowGodSneaker_" .. idx,
+				Color = Color3.fromRGB(145, 65, 255),
+				Size = Vector3.new(1.05 * scale, 0.72 * scale, 1.85 * scale),
+				CFrame = center * CFrame.new(off),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "RainbowNeonSole_" .. idx,
+				Color = if idx == 1 then Color3.fromRGB(255, 65, 125) elseif idx == 2 then Color3.fromRGB(65, 255, 185) else Color3.fromRGB(255, 225, 45),
+				Material = Enum.Material.Neon,
+				Size = Vector3.new(1.12 * scale, 0.28 * scale, 1.95 * scale),
+				CFrame = shoe.CFrame * CFrame.new(0, -0.28 * scale, 0),
+				Parent = model,
+			}))
+			attach(makePart({
+				Name = "GodSwoosh_" .. idx,
+				Color = Color3.fromRGB(255, 235, 85),
+				Material = Enum.Material.Neon,
+				Size = Vector3.new(0.12 * scale, 0.25 * scale, 0.95 * scale),
+				CFrame = shoe.CFrame * CFrame.new((if off.X <= 0 then -0.52 * scale else 0.52 * scale), 0.1 * scale, 0) * CFrame.Angles(0, 0, math.rad(15)),
 				Parent = model,
 			}))
 		end
@@ -1206,7 +2937,8 @@ end
 function SquishyBuilder.CreateSquishyBackpackTool(slimeDef: SlimeData.SlimeDef, squishyLevel: number?): Tool
 	local lvl = squishyLevel or 1
 	local cps = SlimeData.GetSquishyCoinsPerSec(slimeDef, lvl)
-	local isBrainrot = (tonumber(slimeDef.Id) or 1) <= 35
+	local numId = tonumber(slimeDef.Id) or 1
+	local isBrainrot = numId <= 35 or (slimeDef :: any).IsBrainrot == true
 
 	local tool = Instance.new("Tool")
 	tool.Name = string.format("%s %s ($%s/s)", if isBrainrot then "🧠" else "🥟", slimeDef.Name, formatNumber(cps))
@@ -1220,20 +2952,58 @@ function SquishyBuilder.CreateSquishyBackpackTool(slimeDef: SlimeData.SlimeDef, 
 
 	local scale = 0.72
 	local radius = 1.65 * scale
-	local handle = makePart({
-		Name = "Handle",
-		Shape = Enum.PartType.Ball,
-		Material = Enum.Material.SmoothPlastic,
-		Reflectance = 0.15,
-		Color = slimeDef.Color,
-		Size = Vector3.new(radius * 2, radius * 1.85, radius * 2),
-		Anchored = false,
-		CanCollide = false,
-		Parent = tool,
-	})
 
-	addFaceToBody(handle, tool, radius * 0.95, scale, false)
-	addSpeciesFeatures(handle, tool, slimeDef, radius, scale, false)
+	local prebuiltBrainrot: Model? = nil
+	if isBrainrot then
+		local modelIdx = (slimeDef :: any).BrainrotModelIndex or numId
+		prebuiltBrainrot = PrebuiltLoader.CloneNormalizedTemplate("Brainrots", slimeDef.Name or modelIdx, 2.4 * scale, false)
+			or PrebuiltLoader.CloneNormalizedTemplate("Brainrots", modelIdx, 2.4 * scale, false)
+	end
+
+	local handle: BasePart
+	if prebuiltBrainrot then
+		handle = prebuiltBrainrot.PrimaryPart or makePart({
+			Name = "Handle",
+			Shape = Enum.PartType.Block,
+			Material = Enum.Material.SmoothPlastic,
+			Color = slimeDef.Color,
+			Size = Vector3.new(2.2 * scale, 2.6 * scale, 2.2 * scale),
+			Transparency = 1,
+			Anchored = false,
+			CanCollide = false,
+		})
+		handle.Name = "Handle"
+		handle.Anchored = false
+		handle.CanCollide = false
+		handle.Parent = tool
+		for _, desc in ipairs(prebuiltBrainrot:GetDescendants()) do
+			if desc:IsA("BasePart") and desc ~= handle then
+				desc.Anchored = false
+				desc.CanCollide = false
+				weldTo(handle, desc)
+			end
+		end
+		prebuiltBrainrot.Parent = tool
+	else
+		handle = makePart({
+			Name = "Handle",
+			Shape = if isBrainrot then Enum.PartType.Block else Enum.PartType.Ball,
+			Material = Enum.Material.SmoothPlastic,
+			Reflectance = 0.15,
+			Color = slimeDef.Color,
+			Size = if isBrainrot then Vector3.new(2.2 * scale, 2.6 * scale, 2.2 * scale) else Vector3.new(radius * 2, radius * 1.85, radius * 2),
+			Transparency = if isBrainrot then 1 else 0,
+			Anchored = false,
+			CanCollide = false,
+			Parent = tool,
+		})
+
+		if not isBrainrot then
+			addFaceToBody(handle, tool, radius * 0.95, scale, false)
+		end
+		addSpeciesFeatures(handle, tool, slimeDef, radius, scale, false)
+	end
+
 	addRarityParticles(handle, slimeDef.Color, slimeDef.SecondaryColor, 6)
 
 	return tool
@@ -1244,12 +3014,22 @@ end
 function SquishyBuilder.CreateHatchedSquishy(
 	slimeDef: SlimeData.SlimeDef,
 	posOrLevel: any,
-	maybeGelTier: number?,
-	maybeLevel: number?
+	maybeGelTier: any?,
+	maybeLevel: number?,
+	customScale: number?
 ): Model
 	local position = if typeof(posOrLevel) == "Vector3" then posOrLevel else Vector3.new(0, 0, 0)
 	local lvl = if typeof(posOrLevel) == "number" then posOrLevel else (maybeLevel or 1)
-	local tier = maybeGelTier or 1
+	local tier = 1
+	local finalScale = customScale
+	if typeof(maybeGelTier) == "number" then
+		if maybeGelTier > 0 and maybeGelTier < 1.0 and not finalScale then
+			finalScale = maybeGelTier
+			tier = 1
+		else
+			tier = math.floor(maybeGelTier)
+		end
+	end
 	local numId = tonumber(slimeDef.Id) or 1
 	local stageNum = math.clamp(tonumber(slimeDef.Level) or 1, 1, 8)
 	local stageHatchScale = if SlimeData.GetStageHatchScale
@@ -1259,49 +3039,61 @@ function SquishyBuilder.CreateHatchedSquishy(
 	local scale = (if slimeDef.IsBoss then 1.15 else 1.0)
 	local radius = 2.05 * scale
 
-	local model = Instance.new("Model")
-	model.Name = "Squishy_" .. tostring(slimeDef.Id)
 	local outerColor = if tier == 2
 		then Color3.fromRGB(255, 215, 55)
 		elseif tier >= 3 then Color3.fromHSV((numId * 0.11) % 1, 0.85, 1)
 		else slimeDef.Color
 
-	local body = makePart({
-		Name = "JellyBody",
-		Shape = Enum.PartType.Ball,
-		Material = Enum.Material.SmoothPlastic,
-		Reflectance = if tier >= 2 or lvl >= 3 then 0.28 else 0.14,
-		Color = outerColor,
-		Transparency = 0.04,
-		Size = Vector3.new(radius * 2, radius * 1.82, radius * 2),
-		Position = position + Vector3.new(0, radius * 0.9, 0),
-		Parent = model,
-	})
-	body.PivotOffset = CFrame.new(0, -radius * 0.9, 0)
-	model.PrimaryPart = body
-	addFaceToBody(body, model, radius * 0.96, scale, true)
-	addSpeciesFeatures(body, model, slimeDef, radius, scale, true)
-	attachCollectiblePopGlow(model, body, outerColor, slimeDef.SecondaryColor, 12, 1.35)
+	local isBrainrot = numId <= 35 or (slimeDef :: any).IsBrainrot == true
+	local model: Model
+	local body: BasePart
+	local prebuiltBrainrot: Model? = nil
 
-	-- Add 3D Golden/Rainbow Evolution Crown & Aura Ring when leveled up (Lv.2+)!
-	if lvl >= 2 then
-		local crownColor = if lvl >= 5 then Color3.fromRGB(85, 245, 255) else Color3.fromRGB(255, 215, 45)
-		makePart({
-			Name = "LevelCrown",
-			Shape = Enum.PartType.Cylinder,
-			Material = Enum.Material.Neon,
-			Color = crownColor,
-			Size = Vector3.new(0.45 * scale, 1.85 * scale, 1.85 * scale),
-			CFrame = body.CFrame * CFrame.new(0, radius * 0.95, 0) * CFrame.Angles(0, 0, math.rad(90)),
-			Parent = model,
-		})
+	if isBrainrot then
+		local modelIdx = (slimeDef :: any).BrainrotModelIndex or numId
+		prebuiltBrainrot = PrebuiltLoader.CloneNormalizedTemplate("Brainrots", slimeDef.Name or modelIdx, 4.2 * levelScaleBoost, false)
+			or PrebuiltLoader.CloneNormalizedTemplate("Brainrots", modelIdx, 4.2 * levelScaleBoost, false)
 	end
 
-	-- Physically scale the 3D Brainrot model by StageHatchScale * LevelScaleBoost!
-	if levelScaleBoost > 1.01 then
-		pcall(function()
-			model:ScaleTo(levelScaleBoost)
-		end)
+	if prebuiltBrainrot then
+		model = prebuiltBrainrot
+		model.Name = "Squishy_" .. tostring(slimeDef.Id)
+		body = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart") or Instance.new("Part")
+		body.Name = "JellyBody"
+		body.Anchored = true
+		body.CanCollide = false
+		model.PrimaryPart = body
+		model:PivotTo(CFrame.new(position + Vector3.new(0, 1.3 * scale * levelScaleBoost, 0)))
+		attachCollectiblePopGlow(model, body, outerColor, slimeDef.SecondaryColor, 12, 1.35)
+	else
+		model = Instance.new("Model")
+		model.Name = "Squishy_" .. tostring(slimeDef.Id)
+
+		body = makePart({
+			Name = "JellyBody",
+			Shape = if isBrainrot then Enum.PartType.Block else Enum.PartType.Ball,
+			Material = Enum.Material.SmoothPlastic,
+			Reflectance = if tier >= 2 or lvl >= 3 then 0.28 else 0.14,
+			Color = outerColor,
+			Transparency = if isBrainrot then 1 else 0.04,
+			Size = if isBrainrot then Vector3.new(2.2 * scale, 2.6 * scale, 2.2 * scale) else Vector3.new(radius * 2, radius * 1.82, radius * 2),
+			Position = position + Vector3.new(0, if isBrainrot then 1.3 * scale else radius * 0.9, 0),
+			Parent = model,
+		})
+		body.PivotOffset = CFrame.new(0, if isBrainrot then -1.3 * scale else -radius * 0.9, 0)
+		model.PrimaryPart = body
+		if not isBrainrot then
+			addFaceToBody(body, model, radius * 0.96, scale, true)
+		end
+		addSpeciesFeatures(body, model, slimeDef, radius, scale, true)
+		attachCollectiblePopGlow(model, body, outerColor, slimeDef.SecondaryColor, 12, 1.35)
+
+		-- Physically scale the procedural 3D model by StageHatchScale * LevelScaleBoost!
+		if levelScaleBoost > 1.01 then
+			pcall(function()
+				model:ScaleTo(levelScaleBoost)
+			end)
+		end
 	end
 
 	model:SetAttribute("SlimeId", slimeDef.Id)
@@ -1371,6 +3163,12 @@ function SquishyBuilder.CreateHatchedSquishy(
 	rateLabel.TextStrokeTransparency = 0.08
 	rateLabel.Text = string.format("+$%s/s", formatNumber(cps))
 	rateLabel.Parent = bb
+
+	if finalScale and finalScale > 0 and math.abs(finalScale - 1.0) > 0.01 then
+		pcall(function()
+			model:ScaleTo(model:GetScale() * finalScale)
+		end)
+	end
 
 	return model
 end
@@ -1641,19 +3439,23 @@ function SquishyBuilder.ApplyCharacterMorph(character: Model, slimeDef: SlimeDat
 	local radius = 2.0 * morphScale
 	local costume = Instance.new("Model")
 	costume.Name = "SquishyMorphCostume"
+	local isBrainrot = (tonumber(slimeDef.Id) or 1) <= 35 or (slimeDef :: any).IsBrainrot == true
 	local body = makePart({
 		Name = "MorphBody",
-		Shape = Enum.PartType.Ball,
+		Shape = if isBrainrot then Enum.PartType.Block else Enum.PartType.Ball,
 		Material = Enum.Material.SmoothPlastic,
 		Color = slimeDef.Color,
-		Size = Vector3.new(radius * 2, radius * 1.85, radius * 2),
+		Size = if isBrainrot then Vector3.new(2.2 * morphScale, 2.6 * morphScale, 2.2 * morphScale) else Vector3.new(radius * 2, radius * 1.85, radius * 2),
+		Transparency = if isBrainrot then 1 else 0,
 		CFrame = hrp.CFrame,
 		Anchored = false,
 		CanCollide = false,
 		Parent = costume,
 	})
 	weldTo(hrp, body)
-	addFaceToBody(body, costume, radius * 0.96, morphScale, false)
+	if not isBrainrot then
+		addFaceToBody(body, costume, radius * 0.96, morphScale, false)
+	end
 	addSpeciesFeatures(body, costume, slimeDef, radius, morphScale, false)
 	costume.Parent = character
 end

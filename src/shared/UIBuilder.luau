@@ -16,6 +16,7 @@
 
 local TweenService = game:GetService("TweenService")
 local SlimeData = require(script.Parent:WaitForChild("SlimeData"))
+local SquishyBuilder = require(script.Parent:WaitForChild("SquishyBuilder"))
 
 local UIBuilder = {}
 
@@ -129,12 +130,32 @@ local function build3DSquishyViewportModel(
 	accentColor: Color3,
 	isBossEgg: boolean,
 	rarity: string,
-	shapeStyle: string?
+	shapeStyle: string?,
+	slimeDef: any?
 ): (Model, CFrame)
+	local basePivot = CFrame.new(0, -0.05, 0) * CFrame.Angles(0, math.rad(-18), 0)
+
+	if slimeDef and (slimeDef.IsBrainrot or (tonumber(slimeDef.Id) and tonumber(slimeDef.Id) <= 35)) then
+		local hatched = SquishyBuilder.CreateHatchedSquishy(slimeDef, Vector3.zero, 0.55)
+		hatched.Name = "Squishy3DPreview"
+		for _, desc in ipairs(hatched:GetDescendants()) do
+			if desc:IsA("BillboardGui") or desc:IsA("ProximityPrompt") or desc:IsA("Highlight") then
+				desc:Destroy()
+			elseif desc:IsA("BasePart") then
+				desc.Anchored = true
+				desc.CanCollide = false
+				desc.CanTouch = false
+				desc.CanQuery = false
+				desc.CastShadow = false
+			end
+		end
+		hatched:PivotTo(basePivot)
+		hatched.Parent = parent
+		return hatched, basePivot
+	end
+
 	local model = Instance.new("Model")
 	model.Name = "Squishy3DPreview"
-
-	local basePivot = CFrame.new(0, -0.05, 0) * CFrame.Angles(0, math.rad(-18), 0)
 
 	local body = Instance.new("Part")
 	body.Name = "Body"
@@ -338,7 +359,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	topBannerLabel.Font = Enum.Font.FredokaOne
 	topBannerLabel.TextXAlignment = Enum.TextXAlignment.Left
 	topBannerLabel.TextColor3 = Color3.fromRGB(255, 245, 190)
-	topBannerLabel.Text = "✨ <b>FIND MY SQUISHY!</b>  |  Plot #1  |  ⚡ <font color='#65FF8F'>$0/sec</font>"
+	topBannerLabel.Text = "✨ <b>FIND MY SQUISHY & STEAL MY EGG (BRAINROT)!</b>  |  Plot #1  |  ⚡ <font color='#65FF8F'>$0/sec</font>"
 	topBannerLabel.Parent = topContainer
 	addTextSizeConstraint(topBannerLabel, 11, 18)
 	addTextStroke(topBannerLabel, Color3.fromRGB(10, 12, 22), 1.8)
@@ -664,16 +685,17 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	htpBody.Parent = howToPlayModal
 	addTextSizeConstraint(htpBody, 10, 15)
 
-	-- Alert Toast Banner
+	-- Alert Toast Banner (ZIndex = 250 so it always renders ON TOP of ShopModal, SpinModal, IndexModal & LikeFavoriteModal!)
 	local alertToast = Instance.new("TextLabel")
 	alertToast.Name = "AlertToast"
-	alertToast.Size = UDim2.fromScale(0.44, 0.044)
-	alertToast.Position = UDim2.fromScale(0.5, 0.178)
+	alertToast.Size = UDim2.fromScale(0.56, 0.052)
+	alertToast.Position = UDim2.fromScale(0.5, 0.085)
 	alertToast.AnchorPoint = Vector2.new(0.5, 0)
 	alertToast.BackgroundColor3 = Color3.fromRGB(215, 45, 65)
 	alertToast.Font = Enum.Font.FredokaOne
 	alertToast.TextColor3 = Color3.fromRGB(255, 255, 255)
 	alertToast.Text = ""
+	alertToast.ZIndex = 250
 	alertToast.Visible = false
 	alertToast.Parent = screenGui
 	addCorner(alertToast, 12)
@@ -1025,7 +1047,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		cardCam.Parent = cardVF
 		cardVF.CurrentCamera = cardCam
 
-		local squishy3DModel, basePivot = build3DSquishyViewportModel(cardVF, pColor, aColor, isBossEgg, rarity, nil)
+		local squishy3DModel, basePivot = build3DSquishyViewportModel(cardVF, pColor, aColor, isBossEgg, rarity, nil, slime)
 
 		local hintDesc = if isBossEgg
 			then string.format("Steal from Stage %d Sleeping Boss Nest & hatch in your Fenced Pen!", slime.Level)
@@ -1310,7 +1332,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	vipBuyBtn.AutoButtonColor = false
 	vipBuyBtn.Font = Enum.Font.FredokaOne
 	vipBuyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-	vipBuyBtn.Text = "🟢 <b>BUY VIP PASS\n(399 R$)</b>"
+	vipBuyBtn.Text = "🟢 <b>BUY VIP PASS\n$20K / 399 R$</b>"
 	vipBuyBtn.Parent = vipHeroCard
 	addCorner(vipBuyBtn, 14)
 	addStroke(vipBuyBtn, Color3.fromRGB(255, 255, 255), 2.8)
@@ -1329,7 +1351,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 			EmojiBadge = "💰x2",
 			Title = "💰 2x CASH FOREVER",
 			Desc = "Doubles ALL Roaming Squishy $/sec & Pickup Cash Forever!",
-			Price = "199 R$",
+			Price = "$7.5K / 199 R$",
 			ColorTop = Color3.fromRGB(245, 165, 25),
 			ColorBot = Color3.fromRGB(165, 95, 15),
 			StrokeColor = Color3.fromRGB(255, 235, 95),
@@ -1344,7 +1366,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 			EmojiBadge = "⚡x2",
 			Title = "⚡ 2x TREADMILL SPEED",
 			Desc = "Doubles ALL Treadmill Speed Gains (x1 to x50M) Forever!",
-			Price = "149 R$",
+			Price = "$5K / 149 R$",
 			ColorTop = Color3.fromRGB(25, 165, 245),
 			ColorBot = Color3.fromRGB(22, 85, 175),
 			StrokeColor = Color3.fromRGB(125, 242, 255),
@@ -1359,7 +1381,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 			EmojiBadge = "🐣1s",
 			Title = "🥚 INSTANT 1s HATCH",
 			Desc = "Hatches ALL Stolen Boss Eggs in 1 Second Inside Your Fence!",
-			Price = "249 R$",
+			Price = "$12.5K / 249 R$",
 			ColorTop = Color3.fromRGB(175, 55, 235),
 			ColorBot = Color3.fromRGB(98, 28, 158),
 			StrokeColor = Color3.fromRGB(235, 155, 255),
@@ -1374,7 +1396,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 			EmojiBadge = "🎒+2",
 			Title = "🎒 +2 EGG CARRY CAPACITY",
 			Desc = "Carry 2 Boss Eggs at Once From Any Stage Back to Your Ranch!",
-			Price = "299 R$",
+			Price = "$3.5K / 299 R$",
 			ColorTop = Color3.fromRGB(35, 195, 115),
 			ColorBot = Color3.fromRGB(18, 115, 68),
 			StrokeColor = Color3.fromRGB(125, 255, 175),
@@ -1505,7 +1527,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 			Icon = "🐣⚡",
 			Title = "HATCH ALL EGGS",
 			Sub = "Skip All Timers!",
-			Price = "29 R$",
+			Price = "$500 / 29 R$",
 			ColTop = Color3.fromRGB(195, 75, 255),
 			ColBot = Color3.fromRGB(105, 28, 165),
 			Stroke = Color3.fromRGB(235, 165, 255),
@@ -1516,7 +1538,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 			Icon = "🛡️✨",
 			Title = "60s BOSS SHIELD",
 			Sub = "Bosses Can't Hit!",
-			Price = "39 R$",
+			Price = "$750 / 39 R$",
 			ColTop = Color3.fromRGB(45, 185, 255),
 			ColBot = Color3.fromRGB(22, 95, 175),
 			Stroke = Color3.fromRGB(135, 235, 255),
@@ -1527,7 +1549,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 			Icon = "🍀🥚",
 			Title = "LUCKY EGG BOOST",
 			Sub = "2x Rare+ Brainrots!",
-			Price = "79 R$",
+			Price = "$1.5K / 79 R$",
 			ColTop = Color3.fromRGB(45, 215, 115),
 			ColBot = Color3.fromRGB(18, 118, 58),
 			Stroke = Color3.fromRGB(145, 255, 185),
@@ -1538,7 +1560,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 			Icon = "💵💰",
 			Title = "+$5,000 CASH",
 			Sub = "Instant Coins!",
-			Price = "49 R$",
+			Price = "FREE GIFT / 49 R$",
 			ColTop = Color3.fromRGB(55, 205, 105),
 			ColBot = Color3.fromRGB(24, 115, 55),
 			Stroke = Color3.fromRGB(135, 255, 165),
@@ -1624,6 +1646,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		addTextStroke(titleLbl, Color3.fromRGB(14, 16, 32), 2.0)
 
 		local pricePill = Instance.new("TextLabel")
+		pricePill.Name = "PricePill"
 		pricePill.Size = UDim2.fromScale(0.88, 0.23)
 		pricePill.Position = UDim2.fromScale(0.06, 0.72)
 		pricePill.BackgroundColor3 = Color3.fromRGB(65, 238, 105)
@@ -1835,7 +1858,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	buySpinRobuxBtn.AutoButtonColor = false
 	buySpinRobuxBtn.Font = Enum.Font.FredokaOne
 	buySpinRobuxBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-	buySpinRobuxBtn.Text = "💎 <b>+3 SPINS (19 R$)</b>"
+	buySpinRobuxBtn.Text = "💎 <b>+3 SPINS ($5K / 19 R$)</b>"
 	buySpinRobuxBtn.Parent = spinModal
 	addCorner(buySpinRobuxBtn, 12)
 	addStroke(buySpinRobuxBtn, Color3.fromRGB(255, 255, 255), 2.2)
@@ -2075,7 +2098,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	lfDesc.BackgroundColor3 = Color3.fromRGB(38, 28, 62)
 	lfDesc.Font = Enum.Font.FredokaOne
 	lfDesc.TextColor3 = Color3.fromRGB(245, 248, 255)
-	lfDesc.Text = "🌟 <b>Support Find My Squishy & Unlock Exclusive VIP Perks:</b>\n💰 <font color='#65FF8F'>+$5,000 Bonus Cash</font>  •  🎡 <font color='#FFE865'>+2 Free Wheel Spins</font>\n⚡ <font color='#75E8FF'>+15 Speed Power</font>  •  💖 <font color='#FF95E8'>'VIP SUPPORTER' Overhead Tag</font>  •  🛡️ <font color='#FFE865'>60s Boss Shield!</font>"
+	lfDesc.Text = "🌟 <b>Support Find my Squishy and steal my egg (brainrot) & Unlock Exclusive VIP Perks:</b>\n💰 <font color='#65FF8F'>+$5,000 Bonus Cash</font>  •  🎡 <font color='#FFE865'>+2 Free Wheel Spins</font>\n⚡ <font color='#75E8FF'>+15 Speed Power</font>  •  💖 <font color='#FF95E8'>'VIP SUPPORTER' Overhead Tag</font>  •  🛡️ <font color='#FFE865'>60s Boss Shield!</font>"
 	lfDesc.Parent = likeFavoriteModal
 	addCorner(lfDesc, 12)
 	addStroke(lfDesc, Color3.fromRGB(255, 215, 75), 2.0)

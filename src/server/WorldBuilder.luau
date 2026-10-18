@@ -3107,7 +3107,7 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 	})
 	createBillboardText(
 		fountainTop,
-		"🥚 FIND MY SQUISHY! [117 SQUISHIES]\nFollow the Central Highway -> Steal Brainrot Eggs & Find 117 Squishies Across Stages 1-8!",
+		"🥚 FIND MY SQUISHY & STEAL MY EGG (BRAINROT)!\nFollow the Central Highway -> Steal Brainrot Eggs & Find 117 Squishies Across Stages 1-8!",
 		Color3.fromRGB(255, 235, 90),
 		Vector3.new(0, 2.5, 0),
 		UDim2.new(11.5, 0, 2.4, 0),
@@ -3435,14 +3435,15 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 			local zOff = -6.4 + (incIdx - 1) * 3.2
 			local incPos = penCenter + Vector3.new(cfg.FaceDir * (penW * 0.5 - 3.2), 0.1, zOff)
 
-			local incPad = buildGlowingNeonCircle(
-				incubatorsFolder,
-				"Incubator_" .. tostring(incIdx),
-				incPos,
-				3.4,
-				Color3.fromRGB(158, 72, 204),
-				Color3.fromRGB(218, 188, 78)
-			)
+			local incPad = makePart({
+				Name = "Incubator_" .. tostring(incIdx),
+				Size = Vector3.new(2, 0.2, 2),
+				Position = incPos,
+				Transparency = 1,
+				CanCollide = false,
+				CanQuery = false,
+				Parent = incubatorsFolder,
+			})
 			incPad:SetAttribute("IncubatorIndex", incIdx)
 			incPad:SetAttribute("State", "Empty")
 
@@ -3468,23 +3469,16 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 			local zOff = -6.0 + (col - 1) * 3.0
 			local pedPos = penCenter + Vector3.new(xOff, 0.06, zOff)
 
-			local ped = buildGlowingNeonCircle(
-				pedestalsFolder,
-				"Pedestal_" .. tostring(slotIndex),
-				pedPos,
-				2.8,
-				Color3.fromRGB(82, 178, 112),
-				cfg.Color
-			)
+			local ped = makePart({
+				Name = "Pedestal_" .. tostring(slotIndex),
+				Size = Vector3.new(2, 0.2, 2),
+				Position = pedPos,
+				Transparency = 1,
+				CanCollide = false,
+				CanQuery = false,
+				Parent = pedestalsFolder,
+			})
 			ped:SetAttribute("SlotIndex", slotIndex)
-			createAttachmentPrompt(
-				ped,
-				"PlaceSquishyPrompt",
-				"Release Brainrot in Ranch Pen",
-				"Ranch Pen Slot #" .. tostring(slotIndex),
-				Vector3.new(0, 2.2, 0),
-				13
-			)
 		end
 
 		-- Initialize Physical 3D Fence at Level 1 (24x18 studs, 4 Brainrots)
@@ -3628,12 +3622,15 @@ function WorldBuilder.ResizePlayerFencePen(plotModel: Model, fenceLevel: number)
 				local newPedPos = penCenter + Vector3.new(-faceDir * (xAlpha * usableW), 0.06, zAlpha * usableD)
 				local delta = newPedPos - ped.Position
 				ped.Position = newPedPos
-				local isUnlockedSlot = slotIdx <= maxSlots
-				ped.Transparency = if isUnlockedSlot then 0 else 1
+				ped.Transparency = 1
+				ped.CanCollide = false
+				ped.CanQuery = false
 				for _, child in ipairs(ped:GetChildren()) do
 					if child:IsA("BasePart") then
 						child.Position += delta
-						child.Transparency = if isUnlockedSlot then 0 else 1
+						child.Transparency = 1
+						child.CanCollide = false
+						child.CanQuery = false
 					end
 				end
 			end

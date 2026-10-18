@@ -14,22 +14,41 @@ local PrebuiltLoader = {}
 PrebuiltLoader.CREATOR_STORE_ASSETS = {
 	Squishmallows = { 8539945428, 5495888435 },
 	Brainrots = {
-		111854862176457, 83018340261801, -- Tralalero Tralala
-		117924360887083, 91327024837680, -- Bombardiro Crocodilo
-		138151705692565, 137189209569355, -- Tung Tung Tung Sahur
-		100138257253783, 77231614368559, -- Lirili Larila
-		100538198930997, 112709347552350, -- Brr Brr Patapim
-		138416013720223, 139476190777606, -- Cappuccino Assassino
-		134140230073093, 83732984780551, -- Chimpanzini Bananini
-		129565620410132, 128822862184236, -- La Vaca Saturno Saturnita
-		132021456717690, 75983792852042, -- Ballerina Cappuccina
-		132790929973448, 106304037616485, -- Trippi Troppi
-		136392638607318, 106092335355790, -- Frigo Camelo
-		111434069005815, 80500909913897, -- Bombombini Gusini
-		86371208126006, -- Burbaloni Luliloli
-		12370206919, 114171365520457, -- Glorbo Fruttodrillo
-		11390853367, 15765967358, -- Maxwell Cat
-		14819601003, 17759547081, -- Skibidi Titan
+		Tralalero = 111854862176457, -- Tralalero Tralala
+		Bombardiro = 117924360887083, -- Bombardiro Crocodilo
+		TungTung = 138151705692565, -- Tung Tung Tung Sahur
+		Lirili = 100138257253783, -- Lirili Larila
+		Patapim = 100538198930997, -- Brr Brr Patapim
+		Cappuccino = 138416013720223, -- Cappuccino Assassino
+		Chimpanzini = 134140230073093, -- Chimpanzini Bananini
+		Saturno = 129565620410132, -- La Vaca Saturno Saturnita
+		Ballerina = 132021456717690, -- Ballerina Cappuccina
+		Frigo = 136392638607318, -- Frigo Camelo
+		Gusini = 111434069005815, -- Bombombini Gusini
+		Glorbo = 12370206919, -- Glorbo Fruttodrillo
+		Maxwell = 11390853367, -- Maxwell Cat
+		Trippi = 132790929973448, -- Trippi Troppi
+		Burbaloni = 86371208126006, -- Burbaloni Luliloli
+		Orangutini = 134140230073093, -- Orangutini Ananasini
+		Boneca = 100138257253783, -- Boneca Ambalabu
+		Trulimero = 132790929973448, -- Trulimero Trulicina
+		Girafa = 136392638607318, -- Girafa Celestre
+		BriBri = 138416013720223, -- Bri Bri Bicus Dicus
+		Garamaraman = 138151705692565, -- Garamaraman
+		IlCacto = 86371208126006, -- Il Cacto Hipopotamo
+		Blueberrinni = 132790929973448, -- Blueberrinni Octopussini
+		Crabracadabra = 138416013720223, -- Chef Crabracadabra
+		Chicleteira = 132021456717690, -- Chicleteira Bicicleteira
+		Spijuniro = 111434069005815, -- Spijuniro Golubiro
+		Tigrrullini = 12370206919, -- Tigrrullini Watermellini
+		Zibra = 136392638607318, -- Zibra Zubra Zibralini
+		Graipussi = 129565620410132, -- Graipussi Medussi
+		InfernoBombardiro = 117924360887083, -- Inferno Bombardiro Rex
+		Gattatino = 11390853367, -- Gattatino Neonino
+		Matteo = 100538198930997, -- Matteo The Wise
+		UdinDin = 138151705692565, -- Udin Din Din Dun
+		Skibidi = 14819601003, -- Skibidi Cyber Titan
+		CosmicTralalero = 111854862176457, -- Cosmic Tralalero God
 	},
 	BrainrotEggs = { 139663370542966, 154752063, 97487252360689 },
 	GoldCoins = { 25638529, 25718369, 1564608051, 9418153507 },
@@ -59,6 +78,43 @@ PrebuiltLoader.CREATOR_STORE_ASSETS = {
 	BearTraps = { 9615431080, 470975521 },
 }
 
+PrebuiltLoader.BRAINROT_ID_TO_KEY = {
+	[1] = "Tralalero",
+	[2] = "Lirili",
+	[3] = "Trippi",
+	[4] = "Burbaloni",
+	[5] = "Cappuccino",
+	[6] = "Ballerina",
+	[7] = "Chimpanzini",
+	[8] = "Frigo",
+	[9] = "TungTung",
+	[10] = "Bombardiro",
+	[11] = "Gusini",
+	[12] = "Glorbo",
+	[13] = "Patapim",
+	[14] = "Orangutini",
+	[15] = "Boneca",
+	[16] = "Trulimero",
+	[17] = "Girafa",
+	[18] = "BriBri",
+	[19] = "Garamaraman",
+	[20] = "Maxwell",
+	[21] = "Saturno",
+	[22] = "IlCacto",
+	[23] = "Blueberrinni",
+	[24] = "Crabracadabra",
+	[25] = "Chicleteira",
+	[26] = "Spijuniro",
+	[27] = "Tigrrullini",
+	[28] = "Zibra",
+	[29] = "Graipussi",
+	[30] = "InfernoBombardiro",
+	[31] = "Gattatino",
+	[32] = "Matteo",
+	[33] = "UdinDin",
+	[34] = "Skibidi",
+	[35] = "CosmicTralalero",
+}
 
 local HOUSE_PALETTES = {
 	{ Wall = Color3.fromRGB(255, 210, 115), Roof = Color3.fromRGB(215, 62, 58), Trim = Color3.fromRGB(255, 252, 245) },
@@ -159,14 +215,15 @@ local function sanitizeCreatorStoreModel(rawInst: Instance, category: string, in
 		return nil
 	end
 
-	-- Remove scripts, GUI, sounds, decals/textures, constraints, joints, and oversized invisible hitboxes
+	-- Remove scripts, GUI, sounds, decals/textures (unless Brainrots), constraints, joints, and oversized invisible hitboxes
+	local isBrainrot = (category == "Brainrots")
 	for _, desc in ipairs(container:GetDescendants()) do
 		if
 			desc:IsA("LuaSourceContainer")
 			or desc:IsA("Sound")
-			or desc:IsA("Decal")
-			or desc:IsA("Texture")
-			or desc:IsA("SurfaceAppearance")
+			or (not isBrainrot and desc:IsA("Decal"))
+			or (not isBrainrot and desc:IsA("Texture"))
+			or (not isBrainrot and desc:IsA("SurfaceAppearance"))
 			or desc:IsA("ParticleEmitter")
 			or desc:IsA("Trail")
 			or desc:IsA("Beam")
@@ -183,15 +240,26 @@ local function sanitizeCreatorStoreModel(rawInst: Instance, category: string, in
 		then
 			desc:Destroy()
 		elseif desc:IsA("MeshPart") then
-			desc.TextureID = ""
+			if not isBrainrot then
+				desc.TextureID = ""
+			else
+				desc:SetAttribute("PreserveCreatorStoreMesh", true)
+			end
 		elseif desc:IsA("SpecialMesh") then
-			desc.TextureId = ""
-			if desc.MeshType == Enum.MeshType.FileMesh then
-				-- If the parent Part is a tiny 1x1x1 placeholder for a FileMesh, remove the part so it never turns into a giant block
-				local parentPart = desc.Parent
-				desc:Destroy()
-				if parentPart and parentPart:IsA("BasePart") and parentPart.Size.Magnitude < 2.2 then
-					parentPart:Destroy()
+			if not isBrainrot then
+				desc.TextureId = ""
+				if desc.MeshType == Enum.MeshType.FileMesh then
+					-- If the parent Part is a tiny 1x1x1 placeholder for a FileMesh, remove the part so it never turns into a giant block
+					local parentPart = desc.Parent
+					desc:Destroy()
+					if parentPart and parentPart:IsA("BasePart") and parentPart.Size.Magnitude < 2.2 then
+						parentPart:Destroy()
+					end
+				end
+			else
+				desc:SetAttribute("PreserveCreatorStoreMesh", true)
+				if desc.Parent and desc.Parent:IsA("BasePart") then
+					desc.Parent:SetAttribute("PreserveCreatorStoreMesh", true)
 				end
 			end
 		end
@@ -982,13 +1050,16 @@ function PrebuiltLoader.EnsurePrebuiltAssets(customObjectFetcher: ((number) -> {
 	if customObjectFetcher then
 		for category, idList in pairs(PrebuiltLoader.CREATOR_STORE_ASSETS) do
 			local catFolder = ensureCategory(category)
-			if #catFolder:GetChildren() == 0 then
-				for idx, assetId in ipairs(idList) do
+			for keyOrIdx, assetId in pairs(idList) do
+				local name = if type(keyOrIdx) == "string" then keyOrIdx else (category .. "_Store_" .. tostring(keyOrIdx))
+				if not catFolder:FindFirstChild(name) then
 					local ok, objs = pcall(customObjectFetcher, assetId)
 					if ok and objs and #objs > 0 then
-						local sanitized = sanitizeCreatorStoreModel(objs[1], category, idx)
+						local sanitized = sanitizeCreatorStoreModel(objs[1], category, keyOrIdx)
 						if sanitized then
+							sanitized.Name = name
 							sanitized:SetAttribute("SourceAssetId", assetId)
+							sanitized:SetAttribute("BrainrotKey", tostring(keyOrIdx))
 							sanitized.Parent = catFolder
 							totalLoaded += 1
 							storeLoadedCount += 1
@@ -1139,16 +1210,64 @@ end
 
 function PrebuiltLoader.CloneNormalizedTemplate(
 	categoryName: string,
-	seedIndex: number,
+	seedIndex: any,
 	targetScale: number,
 	canCollide: boolean?
 ): Model?
-	local templates = PrebuiltLoader.GetCategoryTemplates(categoryName)
-	if #templates == 0 then
+	local resolvedName = CATEGORY_ALIASES[categoryName] or categoryName
+	local modelsFolder = ReplicatedStorage:FindFirstChild("Models")
+	local prebuiltRoot = if modelsFolder then modelsFolder:FindFirstChild("PrebuiltAssets") else nil
+	local catFolder = if prebuiltRoot then (prebuiltRoot:FindFirstChild(resolvedName) or prebuiltRoot:FindFirstChild(categoryName)) else nil
+
+	local chosen: Model? = nil
+
+	if catFolder and categoryName == "Brainrots" then
+		if type(seedIndex) == "string" then
+			local direct = catFolder:FindFirstChild(seedIndex)
+			if direct and direct:IsA("Model") then
+				chosen = direct
+			else
+				local lowerSeed = string.lower(seedIndex)
+				for _, child in ipairs(catFolder:GetChildren()) do
+					if child:IsA("Model") then
+						local lowerChild = string.lower(child.Name)
+						if string.find(lowerSeed, lowerChild, 1, true) or string.find(lowerChild, lowerSeed, 1, true) then
+							chosen = child
+							break
+						end
+					end
+				end
+			end
+		elseif type(seedIndex) == "number" then
+			local keyName = PrebuiltLoader.BRAINROT_ID_TO_KEY[seedIndex]
+			if keyName then
+				local direct = catFolder:FindFirstChild(keyName)
+				if direct and direct:IsA("Model") then
+					chosen = direct
+				end
+			end
+			if not chosen then
+				local direct = catFolder:FindFirstChild("Brainrots_Store_" .. tostring(seedIndex))
+				if direct and direct:IsA("Model") then
+					chosen = direct
+				end
+			end
+		end
+	end
+
+	if not chosen then
+		local templates = PrebuiltLoader.GetCategoryTemplates(categoryName)
+		if #templates == 0 then
+			return nil
+		end
+		local numSeed = tonumber(seedIndex) or 1
+		chosen = templates[((math.max(1, math.floor(numSeed)) - 1) % #templates) + 1]
+	end
+
+	if not chosen then
 		return nil
 	end
 
-	local chosen = templates[((math.max(1, math.floor(seedIndex)) - 1) % #templates) + 1]
 	local cloned = chosen:Clone()
 
 	local ok, _, bbSize = pcall(function()

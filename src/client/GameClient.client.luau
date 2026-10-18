@@ -597,7 +597,7 @@ local function applyStateToUI(state: any)
 			boostExtras ..= string.format("  |  🎡 <font color='#FF95FF'>%dx Cash (%ds)</font>", state.SpinCashMultiplier or 2, state.SpinCashBoostRemaining)
 		end
 		ui.TopBannerLabel.Text = string.format(
-			"✨ <b>FIND MY SQUISHY!</b>  |  Plot #%d  |  ⚡ <font color='#65FF8F'>$%s/sec</font>  |  Rebirths: %d%s",
+			"✨ <b>FIND MY SQUISHY & STEAL MY EGG (BRAINROT)!</b>  |  Plot #%d  |  ⚡ <font color='#65FF8F'>$%s/sec</font>  |  Rebirths: %d%s",
 			state.PlotIndex or 1,
 			SlimeData.FormatNumber(state.PassiveIncomeRate or 0),
 			state.Rebirths or 0,
@@ -745,6 +745,14 @@ local function applyStateToUI(state: any)
 			if state.OwnedPasses[k] then
 				btn.Text = "✅ <b>OWNED & ACTIVE</b>"
 				btn.BackgroundColor3 = Color3.fromRGB(75, 225, 115)
+			end
+		end
+		if state.OwnedPasses["LuckyEggRoll"] and ui.DevProductButtons and ui.DevProductButtons["LuckyEggRoll"] then
+			local luckyBtn = ui.DevProductButtons["LuckyEggRoll"]
+			local pill = luckyBtn:FindFirstChild("PricePill") :: TextLabel?
+			if pill and pill:IsA("TextLabel") then
+				pill.Text = "✅ <b>OWNED</b>"
+				pill.BackgroundColor3 = Color3.fromRGB(75, 225, 115)
 			end
 		end
 	end
@@ -1015,6 +1023,122 @@ if ui.HowToPlayClose and ui.HowToPlayModal then
 end
 
 local SoundService = game:GetService("SoundService")
+
+local BRAINROT_VOICE_SOUND_IDS: { [string]: string } = {
+	["1"] = "rbxassetid://107015186635337", -- Tralalero Tralala
+	["2"] = "rbxassetid://77891869376009", -- Lirili Larila
+	["3"] = "rbxassetid://73597660759027", -- Trippi Troppi
+	["4"] = "rbxassetid://105548451780438", -- Burbaloni Luliloli
+	["5"] = "rbxassetid://132507332049936", -- Cappuccino Assassino
+	["6"] = "rbxassetid://136160874492071", -- Ballerina Cappuccina
+	["7"] = "rbxassetid://123254496530998", -- Chimpanzini Bananini
+	["8"] = "rbxassetid://116835658278935", -- Frigo Camelo
+	["9"] = "rbxassetid://138857089980331", -- Tung Tung Tung Sahur
+	["10"] = "rbxassetid://95943432024838", -- Bombardiro Crocodilo
+	["11"] = "rbxassetid://137909689525185", -- Bombombini Gusini
+	["12"] = "rbxassetid://128210163482050", -- Glorbo Fruttodrillo
+	["13"] = "rbxassetid://135871919265006", -- Brr Brr Patapim
+	["14"] = "rbxassetid://78995795448312", -- Orangutini Ananasini
+	["15"] = "rbxassetid://82401058692450", -- Boneca Ambalabu
+	["16"] = "rbxassetid://81676654863951", -- Trulimero Trulicina
+	["17"] = "rbxassetid://105522157502975", -- Girafa Celestre
+	["18"] = "rbxassetid://129448508639486", -- Bri Bri Bicus Dicus
+	["19"] = "rbxassetid://101820663420863", -- Garamaraman
+	["20"] = "rbxassetid://130710880521053", -- Maxwell The Spinning Cat
+	["21"] = "rbxassetid://112547585357624", -- La Vaca Saturno Saturnita
+	["22"] = "rbxassetid://74500886543413", -- Il Cacto Hipopotamo
+	["23"] = "rbxassetid://91691159755945", -- Blueberrinni Octopussini
+	["24"] = "rbxassetid://71037632336586", -- Chef Crabracadabra
+	["25"] = "rbxassetid://122317511050064", -- Chicleteira Bicicleteira
+	["26"] = "rbxassetid://83344685907191", -- Spijuniro Golubiro
+	["27"] = "rbxassetid://104643452311000", -- Tigrrullini Watermellini
+	["28"] = "rbxassetid://73930806905242", -- Zibra Zubra Zibralini
+	["29"] = "rbxassetid://80542793426400", -- Graipussi Medussi
+	["30"] = "rbxassetid://78766358499084", -- Inferno Bombardiro Rex
+	["31"] = "rbxassetid://127155994787755", -- Gattatino Neonino
+	["32"] = "rbxassetid://105593983925243", -- Matteo The Wise
+	["33"] = "rbxassetid://104532600549854", -- Udin Din Din Dun
+	["34"] = "rbxassetid://133664122932845", -- Skibidi Cyber Titan
+	["35"] = "rbxassetid://136631296291259", -- Cosmic Tralalero God
+}
+
+local function playBrainrotVoiceAnnouncement(slimeId: string, slimeName: string)
+	local sIdStr = tostring(slimeId)
+	local soundAsset = BRAINROT_VOICE_SOUND_IDS[sIdStr] or "rbxassetid://107015186635337"
+
+	-- 1. Plays matching Roblox Brainrot Voice Sound in SoundService
+	local voiceSound = Instance.new("Sound")
+	voiceSound.Name = "BrainrotVoice_" .. sIdStr
+	voiceSound.SoundId = soundAsset
+	voiceSound.Volume = 2.4
+	voiceSound.Parent = SoundService
+	voiceSound:Play()
+
+	-- Cap playback duration to 4.5 seconds so longer songs play a crisp clip and never loop forever
+	task.delay(4.5, function()
+		if voiceSound.Parent then
+			pcall(function()
+				voiceSound:Stop()
+			end)
+			voiceSound:Destroy()
+		end
+	end)
+
+	-- 2. Triggers Roblox native AudioTextToSpeech wired to AudioDeviceOutput for localPlayer
+	pcall(function()
+		local tts = Instance.new("AudioTextToSpeech")
+		tts.Text = slimeName .. "!"
+		tts.Volume = 2.0
+
+		local output = Instance.new("AudioDeviceOutput")
+		output.Player = localPlayer
+
+		local wire = Instance.new("Wire")
+		wire.SourceInstance = tts
+		wire.TargetInstance = output
+
+		tts.Parent = SoundService
+		output.Parent = SoundService
+		wire.Parent = SoundService
+
+		if (tts :: any).Play then
+			(tts :: any):Play()
+		end
+
+		task.delay(4.5, function()
+			pcall(function()
+				wire:Destroy()
+				output:Destroy()
+				tts:Destroy()
+			end)
+		end)
+	end)
+end
+
+-- Wire clicking on Brainrot cards (#1–#35) in the 3D Index Modal to play the Voice Announcement
+if ui.IndexCards then
+	for sId, cardInfo in pairs(ui.IndexCards) do
+		local numId = tonumber(sId) or 0
+		if numId >= 1 and numId <= 35 then
+			local sData = SlimeData.ById[sId]
+			local sName = if sData then sData.Name else ("Brainrot #" .. sId)
+			cardInfo.Frame.InputBegan:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+					playBrainrotVoiceAnnouncement(tostring(sId), sName)
+					showToast("🗣️🔊 " .. string.upper(sName) .. "!!", Color3.fromRGB(255, 215, 45))
+				end
+			end)
+			if cardInfo.Viewport then
+				cardInfo.Viewport.InputBegan:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+						playBrainrotVoiceAnnouncement(tostring(sId), sName)
+						showToast("🗣️🔊 " .. string.upper(sName) .. "!!", Color3.fromRGB(255, 215, 45))
+					end
+				end)
+			end
+		end
+	end
+end
 
 -- Phase 5: Layered ASMR Squish/Pop + Rising Harmonic Combo Chime + Rarity Fanfare Audio
 local function playLayeredASMRPickupSound(comboCount: number, rarity: string)
@@ -1296,6 +1420,13 @@ EggCapturedEvent.OnClientEvent:Connect(function(info: any)
 			playLayeredASMRPickupSound(comboCount, rarity)
 			spawn3DDopaminePickupBurst(sData, info)
 			showYouFoundPopup(sData, comboCount, comboMult)
+
+			local numId = tonumber((sData :: any).UnlockOrder or (sData :: any).NumericId or sData.Id or info.SquishyId) or 1
+			local isBrainrot = numId <= 35 or (sData :: any).IsBrainrot == true
+			if isBrainrot then
+				playBrainrotVoiceAnnouncement(tostring(info.SquishyId), sData.Name)
+				showToast("🗣️🔊 " .. string.upper(sData.Name) .. "!!", Color3.fromRGB(255, 215, 45))
+			end
 
 			-- Immediately hide collected Squishy (#36-#117) or hatched Egg (#1-#35) on the client so it vanishes on contact!
 			-- (Stolen eggs are hidden server-side by setWorldEggTaken so they remain visible if dropped when hit by a Boss!)

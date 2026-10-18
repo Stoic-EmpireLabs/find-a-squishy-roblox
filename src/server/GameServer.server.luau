@@ -1189,10 +1189,16 @@ local function refreshPedestalVisual(player: Player, slotIdx: number)
 		newPart.Transparency = 1
 		newPart.Anchored = true
 		newPart.CanCollide = false
+		newPart.CanQuery = false
 		local angle = (slotIdx / 35) * math.pi * 2
 		newPart.Position = baseCenter + Vector3.new(math.cos(angle) * 7, 0.3, math.sin(angle) * 5)
 		newPart.Parent = pedestalsFolder
 		pedPart = newPart
+	end
+	if pedPart then
+		pedPart.Transparency = 1
+		pedPart.CanCollide = false
+		pedPart.CanQuery = false
 	end
 
 	local pedState = session.Pedestals[slotIdx]
@@ -1308,91 +1314,12 @@ local function autoReleaseSquishyIntoPen(player: Player, squishyId: string): boo
 end
 
 local function ensurePlacePromptOnPedestal(pedPart: BasePart, plotIdx: number, slotIdx: number)
+	-- Brainrots auto-drop and roam freely inside the pen; no floor prompt on Pedestal slots
 	local prompt = pedPart:FindFirstChild("PlaceSquishyPrompt", true) :: ProximityPrompt?
-	if not prompt then
-		local att = Instance.new("Attachment")
-		att.Name = "PlaceSquishyPrompt_Attachment"
-		att.Position = Vector3.new(0, 2.2, 0)
-		att.Parent = pedPart
-
-		prompt = Instance.new("ProximityPrompt")
-		prompt.Name = "PlaceSquishyPrompt"
-		prompt.ActionText = "Release Brainrot in Ranch Pen"
-		prompt.ObjectText = "Ranch Pen Slot #" .. tostring(slotIdx)
-		prompt.HoldDuration = 0
-		prompt.MaxActivationDistance = 13
-		prompt.RequiresLineOfSight = false
-		prompt.Exclusivity = Enum.ProximityPromptExclusivity.OnePerButton
-		prompt.Parent = att
-	end
-
-	if prompt:GetAttribute("BoundServer") then
-		return
-	end
-	prompt:SetAttribute("BoundServer", true)
-
-	prompt.Triggered:Connect(function(player: Player)
-		local session = sessions[player]
-		if not session or session.PlotIndex ~= plotIdx then
-			GuardianAlertEvent:FireClient(player, "This is not your Base Plot!")
-			return
-		end
-		local maxSlots = SlimeData.GetMaxBrainrotsForFenceLevel(session.FenceLevel or 1)
-		if slotIdx > maxSlots then
-			GuardianAlertEvent:FireClient(
-				player,
-				string.format("🧱 Upgrade your Brainrot Fence (currently Lv.%d, max %d slots) to unlock Slot #%d!", session.FenceLevel or 1, maxSlots, slotIdx)
-			)
-			return
-		end
-		if session.Pedestals[slotIdx] ~= nil then
-			return
-		end
-
-		local chosenId: string? = session.EquippedId
-		if chosenId and SlimeData.ById[chosenId] and (SlimeData.ById[chosenId] :: any).IsShiningSquishy then
-			chosenId = nil
-		end
-		if not chosenId or (session.BackpackCounts[chosenId] or 0) <= 0 then
-			local bestInc = -1
-			for sId, count in pairs(session.BackpackCounts) do
-				if count > 0 then
-					local d = SlimeData.ById[sId]
-					if d and not (d :: any).IsShiningSquishy and d.IncomePerSec > bestInc then
-						bestInc = d.IncomePerSec
-						chosenId = sId
-					end
-				end
-			end
-		end
-
-		if not chosenId or (session.BackpackCounts[chosenId] or 0) <= 0 then
-			GuardianAlertEvent:FireClient(player, "Walk into your Fenced Hatchery Pen carrying a Brainrot Egg to hatch roaming Brainrots!")
-			return
-		end
-
-		session.BackpackCounts[chosenId] -= 1
-		if session.BackpackCounts[chosenId] <= 0 then
-			session.BackpackCounts[chosenId] = nil
-		end
-
+	if prompt then
 		prompt.Enabled = false
-		local homePos = pedPart.Position + Vector3.new(0, 1.8, 0)
-		session.Pedestals[slotIdx] = {
-			SquishyId = chosenId,
-			Level = 1,
-			VisualModel = nil :: any,
-			HomePos = homePos,
-			RoamPos = homePos,
-			RoamTarget = homePos + Vector3.new((math.random() - 0.5) * 5.0, 0, (math.random() - 0.5) * 5.0),
-			NextRoamChange = os.clock() + 1.5,
-		}
-		refreshPedestalVisual(player, slotIdx)
-		refreshBackpackTools(player)
-		recalculateIncome(session)
-		updatePlotOwnerSign(plotIdx, player.DisplayName, session.PassiveIncomeRate, session.UncollectedPlotCash)
-		syncPlayer(player)
-	end)
+	end
+	return
 end
 
 -- Drops a carried Mystery Brainrot Egg into an open Hatchery Nest inside the Fenced Hatchery Pen, wobbles during countdown (00:05 -> HATCH!),
@@ -3077,6 +3004,7 @@ end)
 -- MarketplaceService Gamepasses (PromptGamePassPurchase) & Developer Products (PromptProductPurchase + ProcessReceipt)
 -- =========================================================================
 local MarketplaceService = game:GetService("MarketplaceService")
+local PolicyService = game:GetService("PolicyService")
 
 local GAMEPASS_IDS: { [string]: number } = {
 	["2xCash"] = 0,
@@ -3096,6 +3024,61 @@ local DEVPRODUCT_IDS: { [string]: number } = {
 	["BuySpinRobux"] = 0,
 	["LuckyEggRoll"] = 0,
 }
+
+local PASS_CASH_COSTS: { [string]: number } = {
+	["Carry2Eggs"] = 3500,
+	["2xSpeed"] = 5000,
+	["2xCash"] = 7500,
+	["SquishyRadar"] = 10000,
+	["AutoHatch"] = 12500,
+	["VIP"] = 20000,
+}
+
+local DEVPRODUCT_CASH_COSTS: { [string]: number } = {
+	["InstantHatchAll"] = 500,
+	["BossShield60s"] = 750,
+	["LuckyEggRoll"] = 1500,
+	["BuySpinRobux"] = 5000,
+}
+
+-- Auto-discover any real Robux Developer Products on Roblox
+task.spawn(function()
+	pcall(function()
+		local pages = MarketplaceService:GetDeveloperProductsAsync()
+		while true do
+			local items = pages:GetCurrentPage()
+			for _, item in ipairs(items) do
+				local pName = tostring(item.Name or "")
+				local pId = tonumber(item.ProductId) or 0
+				if pId > 0 then
+					for key in pairs(DEVPRODUCT_IDS) do
+						if string.find(string.lower(pName), string.lower(key)) then
+							DEVPRODUCT_IDS[key] = pId
+						elseif key == "InstantHatchAll" and string.find(string.lower(pName), "hatch") then
+							DEVPRODUCT_IDS[key] = pId
+						elseif key == "BossShield60s" and string.find(string.lower(pName), "shield") then
+							DEVPRODUCT_IDS[key] = pId
+						elseif key == "LuckyEggRoll" and string.find(string.lower(pName), "lucky") then
+							DEVPRODUCT_IDS[key] = pId
+						elseif key == "BuySpinRobux" and (string.find(string.lower(pName), "spin") or string.find(string.lower(pName), "wheel")) then
+							DEVPRODUCT_IDS[key] = pId
+						elseif key == "CashPack5K" and (string.find(pName, "5,000") or string.find(pName, "5000") or string.find(pName, "5K")) then
+							DEVPRODUCT_IDS[key] = pId
+						elseif key == "CashPack25K" and (string.find(pName, "25,000") or string.find(pName, "25000") or string.find(pName, "25K")) then
+							DEVPRODUCT_IDS[key] = pId
+						elseif key == "CashPack100K" and (string.find(pName, "100,000") or string.find(pName, "100000") or string.find(pName, "100K")) then
+							DEVPRODUCT_IDS[key] = pId
+						end
+					end
+				end
+			end
+			if pages.IsFinished then
+				break
+			end
+			pages:AdvanceToNextPageAsync()
+		end
+	end)
+end)
 
 local function grantGamePassReward(player: Player, passKey: string)
 	local session = sessions[player]
@@ -3231,6 +3214,9 @@ MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player: Playe
 	for passKey, configuredId in pairs(GAMEPASS_IDS) do
 		if configuredId > 0 and configuredId == gamePassId then
 			grantGamePassReward(player, passKey)
+			if savePlayerData then
+				savePlayerData(player)
+			end
 			break
 		end
 	end
@@ -3259,30 +3245,100 @@ BuyRobuxItemEvent.OnServerEvent:Connect(function(player: Player, itemKey: any)
 	if not session or type(itemKey) ~= "string" then
 		return
 	end
+
+	-- 1. If already owned, alert and return
+	if session.OwnedPasses and session.OwnedPasses[itemKey] then
+		GuardianAlertEvent:FireClient(player, string.format("✅ You already own %s!", itemKey))
+		return
+	end
+
 	pcall(function()
 		if GAMEPASS_IDS[itemKey] ~= nil then
 			local passId = GAMEPASS_IDS[itemKey]
 			if passId > 0 then
 				MarketplaceService:PromptGamePassPurchase(player, passId)
-			elseif RunService:IsStudio() then
-				grantGamePassReward(player, itemKey)
 			else
-				GuardianAlertEvent:FireClient(
-					player,
-					"💎 Gamepass checkout coming soon! Claim +$5,000 Free Cash at the 💖 Like & Favorite Booth!"
-				)
+				local cashCost = PASS_CASH_COSTS[itemKey] or 10000
+				if session.Coins >= cashCost then
+					session.Coins -= cashCost
+					grantGamePassReward(player, itemKey)
+					if savePlayerData then
+						savePlayerData(player)
+					end
+					GuardianAlertEvent:FireClient(
+						player,
+						string.format("🎉 Purchased %s for $%s In-Game Cash!", itemKey, SlimeData.FormatNumber(cashCost))
+					)
+				else
+					GuardianAlertEvent:FireClient(
+						player,
+						string.format(
+							"💰 Need $%s Cash to buy %s (You have $%s)!",
+							SlimeData.FormatNumber(cashCost),
+							itemKey,
+							SlimeData.FormatNumber(session.Coins)
+						)
+					)
+				end
 			end
 		elseif DEVPRODUCT_IDS[itemKey] ~= nil then
 			local prodId = DEVPRODUCT_IDS[itemKey]
 			if prodId > 0 then
+				local isRestricted = false
+				if itemKey == "BuySpinRobux" then
+					local pSuccess, policy = pcall(function()
+						return PolicyService:GetPolicyInfoForPlayerAsync(player)
+					end)
+					if pSuccess and policy and policy.ArePaidRandomItemsRestricted == true then
+						isRestricted = true
+					end
+				end
+				if isRestricted then
+					GuardianAlertEvent:FireClient(player, "Paid random wheel spins are restricted by your account policy.")
+					return
+				end
 				MarketplaceService:PromptProductPurchase(player, prodId)
-			elseif RunService:IsStudio() then
-				grantDeveloperProductReward(player, itemKey)
+			elseif itemKey == "CashPack5K" or itemKey == "CashPack25K" or itemKey == "CashPack100K" then
+				if not session.ClaimedLikeReward then
+					OpenModalEvent:FireClient(player, "LikeFavorite")
+					GuardianAlertEvent:FireClient(
+						player,
+						"💖 Claim +$5,000 Free Starter Cash at the Like & Favorite VIP Booth!"
+					)
+				else
+					GuardianAlertEvent:FireClient(
+						player,
+						"💎 Cash Packs require configured Developer Products! Complete Biome Stages & Treadmill runs for huge cash!"
+					)
+				end
 			else
-				GuardianAlertEvent:FireClient(
-					player,
-					"💎 Robux Pack checkout coming soon! Claim +$5,000 Free Cash at the 💖 Like & Favorite Booth!"
-				)
+				local cashCost = DEVPRODUCT_CASH_COSTS[itemKey]
+				if cashCost then
+					if session.Coins >= cashCost then
+						session.Coins -= cashCost
+						if grantDeveloperProductReward(player, itemKey) then
+							if savePlayerData then
+								savePlayerData(player)
+							end
+							GuardianAlertEvent:FireClient(
+								player,
+								string.format("🎉 Purchased %s for $%s In-Game Cash!", itemKey, SlimeData.FormatNumber(cashCost))
+							)
+						end
+					else
+						GuardianAlertEvent:FireClient(
+							player,
+							string.format(
+								"💰 Need $%s Cash to buy %s (You have $%s)!",
+								SlimeData.FormatNumber(cashCost),
+								itemKey,
+								SlimeData.FormatNumber(session.Coins)
+							)
+						)
+					end
+				else
+					GuardianAlertEvent:FireClient(player, "💎 Developer Product checkout coming soon!")
+				end
 			end
 		end
 	end)
@@ -3755,7 +3811,7 @@ Players.PlayerRemoving:Connect(function(player: Player)
 				local pedPart = peds and peds:FindFirstChild("Pedestal_" .. tostring(slotIdx))
 				local pr = pedPart and pedPart:FindFirstChild("PlaceSquishyPrompt", true) :: ProximityPrompt?
 				if pr then
-					pr.Enabled = true
+					pr.Enabled = false
 				end
 			end
 		end
