@@ -925,6 +925,8 @@ local function updateSpeedUpgradePrompt(player: Player)
 	end
 end
 
+local tryUnlockStageGate: (player: Player, targetLevel: number) -> ()
+
 local function upgradePlayerTreadmill(player: Player)
 	local session = sessions[player]
 	if not session then
@@ -937,22 +939,8 @@ local function upgradePlayerTreadmill(player: Player)
 	local nextTierIdx = session.SpeedLevel + 1
 	local nextTierData = SlimeData.TreadmillTiers[nextTierIdx] or SlimeData.TreadmillTiers[#SlimeData.TreadmillTiers]
 	local reqStage = (nextTierData :: any).RequiredStage or nextTierIdx
-	if reqStage > 1 and not SlimeData.IsLevelUnlocked(session.FoundEggs, session.SpeedStat, reqStage) then
-		local prevStage = reqStage - 1
-		local foundPrev, totalPrev = SlimeData.GetLevelProgress(session.FoundEggs, prevStage)
-		local reqSpd = (SlimeData.Levels[reqStage] :: any).RequiredSpeed or 250
-		GuardianAlertEvent:FireClient(
-			player,
-			string.format(
-				"🔒 Unlock Stage %d first (%d/%d Stage %d + %s Speed) before buying Treadmill Tier %d!",
-				reqStage,
-				foundPrev,
-				totalPrev,
-				prevStage,
-				SlimeData.FormatNumber(reqSpd),
-				nextTierIdx
-			)
-		)
+	if reqStage > 1 and not SlimeData.IsLevelUnlocked(session.FoundEggs, session.SpeedStat, reqStage, session.FenceLevel or 1, session.UnlockedGates) then
+		tryUnlockStageGate(player, reqStage)
 		return
 	end
 	local cost = if nextTierData and nextTierData.UpgradeCost and nextTierData.UpgradeCost > 0
@@ -1524,14 +1512,16 @@ local function plantCarriedEggIntoHatcheryNest(player: Player, preferredIncIdx: 
 					bbLabel.Text = "🥚 HATCHERY NEST #" .. tostring(targetIncIdx) .. "\n[READY]"
 				end
 
-				-- Roll which Brainrot (#1-#35) hatches from this Stage Egg (also marks the stolen nest slot as discovered for Stage completion!)
-				session.FoundEggs[plantedEggId] = true
+				-- Roll which Brainrot (#1-#35) hatches from this Stage Egg (preferring unfound Brainrots so Stage completion never soft-locks!)
 				local hasLucky = session.OwnedPasses and (session.OwnedPasses["LuckyEggRoll"] or session.OwnedPasses["VIP"])
-				local rolledBrainrotId = SlimeData.RollStageBrainrotId(eggData.Level, hasLucky, session.FoundEggs)
+				local rolledBrainrotId = if not session.FoundEggs[plantedEggId] and not hasLucky
+					then plantedEggId
+					else SlimeData.RollStageBrainrotId(eggData.Level, hasLucky, session.FoundEggs)
 				local hatchedData = SlimeData.ById[rolledBrainrotId] or eggData
 
 				local isFirst = not session.FoundEggs[rolledBrainrotId]
 				session.FoundEggs[rolledBrainrotId] = true
+				session.FoundEggs[plantedEggId] = true
 				local passMult = if session.OwnedPasses and session.OwnedPasses["2xCash"] then 2.0 else 1.0
 				local baseReward = (hatchedData :: any).CoinReward or eggData.CoinReward or 50
 				local rewardCash = math.floor(baseReward * (if isFirst then 1.5 else 1.0) * passMult)
@@ -1609,7 +1599,7 @@ end
 -- 2. Find 100% of Stage (S-1) Hidden Squishies (#36-#117)
 -- 3. Upgrade Fence to Level S (Lv. 1 -> Lv. 8)
 -- 4. Reach Required Speed on the Treadmill + Pay Stage Gate Cash Cost
-local function tryUnlockStageGate(player: Player, targetLevel: number)
+tryUnlockStageGate = function(player: Player, targetLevel: number)
 	local session = sessions[player]
 	if not session or targetLevel <= 1 or targetLevel > #SlimeData.Levels then
 		return
@@ -1993,7 +1983,7 @@ local function tryCollectOrStealWorldItem(player: Player, eggId: string)
 		return
 	end
 
-	if eggTakenByPlayer[eggId] ~= nil then
+	if session.FoundEggs[eggId] or eggTakenByPlayer[eggId] ~= nil then
 		return
 	end
 	local dropCdKey = tostring(player.UserId) .. "_" .. eggId
@@ -2113,7 +2103,7 @@ local function bindBiomeObstacles()
 						return
 					end
 					local stageId = (desc:GetAttribute("StageId") :: number?) or 1
-					if stageId > 1 and not SlimeData.IsLevelUnlocked(session.FoundEggs, session.SpeedStat, stageId) then
+					if stageId > 1 and not SlimeData.IsLevelUnlocked(session.FoundEggs, session.SpeedStat, stageId, session.FenceLevel or 1, session.UnlockedGates) then
 						return
 					end
 					session.CollectedCoins[coinId] = true
@@ -2421,31 +2411,20 @@ RunService.Heartbeat:Connect(function(rawDt: number)
 			continue
 		end
 
-		-- Strict Server Z-Boundary Teleport Guard (Enforces 100% Stage N Completion + Speed Power before entering Stage N+1!)
+		-- Strict Server Z-Boundary Teleport Guard (Enforces all 4 Stage Gate requirements before entering Stage N+1!)
 		for lvlId = 2, #SlimeData.Levels do
 			local levelInfo = SlimeData.Levels[lvlId]
 			if levelInfo and hrp.Position.Z <= (levelInfo.ZStart - 2.0) then
-				if not SlimeData.IsLevelUnlocked(session.FoundEggs, session.SpeedStat, lvlId) then
-					hrp.CFrame = CFrame.new(math.clamp(hrp.Position.X, -85, 85), math.max(hrp.Position.Y, 6), levelInfo.ZStart + 6.5)
-					hrp.AssemblyLinearVelocity = Vector3.zero
+				if not SlimeData.IsLevelUnlocked(session.FoundEggs, session.SpeedStat, lvlId, session.FenceLevel or 1, session.UnlockedGates) then
 					if not stageLockAlertCooldowns[player.UserId] or (now - stageLockAlertCooldowns[player.UserId]) >= 2.0 then
 						stageLockAlertCooldowns[player.UserId] = now
-						local prevLvl = lvlId - 1
-						local foundPrev, totalPrev = SlimeData.CountLevelProgress(session.FoundEggs, prevLvl)
-						local reqSpd = levelInfo.RequiredSpeed or 0
-						GuardianAlertEvent:FireClient(
-							player,
-							string.format(
-								"🔒 STAGE %d LOCKED! Complete 100%% of Stage %d (%d/%d Squishies & Eggs) + %s Speed Power!",
-								lvlId,
-								prevLvl,
-								foundPrev,
-								totalPrev,
-								SlimeData.FormatNumber(reqSpd)
-							)
-						)
+						tryUnlockStageGate(player, lvlId)
 					end
-					break
+					if not SlimeData.IsLevelUnlocked(session.FoundEggs, session.SpeedStat, lvlId, session.FenceLevel or 1, session.UnlockedGates) then
+						hrp.CFrame = CFrame.new(math.clamp(hrp.Position.X, -85, 85), math.max(hrp.Position.Y, 6), levelInfo.ZStart + 6.5)
+						hrp.AssemblyLinearVelocity = Vector3.zero
+						break
+					end
 				end
 			end
 		end
@@ -2469,12 +2448,13 @@ RunService.Heartbeat:Connect(function(rawDt: number)
 		if world.WorldCoins then
 			for coinId, coinPart in pairs(world.WorldCoins) do
 				if not session.CollectedCoins[coinId] and coinPart and coinPart.Parent then
-					local d = (hrp.Position - coinPart.Position).Magnitude
+					local coinPos = if coinPart:IsA("Model") then coinPart:GetPivot().Position else (coinPart :: any).Position
+					local d = (hrp.Position - coinPos).Magnitude
 					if d <= 6.5 then
 						local stageId = (coinPart:GetAttribute("StageId") :: number?) or 1
-						if stageId <= 1 or SlimeData.IsLevelUnlocked(session.FoundEggs, session.SpeedStat, stageId) then
+						if stageId <= 1 or SlimeData.IsLevelUnlocked(session.FoundEggs, session.SpeedStat, stageId, session.FenceLevel or 1, session.UnlockedGates) then
 							session.CollectedCoins[coinId] = true
-							local sound = coinPart:FindFirstChild("CoinChime") :: Sound?
+							local sound = coinPart:FindFirstChild("CoinChime", true) :: Sound?
 							if sound then
 								sound:Play()
 							end
@@ -2490,7 +2470,7 @@ RunService.Heartbeat:Connect(function(rawDt: number)
 							CoinCollectedEvent:FireClient(player, {
 								CoinId = coinId,
 								CoinsEarned = earned,
-								WorldPos = coinPart.Position,
+								WorldPos = coinPos,
 							})
 							syncPlayer(player)
 						end
@@ -2686,10 +2666,6 @@ task.spawn(function()
 end)
 
 -- Remote Events from HUD
-BuySpeedUpgradeEvent.OnServerEvent:Connect(function(player: Player)
-	upgradePlayerTreadmill(player)
-end)
-
 local lastTreadmillTapByPlayer: { [Player]: number } = {}
 TreadmillTapBoostEvent.OnServerEvent:Connect(function(player: Player)
 	local session = sessions[player]
@@ -3116,12 +3092,19 @@ BuySquishyHintEvent.OnServerEvent:Connect(function(player: Player, targetIdArg: 
 	end
 	local targetId = tostring(targetIdArg or "")
 	local slimeDef = SlimeData.ById[targetId]
+	if slimeDef then
+		local tNum = tonumber((slimeDef :: any).UnlockOrder or (slimeDef :: any).NumericId or slimeDef.Id) or 1
+		if tNum <= 35 then
+			slimeDef = nil
+		end
+	end
 	if not slimeDef then
-		-- Find the first uncollected Squishy in the player's current unlocked stages
+		-- Find the first uncollected Hidden Collectible Squishy (#36-#117) in the player's current unlocked stages
 		for _, s in ipairs(SlimeData.Slimes) do
 			local sId = tostring((s :: any).Id)
-			if not session.FoundEggs[sId] and not session.UnlockedHints[sId] then
-				if SlimeData.IsLevelUnlocked(session.FoundEggs, session.SpeedStat, s.Level) then
+			local numId = tonumber((s :: any).UnlockOrder or (s :: any).NumericId or s.Id) or 1
+			if numId > 35 and not session.FoundEggs[sId] and not session.UnlockedHints[sId] then
+				if SlimeData.IsLevelUnlocked(session.FoundEggs, session.SpeedStat, s.Level, session.FenceLevel or 1, session.UnlockedGates) then
 					slimeDef = s
 					targetId = sId
 					break

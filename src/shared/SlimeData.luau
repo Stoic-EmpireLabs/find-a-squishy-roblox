@@ -1753,19 +1753,42 @@ function SlimeData.GetHintCostForStage(stageNum: number): number
 	return costs[lvl] or 150
 end
 
--- Weighted Random Brainrot Egg Roll for a Stage (prioritizes uncollected Brainrots when Lucky Roll is active or on pity!)
+function SlimeData.GetStageHatchScale(stageNum: number): number
+	local lvl = math.clamp(math.floor(stageNum or 1), 1, 8)
+	local scales = SlimeData.StageHatchScales or {
+		[1] = 1.00,
+		[2] = 1.25,
+		[3] = 1.50,
+		[4] = 1.80,
+		[5] = 2.10,
+		[6] = 2.45,
+		[7] = 2.80,
+		[8] = 3.20,
+	}
+	return scales[lvl] or (1.0 + (lvl - 1) * 0.28)
+end
+
+-- Weighted Random Brainrot Egg Roll for a Stage (guarantees uncollected Brainrots when completing Stage Eggs so players can never get soft-locked!)
 function SlimeData.RollStageBrainrotId(stageLevel: number, hasLuckyRoll: boolean?, foundMap: { [any]: boolean }?): string
 	local lvl = math.clamp(math.floor(stageLevel or 1), 1, 8)
 	local stageBrainrots = {}
+	local unfoundBrainrots = {}
 	for idx = 1, 35 do
 		local s = SlimeData.ById[idx]
 		if s and s.Level == lvl then
 			table.insert(stageBrainrots, s)
+			local sId = tostring((s :: any).Id)
+			local alreadyFound = foundMap and (foundMap[sId] or foundMap[tonumber(sId) :: any])
+			if not alreadyFound then
+				table.insert(unfoundBrainrots, s)
+			end
 		end
 	end
 	if #stageBrainrots == 0 then
 		return "1"
 	end
+
+	local pool = if #unfoundBrainrots > 0 then unfoundBrainrots else stageBrainrots
 
 	local rarityWeights = {
 		Common = if hasLuckyRoll then 15 else 48,
@@ -1777,12 +1800,11 @@ function SlimeData.RollStageBrainrotId(stageLevel: number, hasLuckyRoll: boolean
 
 	local totalWeight = 0
 	local weightedList = {}
-	for _, b in ipairs(stageBrainrots) do
+	for _, b in ipairs(pool) do
 		local w = rarityWeights[b.Rarity] or 20
 		local sId = tostring((b :: any).Id)
 		local alreadyFound = foundMap and (foundMap[sId] or foundMap[tonumber(sId) :: any])
 		if not alreadyFound then
-			-- Boost uncollected Brainrots so players can complete their Stage Brainrot Index!
 			w = math.floor(w * (if hasLuckyRoll then 3.5 else 1.8))
 		end
 		totalWeight += w
@@ -1801,6 +1823,3 @@ function SlimeData.RollStageBrainrotId(stageLevel: number, hasLuckyRoll: boolean
 end
 
 return SlimeData
-
-
-

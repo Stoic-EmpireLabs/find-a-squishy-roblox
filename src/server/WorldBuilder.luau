@@ -4042,6 +4042,13 @@ function WorldBuilder.BuildWorld(): {
 			disc.Material = Enum.Material.Neon
 			disc.Anchored = true
 			disc.CanCollide = false
+			disc.CanTouch = true
+			disc:SetAttribute("WorldCoinPickup", true)
+			disc:SetAttribute("CoinId", cIdStr)
+			disc:SetAttribute("StageId", stageIdx)
+			disc:SetAttribute("CoinValue", coinValue)
+			disc:SetAttribute("CoinSpinRotor", true)
+			disc:SetAttribute("SpinSpeed", 2.4)
 			disc.Parent = coinModel
 			coinModel.PrimaryPart = disc
 

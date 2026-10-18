@@ -81,6 +81,26 @@ local function hideWorldItemForLocalPlayer(target: Instance?)
 	end
 end
 
+local function findWorldEggModel(worldEggsFolder: Instance?, sKey: string): Instance?
+	if not worldEggsFolder then
+		return nil
+	end
+	local k = tostring(sKey)
+	return worldEggsFolder:FindFirstChild("ShiningSquishy_" .. k)
+		or worldEggsFolder:FindFirstChild("Egg_" .. k)
+		or worldEggsFolder:FindFirstChild("WorldEgg_" .. k)
+		or worldEggsFolder:FindFirstChild(k)
+end
+
+local function findWorldCoinModel(worldCoinsFolder: Instance?, coinId: string): Instance?
+	if not worldCoinsFolder then
+		return nil
+	end
+	local c = tostring(coinId)
+	return worldCoinsFolder:FindFirstChild("WorldCoin_" .. c)
+		or worldCoinsFolder:FindFirstChild(c)
+end
+
 local toastToken = 0
 local function showToast(msg: string, bgColor: Color3?)
 	toastToken += 1
@@ -289,6 +309,19 @@ local function refreshWorldCaches()
 						BaseZ = (child:GetAttribute("BaseZ") :: number?) or child.Position.Z,
 					})
 				end
+			end
+		end
+	end
+
+	local worldCoinsFolder = squishyWorld:FindFirstChild("WorldCoins")
+	if worldCoinsFolder then
+		for _, desc in ipairs(worldCoinsFolder:GetDescendants()) do
+			if desc:IsA("BasePart") and desc:GetAttribute("CoinSpinRotor") and desc:GetAttribute("SpinSpeed") then
+				table.insert(cachedCosmeticRotors, {
+					Part = desc,
+					Speed = desc:GetAttribute("SpinSpeed") :: number,
+					Mode = "Y",
+				})
 			end
 		end
 	end
@@ -573,14 +606,20 @@ local function applyStateToUI(state: any)
 	end
 
 	local hintStage = 1
-	if state.UnlockedLevels then
-		for sIdx = 1, 8 do
-			if state.UnlockedLevels[tostring(sIdx)] then
-				hintStage = sIdx
+	local foundMapForHint = state.Found or {}
+	local unlockedHintsForHint = state.UnlockedHints or {}
+	local unlockedLevelsForHint = state.UnlockedLevels or { ["1"] = true }
+	for _, s in ipairs(SlimeData.Slimes) do
+		local sKey = tostring((s :: any).Id)
+		local numId = tonumber((s :: any).UnlockOrder or (s :: any).NumericId or s.Id) or 1
+		if numId > 35 and not foundMapForHint[sKey] and not unlockedHintsForHint[sKey] then
+			if unlockedLevelsForHint[tostring(s.Level)] then
+				hintStage = s.Level
+				break
 			end
 		end
 	end
-	local hintCost = math.floor(500 * (2.6 ^ math.max(0, hintStage - 1)))
+	local hintCost = SlimeData.GetHintCostForStage(hintStage)
 	if ui.BuyHintShopBtn then
 		ui.BuyHintShopBtn.Text = string.format("🔍 <b>Squishy Hint - $%s</b>", SlimeData.FormatNumber(hintCost))
 	end
@@ -647,13 +686,9 @@ local function applyStateToUI(state: any)
 		if worldEggsFolder then
 			for sKey, isFound in pairs(state.Found) do
 				if isFound then
-					local sData = SlimeData.ById[sKey]
-					local numId = if sData then (tonumber((sData :: any).UnlockOrder or (sData :: any).NumericId or sData.Id) or 1) else 999
-					-- Collectible Squishies (#36-#117) permanently disappear on the client once collected!
-					if numId > 35 then
-						local m = worldEggsFolder:FindFirstChild("WorldEgg_" .. tostring(sKey)) or worldEggsFolder:FindFirstChild(tostring(sKey))
-						hideWorldItemForLocalPlayer(m)
-					end
+					-- Both hatched Stage Eggs (#1-#35) and collected Squishies (#36-#117) permanently disappear on the client once completed!
+					local m = findWorldEggModel(worldEggsFolder, tostring(sKey))
+					hideWorldItemForLocalPlayer(m)
 				end
 			end
 		end
@@ -665,7 +700,7 @@ local function applyStateToUI(state: any)
 		if worldCoinsFolder then
 			for coinId, isCollected in pairs(state.CollectedCoins) do
 				if isCollected then
-					local coinPart = worldCoinsFolder:FindFirstChild(tostring(coinId))
+					local coinPart = findWorldCoinModel(worldCoinsFolder, tostring(coinId))
 					hideWorldItemForLocalPlayer(coinPart)
 				end
 			end
@@ -1113,12 +1148,15 @@ EggCapturedEvent.OnClientEvent:Connect(function(info: any)
 			spawn3DDopaminePickupBurst(sData, info)
 			showYouFoundPopup(sData, comboCount, comboMult)
 
-			-- Immediately hide picked-up Egg (#1-#35) or collected Squishy (#36-#117) on the client so it vanishes on contact!
-			local sw = Workspace:FindFirstChild("SquishyWorld")
-			local worldEggsFolder = sw and sw:FindFirstChild("WorldEggs")
-			if worldEggsFolder then
-				local m = worldEggsFolder:FindFirstChild("WorldEgg_" .. tostring(info.SquishyId)) or worldEggsFolder:FindFirstChild(tostring(info.SquishyId))
-				hideWorldItemForLocalPlayer(m)
+			-- Immediately hide collected Squishy (#36-#117) or hatched Egg (#1-#35) on the client so it vanishes on contact!
+			-- (Stolen eggs are hidden server-side by setWorldEggTaken so they remain visible if dropped when hit by a Boss!)
+			if info.ActionType ~= "EggStolen" then
+				local sw = Workspace:FindFirstChild("SquishyWorld")
+				local worldEggsFolder = sw and sw:FindFirstChild("WorldEggs")
+				if worldEggsFolder then
+					local m = findWorldEggModel(worldEggsFolder, tostring(info.SquishyId))
+					hideWorldItemForLocalPlayer(m)
+				end
 			end
 
 			if info.ActionType == "EggStolen" then
@@ -1150,7 +1188,7 @@ CoinCollectedEvent.OnClientEvent:Connect(function(info: any)
 		local sw = Workspace:FindFirstChild("SquishyWorld")
 		local worldCoinsFolder = sw and sw:FindFirstChild("WorldCoins")
 		if worldCoinsFolder then
-			local coinPart = worldCoinsFolder:FindFirstChild(tostring(info.CoinId))
+			local coinPart = findWorldCoinModel(worldCoinsFolder, tostring(info.CoinId))
 			hideWorldItemForLocalPlayer(coinPart)
 		end
 		local earned = tonumber(info.CoinsEarned) or 45
@@ -1317,6 +1355,12 @@ local function getPlotStationPos(plotIdx: number, stationName: string): Vector3
 			if floor then
 				return floor.Position + Vector3.new(0, 2.5, 0)
 			end
+		elseif stationName == "UpgradeFence" then
+			local pen = pModel:FindFirstChild("HatcheryPen")
+			local fenceStand = pen and pen:FindFirstChild("UpgradeFenceStand") :: BasePart?
+			if fenceStand then
+				return fenceStand.Position + Vector3.new(0, 2.5, 0)
+			end
 		elseif stationName == "GrowOrCash" then
 			local pen = pModel:FindFirstChild("HatcheryPen")
 			local growSign = pen and (pen:FindFirstChild("GrowSquishyStand") or pen:FindFirstChild("GrowUpgradeStationSign")) :: BasePart?
@@ -1364,6 +1408,7 @@ local function computeCurrent6StepTarget(hrpPos: Vector3): (Vector3, string, str
 	local minUpgradeCost = tonumber(latestState.MinSquishyUpgradeCost) or 0
 	local uncollectedCash = tonumber(latestState.UncollectedPlotCash) or 0
 	local unlockedMap = latestState.UnlockedLevels or { ["1"] = true }
+	local fenceLvl = tonumber(latestState.FenceLevel) or 1
 
 	-- [STEP 4] Carrying a stolen Boss Egg -> Go straight to your Plot's Fenced Hatchery Pen!
 	if carriedEggs > 0 then
@@ -1424,14 +1469,39 @@ local function computeCurrent6StepTarget(hrpPos: Vector3): (Vector3, string, str
 			Color3.fromRGB(95, 255, 145)
 	end
 
-	-- [STEP 1] If player is at very start of Stage 1 with low Speed (< 45) OR has 100% of activeStage items and needs Speed for Stage (activeStage + 1):
+	-- [STEP 5/6] If player has 100% of activeStage Brainrots & Squishies and nextStageInfo exists:
 	local nextReqSpeed = if nextStageInfo then (nextStageInfo.RequiredSpeed or 250) else 0
-	if (activeStage == 1 and spd < 45 and foundInStage == 0) or (foundInStage >= totalInStage and nextStageInfo and spd < nextReqSpeed) then
+	if foundInStage >= totalInStage and nextStageInfo then
+		local reqFenceLvl = activeStage + 1
+		if fenceLvl < reqFenceLvl then
+			local fencePos = getPlotStationPos(plotIdx, "UpgradeFence")
+			local fCost = tonumber(latestState.NextFenceCost) or SlimeData.GetFenceUpgradeCost(fenceLvl)
+			return fencePos,
+				string.format("🧱 STEP 5: UPGRADE FENCE TO LV.%d ($%s)!", reqFenceLvl, SlimeData.FormatNumber(fCost)),
+				string.format("🧭 <b>FOLLOW 3D ARROW:</b> [Step 5/6] 🧱 Upgrade your Fence Size to <b>Lv.%d</b> ($%s) to unlock Stage %d!", reqFenceLvl, SlimeData.FormatNumber(fCost), reqFenceLvl),
+				Color3.fromRGB(115, 255, 140)
+		elseif spd < nextReqSpeed then
+			local tmPos = getStageTreadmillPos(activeStage, plotIdx)
+			return tmPos,
+				string.format("⚡ STEP 1: RUN ON TREADMILL (%s / %s SPD)!", SlimeData.FormatNumber(spd), SlimeData.FormatNumber(nextReqSpeed)),
+				string.format("🧭 <b>FOLLOW 3D ARROW:</b> [Step 1/6] ⚡ Run on the Stage %d Treadmill to reach <b>%s Speed</b>!", activeStage, SlimeData.FormatNumber(nextReqSpeed)),
+				Color3.fromRGB(85, 235, 255)
+		else
+			local gatePos = Vector3.new(0, 5, nextStageInfo.ZStart)
+			local gCost = SlimeData.GetStageGateUnlockCost(activeStage + 1)
+			return gatePos,
+				string.format("🔓 STEP 6: UNLOCK STAGE %d GATE ($%s)!", activeStage + 1, SlimeData.FormatNumber(gCost)),
+				string.format("🧭 <b>FOLLOW 3D ARROW:</b> [Step 6/6] 🔓 Walk to the <b>Stage %d Gate</b> to unlock <b>%s</b> ($%s)!", activeStage + 1, nextStageInfo.Name, SlimeData.FormatNumber(gCost)),
+				Color3.fromRGB(95, 255, 145)
+		end
+	end
+
+	-- [STEP 1] If player is at very start of Stage 1 with low Speed (< 45):
+	if activeStage == 1 and spd < 45 and foundInStage == 0 then
 		local tmPos = getStageTreadmillPos(activeStage, plotIdx)
-		local targetSpd = if foundInStage >= totalInStage then nextReqSpeed else 45
 		return tmPos,
-			string.format("⚡ STEP 1: RUN ON TREADMILL (%s / %s SPD)!", SlimeData.FormatNumber(spd), SlimeData.FormatNumber(targetSpd)),
-			string.format("🧭 <b>FOLLOW 3D ARROW:</b> [Step 1/6] ⚡ Run on the Stage %d Treadmill to reach <b>%s Speed</b>!", activeStage, SlimeData.FormatNumber(targetSpd)),
+			string.format("⚡ STEP 1: RUN ON TREADMILL (%s / 45 SPD)!", SlimeData.FormatNumber(spd)),
+			"🧭 <b>FOLLOW 3D ARROW:</b> [Step 1/6] ⚡ Run on the Stage 1 Treadmill to reach <b>45 Speed</b>!",
 			Color3.fromRGB(85, 235, 255)
 	end
 
@@ -1454,7 +1524,7 @@ local function computeCurrent6StepTarget(hrpPos: Vector3): (Vector3, string, str
 			if not foundMap[sKey] then
 				local itemPos = sData.SpawnOffset
 				if worldEggsFolder then
-					local m = worldEggsFolder:FindFirstChild("WorldEgg_" .. sKey) or worldEggsFolder:FindFirstChild(sKey)
+					local m = findWorldEggModel(worldEggsFolder, sKey)
 					if m and m:IsA("Model") then
 						itemPos = m:GetPivot().Position
 					end
@@ -1496,7 +1566,6 @@ local function computeCurrent6StepTarget(hrpPos: Vector3): (Vector3, string, str
 			string.format("🧭 <b>SQUISHY RADAR ACTIVE:</b> [Step 3/6] 🧸 Walk over <b>%s</b> in Stage %d (%d/%d Found for 100%%)!", nearestSquishyName, activeStage, foundInStage, totalInStage),
 			Color3.fromRGB(255, 145, 235)
 	elseif hasUnfoundHiddenSquishy then
-		local stageInfo = SlimeData.Levels[activeStage]
 		local stageMidZ = if stageInfo then (stageInfo.ZStart + stageInfo.ZEnd) * 0.5 else -80
 		return Vector3.new(0, 3.5, stageMidZ),
 			string.format("🔍 SEARCH STAGE %d LANDMARKS & OBBIES (%d/%d)!", activeStage, foundInStage, totalInStage),
