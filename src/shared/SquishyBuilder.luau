@@ -598,9 +598,9 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 
 		local prompt = Instance.new("ProximityPrompt")
 		prompt.Name = "CapturePrompt"
-		prompt.ActionText = "Egg - Steal"
+		prompt.ActionText = "Egg - Steal (Walk Over!)"
 		prompt.ObjectText = string.format("%s [%s] ($%s/s)", slimeDef.Name, slimeDef.Rarity, formatNumber(slimeDef.CoinsPerSec))
-		prompt.HoldDuration = 0.25
+		prompt.HoldDuration = 0
 		prompt.MaxActivationDistance = 15
 		prompt.RequiresLineOfSight = false
 		prompt.Exclusivity = Enum.ProximityPromptExclusivity.OnePerButton
@@ -747,7 +747,7 @@ function SquishyBuilder.CreateSquishyBackpackTool(slimeDef: SlimeData.SlimeDef, 
 	return tool
 end
 
--- Creates a Placed 3D Squishy inside the player's Base Pen matching the exact 117 Species & Colors!
+-- Creates a Live Roaming 3D Squishy inside the player's Fenced Hatchery Pen matching the exact 117 Species, growing bigger & gaining Crowns as it levels up!
 function SquishyBuilder.CreateHatchedSquishy(
 	slimeDef: SlimeData.SlimeDef,
 	posOrLevel: any,
@@ -758,8 +758,8 @@ function SquishyBuilder.CreateHatchedSquishy(
 	local lvl = if typeof(posOrLevel) == "number" then posOrLevel else (maybeLevel or 1)
 	local tier = maybeGelTier or 1
 	local numId = tonumber(slimeDef.Id) or 1
-	local levelScaleBoost = 1 + math.min(0.65, (lvl - 1) * 0.08)
-	local scale = (if slimeDef.IsBoss then 1.38 else 1.2) * levelScaleBoost
+	local levelScaleBoost = 1 + math.min(0.95, (lvl - 1) * 0.14)
+	local scale = (if slimeDef.IsBoss then 1.38 else 1.2)
 	local radius = 2.25 * scale
 
 	local model = Instance.new("Model")
@@ -773,7 +773,7 @@ function SquishyBuilder.CreateHatchedSquishy(
 		Name = "JellyBody",
 		Shape = Enum.PartType.Ball,
 		Material = Enum.Material.SmoothPlastic,
-		Reflectance = if tier >= 2 then 0.28 else 0.14,
+		Reflectance = if tier >= 2 or lvl >= 3 then 0.28 else 0.14,
 		Color = outerColor,
 		Transparency = 0.06,
 		Size = Vector3.new(radius * 2, radius * 1.82, radius * 2),
@@ -785,23 +785,45 @@ function SquishyBuilder.CreateHatchedSquishy(
 	addFaceToBody(body, model, radius * 0.96, scale, true)
 	addSpeciesFeatures(body, model, slimeDef, radius, scale, true)
 
+	-- Add 3D Golden/Rainbow Evolution Crown & Aura Ring when leveled up (Lv.2+)!
+	if lvl >= 2 then
+		local crownColor = if lvl >= 5 then Color3.fromRGB(85, 245, 255) else Color3.fromRGB(255, 215, 45)
+		makePart({
+			Name = "LevelCrown",
+			Shape = Enum.PartType.Cylinder,
+			Material = Enum.Material.Neon,
+			Color = crownColor,
+			Size = Vector3.new(0.45 * scale, 1.85 * scale, 1.85 * scale),
+			CFrame = body.CFrame * CFrame.new(0, radius * 0.95, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			Parent = model,
+		})
+	end
+
+	-- Physically grow the entire 3D Squishy model larger using ScaleTo as its Level increases!
+	if levelScaleBoost > 1.01 then
+		pcall(function()
+			model:ScaleTo(levelScaleBoost)
+		end)
+	end
+
 	model:SetAttribute("SlimeId", slimeDef.Id)
 	model:SetAttribute("SquishyLevel", lvl)
+	model:SetAttribute("ScaleMultiplier", levelScaleBoost)
 
 	local cps = SlimeData.GetSquishyCoinsPerSec(slimeDef, lvl)
 	local upgCost = SlimeData.GetSquishyUpgradeCost(slimeDef, lvl)
 
 	local upgAtt = Instance.new("Attachment")
 	upgAtt.Name = "UpgradePromptAttachment"
-	upgAtt.Position = Vector3.new(0, 1.35 * scale, 0)
+	upgAtt.Position = Vector3.new(0, 1.35 * scale * levelScaleBoost, 0)
 	upgAtt.Parent = body
 
 	local upgPrompt = Instance.new("ProximityPrompt")
 	upgPrompt.Name = "PedestalUpgradePrompt"
-	upgPrompt.ActionText = string.format("Level Up -> Lv.%d ($%s)", lvl + 1, formatNumber(upgCost))
-	upgPrompt.ObjectText = string.format("%s (+$%s/s)", slimeDef.Name, formatNumber(cps))
+	upgPrompt.ActionText = string.format("🌱 Grow & Level Up -> Lv.%d ($%s)", lvl + 1, formatNumber(upgCost))
+	upgPrompt.ObjectText = string.format("%s [Lv.%d • x%.2f Size] (+$%s/s)", slimeDef.Name, lvl, levelScaleBoost, formatNumber(cps))
 	upgPrompt.HoldDuration = 0
-	upgPrompt.MaxActivationDistance = 12
+	upgPrompt.MaxActivationDistance = 14
 	upgPrompt.RequiresLineOfSight = false
 	upgPrompt.KeyboardKeyCode = Enum.KeyCode.E
 	upgPrompt.Exclusivity = Enum.ProximityPromptExclusivity.OnePerButton
@@ -809,11 +831,11 @@ function SquishyBuilder.CreateHatchedSquishy(
 
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "SquishyTag"
-	bb.Size = UDim2.new(4.8, 0, 1.6, 0)
-	bb.StudsOffset = Vector3.new(0, radius + 2.0, 0)
+	bb.Size = UDim2.new(5.2, 0, 1.75, 0)
+	bb.StudsOffset = Vector3.new(0, (radius * levelScaleBoost) + 2.2, 0)
 	bb.AlwaysOnTop = false
 	bb.LightInfluence = 0
-	bb.MaxDistance = 35
+	bb.MaxDistance = 42
 	bb.Parent = body
 
 	local nameLabel = Instance.new("TextLabel")
@@ -824,7 +846,7 @@ function SquishyBuilder.CreateHatchedSquishy(
 	nameLabel.TextScaled = true
 	nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 	nameLabel.TextStrokeTransparency = 0.08
-	nameLabel.Text = string.format("%s [Lv.%d]", slimeDef.Name, lvl)
+	nameLabel.Text = string.format("%s%s [Lv.%d]", if lvl >= 2 then "👑 " else "", slimeDef.Name, lvl)
 	nameLabel.Parent = bb
 
 	local rarityLabel = Instance.new("TextLabel")
@@ -836,7 +858,7 @@ function SquishyBuilder.CreateHatchedSquishy(
 	rarityLabel.TextScaled = true
 	rarityLabel.TextColor3 = SlimeData.RarityColors[slimeDef.Rarity] or Color3.fromRGB(200, 200, 210)
 	rarityLabel.TextStrokeTransparency = 0.15
-	rarityLabel.Text = slimeDef.Rarity
+	rarityLabel.Text = string.format("%s • %.0f%% Size", slimeDef.Rarity, levelScaleBoost * 100)
 	rarityLabel.Parent = bb
 
 	local rateLabel = Instance.new("TextLabel")

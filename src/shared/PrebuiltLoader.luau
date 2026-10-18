@@ -17,6 +17,8 @@ PrebuiltLoader.CREATOR_STORE_ASSETS = {
 	PalmTrees = { 10562894034 },
 	Crystals = { 4576917611 },
 	Bridges = { 18262413487 },
+	Bats = { 4494586033, 13233709250 },
+	BearTraps = { 9615431080, 470975521 },
 }
 
 
@@ -791,12 +793,17 @@ function PrebuiltLoader.EnsurePrebuiltAssets(customObjectFetcher: ((number) -> {
 			desc.CanQuery = false
 			desc.Massless = true
 			desc.CastShadow = false
+		elseif desc:IsA("MeshPart") and string.find(desc.TextureID, "203785492") then
+			desc.TextureID = ""
+		elseif desc:IsA("SpecialMesh") and string.find(desc.TextureId, "203785492") then
+			desc.TextureId = ""
 		elseif
 			desc:IsA("LuaSourceContainer")
 			or desc:IsA("Light")
 			or desc:IsA("ParticleEmitter")
 			or desc:IsA("Sparkles")
 			or desc:IsA("Highlight")
+			or desc:IsA("Sound")
 		then
 			desc:Destroy()
 		end

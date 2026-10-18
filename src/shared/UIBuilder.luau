@@ -431,11 +431,159 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	addTextSizeConstraint(speedBarText, 9, 15)
 	addTextStroke(speedBarText, Color3.fromRGB(10, 14, 24), 2.0)
 
+	-- 1B. LIVE 6-STEP OBJECTIVE & GUIDING ARROW TRACKER BANNER + HOW-TO-PLAY BUTTON
+	local objectiveBanner = Instance.new("Frame")
+	objectiveBanner.Name = "ObjectiveTrackerBanner"
+	objectiveBanner.Size = UDim2.fromScale(0.46, 0.042)
+	objectiveBanner.Position = UDim2.fromScale(0.5, 0.130)
+	objectiveBanner.AnchorPoint = Vector2.new(0.5, 0)
+	objectiveBanner.BackgroundColor3 = Color3.fromRGB(16, 24, 46)
+	objectiveBanner.BackgroundTransparency = 0.08
+	objectiveBanner.Parent = screenGui
+	addCorner(objectiveBanner, 10)
+	addStroke(objectiveBanner, Color3.fromRGB(85, 235, 255), 2.0)
+
+	local objectiveText = Instance.new("TextLabel")
+	objectiveText.Name = "ObjectiveText"
+	objectiveText.Size = UDim2.fromScale(0.83, 0.90)
+	objectiveText.Position = UDim2.fromScale(0.02, 0.05)
+	objectiveText.BackgroundTransparency = 1
+	objectiveText.Font = Enum.Font.FredokaOne
+	objectiveText.TextXAlignment = Enum.TextXAlignment.Left
+	objectiveText.TextColor3 = Color3.fromRGB(125, 255, 195)
+	objectiveText.Text = "🧭 <b>FOLLOW 3D ARROW:</b> [Step 1] ⚡ Run on Treadmill to Train Speed!"
+	objectiveText.Parent = objectiveBanner
+	addTextSizeConstraint(objectiveText, 10, 16)
+	addTextStroke(objectiveText, Color3.fromRGB(10, 14, 24), 1.8)
+
+	local guideBtnSize = UDim2.fromScale(0.13, 0.78)
+	local guideToggleBtn = Instance.new("TextButton")
+	guideToggleBtn.Name = "GuideToggleBtn"
+	guideToggleBtn.Size = guideBtnSize
+	guideToggleBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+	guideToggleBtn.Position = UDim2.fromScale(0.92, 0.5)
+	guideToggleBtn.BackgroundColor3 = Color3.fromRGB(255, 205, 55)
+	guideToggleBtn.AutoButtonColor = false
+	guideToggleBtn.Font = Enum.Font.FredokaOne
+	guideToggleBtn.TextColor3 = Color3.fromRGB(18, 22, 34)
+	guideToggleBtn.Text = "❓ <b>GUIDE</b>"
+	guideToggleBtn.Parent = objectiveBanner
+	addCorner(guideToggleBtn, 8)
+	addStroke(guideToggleBtn, Color3.fromRGB(255, 255, 255), 1.5)
+	addTextSizeConstraint(guideToggleBtn, 9, 14)
+	bindHoverAndClickTween(guideToggleBtn, guideBtnSize, Color3.fromRGB(255, 205, 55))
+
+	-- 1C. SQUISH FEVER COMBO MULTIPLIER BAR (x1.5 -> x5.0 CASH!)
+	local comboFrame = Instance.new("Frame")
+	comboFrame.Name = "SquishFeverComboFrame"
+	comboFrame.Size = UDim2.fromScale(0.32, 0.044)
+	comboFrame.Position = UDim2.fromScale(0.5, 0.228)
+	comboFrame.AnchorPoint = Vector2.new(0.5, 0)
+	comboFrame.BackgroundColor3 = Color3.fromRGB(36, 16, 48)
+	comboFrame.BackgroundTransparency = 0.06
+	comboFrame.Visible = false
+	comboFrame.Parent = screenGui
+	addCorner(comboFrame, 12)
+	addStroke(comboFrame, Color3.fromRGB(255, 115, 235), 2.5)
+
+	local comboLabel = Instance.new("TextLabel")
+	comboLabel.Name = "ComboLabel"
+	comboLabel.Size = UDim2.fromScale(0.94, 0.62)
+	comboLabel.Position = UDim2.fromScale(0.03, 0.04)
+	comboLabel.BackgroundTransparency = 1
+	comboLabel.Font = Enum.Font.FredokaOne
+	comboLabel.TextColor3 = Color3.fromRGB(255, 235, 85)
+	comboLabel.Text = "🔥 <b>SQUISH FEVER COMBO: x1.5 CASH! (2x CHAIN)</b> 🔥"
+	comboLabel.Parent = comboFrame
+	addTextSizeConstraint(comboLabel, 10, 17)
+	addTextStroke(comboLabel, Color3.fromRGB(18, 8, 26), 2.0)
+
+	local comboBarBg = Instance.new("Frame")
+	comboBarBg.Name = "ComboBarBg"
+	comboBarBg.Size = UDim2.fromScale(0.92, 0.22)
+	comboBarBg.Position = UDim2.fromScale(0.04, 0.70)
+	comboBarBg.BackgroundColor3 = Color3.fromRGB(14, 8, 22)
+	comboBarBg.BorderSizePixel = 0
+	comboBarBg.Parent = comboFrame
+	addCorner(comboBarBg, 6)
+
+	local comboFill = Instance.new("Frame")
+	comboFill.Name = "ComboFill"
+	comboFill.Size = UDim2.fromScale(1, 1)
+	comboFill.BackgroundColor3 = Color3.fromRGB(255, 195, 55)
+	comboFill.BorderSizePixel = 0
+	comboFill.Parent = comboBarBg
+	addCorner(comboFill, 6)
+
+	local comboGrad = Instance.new("UIGradient")
+	comboGrad.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 75, 165)),
+		ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 195, 55)),
+		ColorSequenceKeypoint.new(1.0, Color3.fromRGB(85, 255, 165)),
+	})
+	comboGrad.Parent = comboFill
+
+	-- 1D. 6-STEP HOW-TO-PLAY POPUP CARD
+	local howToPlayModal = Instance.new("Frame")
+	howToPlayModal.Name = "HowToPlayModal"
+	howToPlayModal.Size = UDim2.fromScale(0.42, 0.44)
+	howToPlayModal.Position = UDim2.fromScale(0.5, 0.50)
+	howToPlayModal.AnchorPoint = Vector2.new(0.5, 0.5)
+	howToPlayModal.BackgroundColor3 = Color3.fromRGB(18, 24, 44)
+	howToPlayModal.BackgroundTransparency = 0.04
+	howToPlayModal.Visible = false
+	howToPlayModal.Parent = screenGui
+	addCorner(howToPlayModal, 16)
+	addStroke(howToPlayModal, Color3.fromRGB(85, 235, 255), 3.0)
+
+	local htpTitle = Instance.new("TextLabel")
+	htpTitle.Size = UDim2.new(1, -60, 0, 36)
+	htpTitle.Position = UDim2.fromOffset(18, 10)
+	htpTitle.BackgroundTransparency = 1
+	htpTitle.Font = Enum.Font.FredokaOne
+	htpTitle.TextXAlignment = Enum.TextXAlignment.Left
+	htpTitle.TextColor3 = Color3.fromRGB(255, 235, 85)
+	htpTitle.Text = "🧭 <b>HOW TO PLAY — 6-STEP STAGE MASTERY LOOP</b>"
+	htpTitle.Parent = howToPlayModal
+	addTextSizeConstraint(htpTitle, 13, 22)
+
+	local htpClose = Instance.new("TextButton")
+	htpClose.Name = "CloseBtn"
+	htpClose.Size = UDim2.fromOffset(34, 34)
+	htpClose.AnchorPoint = Vector2.new(0.5, 0.5)
+	htpClose.Position = UDim2.new(1, -26, 0, 26)
+	htpClose.BackgroundColor3 = Color3.fromRGB(235, 65, 75)
+	htpClose.Font = Enum.Font.FredokaOne
+	htpClose.TextColor3 = Color3.fromRGB(255, 255, 255)
+	htpClose.Text = "<b>X</b>"
+	htpClose.Parent = howToPlayModal
+	addCorner(htpClose, 8)
+
+	local htpBody = Instance.new("TextLabel")
+	htpBody.Size = UDim2.new(1, -36, 1, -62)
+	htpBody.Position = UDim2.fromOffset(18, 50)
+	htpBody.BackgroundTransparency = 1
+	htpBody.Font = Enum.Font.GothamBold
+	htpBody.TextXAlignment = Enum.TextXAlignment.Left
+	htpBody.TextYAlignment = Enum.TextYAlignment.Top
+	htpBody.TextWrapped = true
+	htpBody.TextColor3 = Color3.fromRGB(235, 245, 255)
+	htpBody.Text = table.concat({
+		"⚡ <b>STEP 1 — TRAIN SPEED ON TREADMILL:</b> Run on your Plot or Stage Treadmill (x1 -> x50M Speed!). Use the <b>25% / 50% / 75% / 100%</b> Speed Bar to control high speed!",
+		"🧸 <b>STEP 2 — WALK OVER SQUISHIES:</b> Walk right over Collectible Squishies in Houses, Mazes, Castle Walls & Obbies (auto-pickup, zero button holding! Chain pickups for <b>x5.0 SQUISH FEVER CASH!</b>).",
+		"🥚 <b>STEP 3 — STEAL BOSS EGGS:</b> Sneak into Sector 3's Sleeping Boss Arena & walk over Boss Eggs to steal them!",
+		"🏡 <b>STEP 4 — HATCH IN FENCED PEN:</b> Walk into your Plot's <b>Fenced Hatchery Pen</b> — Eggs auto-drop, countdown (00:05), and hatch into live roaming Squishies!",
+		"⬆️ <b>STEP 5 — GROW & CLAIM $/SEC CASH:</b> Upgrade your roaming Squishies in the pen so they physically grow larger, wear Crowns, and multiply $/sec Cash!",
+		"🔓 <b>STEP 6 — 100% STAGE UNLOCK:</b> Complete <b>100% of all Stage Squishies + Boss Eggs + Speed Goal</b> to unlock the next Stage Gate (Stages 1 -> 8)!",
+	}, "\n\n")
+	htpBody.Parent = howToPlayModal
+	addTextSizeConstraint(htpBody, 10, 15)
+
 	-- Alert Toast Banner
 	local alertToast = Instance.new("TextLabel")
 	alertToast.Name = "AlertToast"
-	alertToast.Size = UDim2.fromScale(0.44, 0.045)
-	alertToast.Position = UDim2.fromScale(0.5, 0.132)
+	alertToast.Size = UDim2.fromScale(0.44, 0.044)
+	alertToast.Position = UDim2.fromScale(0.5, 0.178)
 	alertToast.AnchorPoint = Vector2.new(0.5, 0)
 	alertToast.BackgroundColor3 = Color3.fromRGB(215, 45, 65)
 	alertToast.Font = Enum.Font.FredokaOne
@@ -611,6 +759,45 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	addAspectRatio(cashPlusBtn, 1.0)
 	addTextSizeConstraint(cashPlusBtn, 12, 24)
 	bindHoverAndClickTween(cashPlusBtn, plusBtnSize, Color3.fromRGB(65, 225, 85))
+
+	-- =========================================================================
+	-- 3B. HUD WALKSPEED CONTROL SELECTOR (25% / 50% / 75% / 100% — Controllable Speed at 250M+!)
+	-- =========================================================================
+	local speedThrottleBar = Instance.new("Frame")
+	speedThrottleBar.Name = "SpeedThrottleBar"
+	speedThrottleBar.Size = UDim2.fromScale(0.165, 0.042)
+	speedThrottleBar.Position = UDim2.new(0.012, 0, 0.868, 0)
+	speedThrottleBar.AnchorPoint = Vector2.new(0, 1)
+	speedThrottleBar.BackgroundColor3 = Color3.fromRGB(16, 20, 36)
+	speedThrottleBar.BackgroundTransparency = 0.08
+	speedThrottleBar.Parent = screenGui
+	addCorner(speedThrottleBar, 10)
+	addStroke(speedThrottleBar, Color3.fromRGB(75, 215, 255), 1.8)
+	addAspectRatio(speedThrottleBar, 6.2)
+
+	local speedThrottleButtons: { [number]: TextButton } = {}
+	local throttleRatios = { 0.25, 0.50, 0.75, 1.00 }
+	for idx, ratio in ipairs(throttleRatios) do
+		local pct = math.round(ratio * 100)
+		local btn = Instance.new("TextButton")
+		btn.Name = string.format("Throttle_%d", pct)
+		local btnSize = UDim2.fromScale(0.225, 0.78)
+		btn.Size = btnSize
+		btn.AnchorPoint = Vector2.new(0.5, 0.5)
+		btn.Position = UDim2.fromScale(0.13 + (idx - 1) * 0.246, 0.5)
+		local isDefault = (pct == 100)
+		local bgCol = if isDefault then Color3.fromRGB(55, 215, 115) else Color3.fromRGB(34, 42, 68)
+		btn.BackgroundColor3 = bgCol
+		btn.AutoButtonColor = false
+		btn.Font = Enum.Font.FredokaOne
+		btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+		btn.Text = string.format("<b>%d%%</b>", pct)
+		btn.Parent = speedThrottleBar
+		addCorner(btn, 7)
+		addStroke(btn, Color3.fromRGB(255, 255, 255), 1.2)
+		addTextSizeConstraint(btn, 9, 14)
+		speedThrottleButtons[pct] = btn
+	end
 
 	-- =========================================================================
 	-- 4. MODAL #1: 📘 117 SQUISHY & EGG INDEX MODAL WITH 3D VIEWPORTFRAME ROTATING PREVIEWS ON EVERY CARD!
@@ -1336,6 +1523,14 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		SpeedBarGroup = speedBarGroup,
 		SpeedBarFill = speedBarFill,
 		SpeedBarText = speedBarText,
+		ObjectiveBanner = objectiveBanner,
+		ObjectiveText = objectiveText,
+		GuideToggleBtn = guideToggleBtn,
+		HowToPlayModal = howToPlayModal,
+		HowToPlayClose = htpClose,
+		ComboFrame = comboFrame,
+		ComboLabel = comboLabel,
+		ComboFill = comboFill,
 		AlertToast = alertToast,
 		ShopBtn = shopBtn,
 		IndexBtn = indexBtn,
@@ -1350,6 +1545,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		SpeedPlusBtn = speedPlusBtn,
 		CashCounterLbl = cashCounterLbl,
 		CashPlusBtn = cashPlusBtn,
+		SpeedThrottleButtons = speedThrottleButtons,
 		IndexModal = indexModal,
 		IndexFeaturedViewport = indexFeaturedViewport,
 		IndexFeaturedModel = indexFeaturedModel,

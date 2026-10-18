@@ -567,6 +567,27 @@ local function buildBigCartoonHouse(
 			})
 		end
 	elseif biomeId == 4 then
+		for _, stalkX in ipairs({ -6.2, 6.2 }) do
+			makePart({
+				Name = "BambooRoofStalk",
+				Shape = Enum.PartType.Cylinder,
+				Size = Vector3.new(9.5, 2.0, 2.0),
+				CFrame = (cf * CFrame.new(stalkX, targetHeight + 1.5, 2.0)) * CFrame.Angles(0, 0, math.rad(90)),
+				Color = Color3.fromRGB(95, 225, 115),
+				Material = Enum.Material.SmoothPlastic,
+				Parent = hModel,
+			})
+			makePart({
+				Name = "JadeLanternOrb",
+				Shape = Enum.PartType.Ball,
+				Size = Vector3.new(3.2, 3.2, 3.2),
+				CFrame = cf * CFrame.new(stalkX, targetHeight + 6.5, 2.0),
+				Color = Color3.fromRGB(145, 255, 165),
+				Material = Enum.Material.Neon,
+				Parent = hModel,
+			})
+		end
+	elseif biomeId == 5 then
 		for _, spireX in ipairs({ -5.5, 5.5 }) do
 			makePart({
 				Name = "HouseCrystalSpire",
@@ -577,13 +598,34 @@ local function buildBigCartoonHouse(
 				Parent = hModel,
 			})
 		end
-	elseif biomeId == 5 then
+	elseif biomeId == 6 then
+		makePart({
+			Name = "SkyTempleHaloRing",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(1.2, 11.5, 11.5),
+			CFrame = (cf * CFrame.new(0, targetHeight + 4.2, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+			Color = Color3.fromRGB(255, 235, 115),
+			Material = Enum.Material.Neon,
+			Parent = hModel,
+		})
+	elseif biomeId == 7 then
 		for _, hornX in ipairs({ -6.0, 6.0 }) do
 			makePart({
 				Name = "ObsidianRoofHorn",
 				Size = Vector3.new(2.2, 8.5, 2.2),
 				CFrame = (cf * CFrame.new(hornX, targetHeight + 1.2, 2.0)) * CFrame.Angles(math.rad(-16), 0, math.rad(-hornX * 3)),
 				Color = Color3.fromRGB(255, 85, 25),
+				Material = Enum.Material.Neon,
+				Parent = hModel,
+			})
+		end
+	elseif biomeId == 8 then
+		for _, voidX in ipairs({ -5.8, 5.8 }) do
+			makePart({
+				Name = "VoidStarMonolith",
+				Size = Vector3.new(2.4, 10.0, 2.4),
+				CFrame = (cf * CFrame.new(voidX, targetHeight + 1.8, 2.0)) * CFrame.Angles(math.rad(14), 0, math.rad(voidX * 2.5)),
+				Color = Color3.fromRGB(195, 75, 255),
 				Material = Enum.Material.Neon,
 				Parent = hModel,
 			})
@@ -713,23 +755,32 @@ local function buildCastleWallBattlements(parent: Instance, levelInfo: any, half
 	local length = math.abs(zStart - zEnd)
 	local themeColor = levelInfo.ThemeColor or Color3.fromRGB(120, 210, 120)
 
-	-- Distinct Wall Palette & Material per Stage so stages never look like the same gray corridor!
+	-- Distinct Wall Palette & Material per Stage across all 8 Stages!
 	local stoneColor = if id == 1 then Color3.fromRGB(158, 178, 138)
 		elseif id == 2 then Color3.fromRGB(142, 78, 52)
 		elseif id == 3 then Color3.fromRGB(232, 204, 148)
-		elseif id == 4 then Color3.fromRGB(64, 46, 108)
-		else Color3.fromRGB(42, 34, 40)
+		elseif id == 4 then Color3.fromRGB(78, 148, 92)
+		elseif id == 5 then Color3.fromRGB(64, 46, 108)
+		elseif id == 6 then Color3.fromRGB(235, 242, 255)
+		elseif id == 7 then Color3.fromRGB(42, 34, 40)
+		else Color3.fromRGB(28, 18, 48)
 
 	local trimStone = if id == 1 then Color3.fromRGB(112, 148, 92)
 		elseif id == 2 then Color3.fromRGB(255, 135, 198)
 		elseif id == 3 then Color3.fromRGB(55, 205, 230)
-		elseif id == 4 then Color3.fromRGB(135, 75, 255)
-		else Color3.fromRGB(255, 82, 24)
+		elseif id == 4 then Color3.fromRGB(125, 235, 145)
+		elseif id == 5 then Color3.fromRGB(135, 75, 255)
+		elseif id == 6 then Color3.fromRGB(255, 225, 105)
+		elseif id == 7 then Color3.fromRGB(255, 82, 24)
+		else Color3.fromRGB(215, 65, 255)
 
 	local wallMat = if id == 1 then Enum.Material.Cobblestone
 		elseif id == 2 then Enum.Material.Brick
 		elseif id == 3 then Enum.Material.Sandstone
 		elseif id == 4 then Enum.Material.Slate
+		elseif id == 5 then Enum.Material.Slate
+		elseif id == 6 then Enum.Material.Marble
+		elseif id == 7 then Enum.Material.Basalt
 		else Enum.Material.Basalt
 
 	local castleFolder = Instance.new("Folder")
@@ -769,7 +820,7 @@ local function buildCastleWallBattlements(parent: Instance, levelInfo: any, half
 				Size = Vector3.new(1.8, 3.6, 5.2),
 				Position = Vector3.new(wallX - side * 2.4, WALL_HEIGHT + 2.6, zMerlon),
 				Color = if (math.abs(zMerlon) % 24 == 0) then trimStone else stoneColor,
-				Material = if id >= 4 and (math.abs(zMerlon) % 24 == 0) then Enum.Material.Neon else wallMat,
+				Material = if id >= 5 and (math.abs(zMerlon) % 24 == 0) then Enum.Material.Neon else wallMat,
 				Parent = castleFolder,
 			})
 		end
@@ -792,7 +843,7 @@ local function buildCastleWallBattlements(parent: Instance, levelInfo: any, half
 				Size = Vector3.new(2.2, 14.2, 14.2),
 				CFrame = CFrame.new(towerPos + Vector3.new(0, 23.8, 0)) * CFrame.Angles(0, 0, math.rad(90)),
 				Color = trimStone,
-				Material = if id >= 4 then Enum.Material.Neon else Enum.Material.SmoothPlastic,
+				Material = if id >= 5 then Enum.Material.Neon else Enum.Material.SmoothPlastic,
 				Parent = castleFolder,
 			})
 			makePart({
@@ -801,7 +852,7 @@ local function buildCastleWallBattlements(parent: Instance, levelInfo: any, half
 				Size = Vector3.new(10, 11, 10),
 				Position = towerPos + Vector3.new(0, 27.5, 0),
 				Color = themeColor,
-				Material = if id >= 4 then Enum.Material.Neon else Enum.Material.SmoothPlastic,
+				Material = if id >= 5 then Enum.Material.Neon else Enum.Material.SmoothPlastic,
 				Parent = castleFolder,
 			})
 		end
@@ -828,7 +879,7 @@ local function buildCastleWallBattlements(parent: Instance, levelInfo: any, half
 				Size = Vector3.new(3.6, 36, 3.6),
 				CFrame = CFrame.new(side * 86, 31, archZ) * CFrame.Angles(0, 0, math.rad(side * 34)),
 				Color = if archIdx % 2 == 1 then themeColor else trimStone,
-				Material = if id >= 4 then Enum.Material.Neon else wallMat,
+				Material = if id >= 5 then Enum.Material.Neon else wallMat,
 				CanCollide = false,
 				Parent = castleFolder,
 			})
@@ -840,7 +891,7 @@ local function buildCastleWallBattlements(parent: Instance, levelInfo: any, half
 				Size = Vector3.new(142, 2.8, 2.8),
 				Position = Vector3.new(0, 44, archZ),
 				Color = trimStone,
-				Material = if id >= 4 then Enum.Material.Neon else Enum.Material.SmoothPlastic,
+				Material = if id >= 5 then Enum.Material.Neon else Enum.Material.SmoothPlastic,
 				CanCollide = false,
 				Parent = castleFolder,
 			})
@@ -860,13 +911,19 @@ local function buildOuterSideMazes(parent: Instance, levelInfo: any, halfW: numb
 	local mazeWallColor = if id == 1 then Color3.fromRGB(58, 168, 68)
 		elseif id == 2 then Color3.fromRGB(235, 95, 165)
 		elseif id == 3 then Color3.fromRGB(168, 125, 65)
-		elseif id == 4 then Color3.fromRGB(85, 195, 245)
-		else Color3.fromRGB(72, 48, 58)
+		elseif id == 4 then Color3.fromRGB(75, 185, 95)
+		elseif id == 5 then Color3.fromRGB(85, 195, 245)
+		elseif id == 6 then Color3.fromRGB(155, 215, 255)
+		elseif id == 7 then Color3.fromRGB(72, 48, 58)
+		else Color3.fromRGB(115, 45, 175)
 
 	local mazeMat = if id == 1 then Enum.Material.Grass
 		elseif id == 2 then Enum.Material.SmoothPlastic
 		elseif id == 3 then Enum.Material.WoodPlanks
-		elseif id == 4 then Enum.Material.Slate
+		elseif id == 4 then Enum.Material.WoodPlanks
+		elseif id == 5 then Enum.Material.Slate
+		elseif id == 6 then Enum.Material.Marble
+		elseif id == 7 then Enum.Material.Basalt
 		else Enum.Material.Basalt
 
 	local mazeFolder = Instance.new("Folder")
@@ -951,133 +1008,217 @@ local function buildOuterSideMazes(parent: Instance, levelInfo: any, halfW: numb
 	end
 end
 
--- Builds the Iconic Giant 18-Stud Green Dino-Jaw Speed Treadmill from the reference screenshot!
-local function buildDinoJawTreadmill(parent: Instance, treadCenter: Vector3, faceDir: number, plotIdx: number): Part
-	local dinoFolder = Instance.new("Model")
-	dinoFolder.Name = "DinoTreadmill_" .. tostring(plotIdx)
-	dinoFolder.Parent = parent
+-- Builds the Authentic Creator Store 3D Speed Treadmill (Assets 85105314510723, 105125399134543, 135041830463035, 98972491411819)
+-- Includes:
+--   1. Creator Store 3D Treadmill Hood/Console Mesh (`rbxassetid://9507455017`, `10256224170`, `2682037588`, `15108756532`)
+--   2. Physical Conveyor Belt Pushback (`AssemblyLinearVelocity`)
+--   3. Scrolling `Beam` Belt Arrows (`rbxassetid://6798365555`, `123374008022599`, `4887782888`)
+--   4. Speed Aura `ParticleEmitter` (`rbxassetid://9129151031`, `7451822955`)
+--   5. Overhead `[x1 SPEED]` -> `[x50M SPEED]` Display Sign (`formatSpeed(speedPerSec)`)
+local function buildDinoJawTreadmill(
+	parent: Instance,
+	treadCenter: Vector3,
+	faceDir: number,
+	plotIdx: number,
+	stageTierOverride: number?
+): Part
+	local tierId = math.clamp(stageTierOverride or 1, 1, 8)
+	local tier = SlimeData.TreadmillTiers[tierId] or SlimeData.TreadmillTiers[1]
+	local isStageTreadmill = stageTierOverride ~= nil
 
+	local tmModel = Instance.new("Model")
+	tmModel.Name = if isStageTreadmill
+		then ("StageTreadmill_" .. tostring(tierId))
+		else ("DinoTreadmill_" .. tostring(plotIdx))
+	tmModel.Parent = parent
+
+	-- Heavy Steel & Neon Treadmill Base Deck
 	makePart({
 		Name = "TreadmillBase",
-		Size = Vector3.new(12.5, 1.2, 16.5),
+		Size = Vector3.new(12.8, 1.2, 16.8),
 		Position = treadCenter + Vector3.new(0, 0.6, 0),
-		Color = Color3.fromRGB(40, 44, 58),
+		Color = Color3.fromRGB(34, 38, 52),
 		Material = Enum.Material.Metal,
-		Parent = dinoFolder,
+		Parent = tmModel,
 	})
 
+	-- Glowing Tier-Colored Side Handrails
 	for _, railZ in ipairs({ -7.4, 7.4 }) do
 		makePart({
 			Name = "SideRail",
-			Size = Vector3.new(12.5, 1.9, 1.4),
-			Position = treadCenter + Vector3.new(0, 1.25, railZ),
-			Color = Color3.fromRGB(55, 210, 85),
+			Size = Vector3.new(12.8, 2.2, 1.4),
+			Position = treadCenter + Vector3.new(0, 1.4, railZ),
+			Color = tier.PrimaryColor,
 			Material = Enum.Material.SmoothPlastic,
-			Parent = dinoFolder,
+			Parent = tmModel,
+		})
+		makePart({
+			Name = "SideRailNeonTrim",
+			Size = Vector3.new(12.4, 0.45, 1.55),
+			Position = treadCenter + Vector3.new(0, 2.35, railZ),
+			Color = tier.AccentColor,
+			Material = Enum.Material.Neon,
+			CanCollide = false,
+			Parent = tmModel,
 		})
 	end
 
+	-- Active Conveyor Belt Part (`TreadmillBelt_<id>`) with `Touched` / `TouchEnded` + Conveyor Velocity Pushback!
+	local beltName = if isStageTreadmill
+		then ("TreadmillBelt_Stage_" .. tostring(tierId))
+		else ("TreadmillBelt_" .. tostring(plotIdx))
+
 	local belt = makePart({
-		Name = "TreadmillBelt_" .. tostring(plotIdx),
-		Size = Vector3.new(11.4, 1.35, 13.0),
-		Position = treadCenter + Vector3.new(0, 0.82, 0),
-		Color = Color3.fromRGB(255, 65, 150),
-		Material = Enum.Material.Neon,
+		Name = beltName,
+		Size = Vector3.new(11.6, 1.38, 13.2),
+		Position = treadCenter + Vector3.new(0, 0.84, 0),
+		Color = Color3.fromRGB(28, 30, 42),
+		Material = Enum.Material.SmoothPlastic,
+		CanTouch = true,
 		Parent = parent,
 	})
-	belt:SetAttribute("PlotIndex", plotIdx)
+	belt:SetAttribute("IsCreatorStoreTreadmill", true)
+	belt:SetAttribute("TreadmillTier", tierId)
+	belt:SetAttribute("SpeedPerSec", tier.SpeedPerSec)
+	belt:SetAttribute("MultiplierText", tier.MultiplierText)
+	belt:SetAttribute("RunAnimSpeed", math.clamp(1.25 + (tierId * 0.12), 1.3, 2.25))
+	belt:SetAttribute("FaceDir", faceDir)
+	if not isStageTreadmill then
+		belt:SetAttribute("PlotIndex", plotIdx)
+	else
+		belt:SetAttribute("StageId", tierId)
+	end
 
+	-- Physical conveyor belt pushback so players run in place against the moving belt!
+	belt.AssemblyLinearVelocity = Vector3.new(faceDir * 9.5, 0, 0)
+
+	-- Authentic Creator Store Scrolling `Beam` Belt Texture (`rbxassetid://6798365555`, `123374008022599`, `4887782888`)
+	local att0 = Instance.new("Attachment")
+	att0.Name = "BeltScrollAtt0"
+	att0.Position = Vector3.new(-faceDir * 5.6, 0.72, 0)
+	att0.Orientation = Vector3.new(0, 0, 90)
+	att0.Parent = belt
+
+	local att1 = Instance.new("Attachment")
+	att1.Name = "BeltScrollAtt1"
+	att1.Position = Vector3.new(faceDir * 5.6, 0.72, 0)
+	att1.Orientation = Vector3.new(0, 0, 90)
+	att1.Parent = belt
+
+	local scrollBeam = Instance.new("Beam")
+	scrollBeam.Name = "TreadmillScrollBeam"
+	scrollBeam.Attachment0 = att0
+	scrollBeam.Attachment1 = att1
+	scrollBeam.Texture = tier.BeamTexture or "rbxassetid://6798365555"
+	scrollBeam.TextureSpeed = tier.TextureSpeed or 2.4
+	scrollBeam.TextureLength = 3.6
+	scrollBeam.TextureMode = Enum.TextureMode.Wrap
+	scrollBeam.Width0 = 11.8
+	scrollBeam.Width1 = 11.8
+	scrollBeam.FaceCamera = false
+	scrollBeam.LightEmission = 0.85
+	scrollBeam.LightInfluence = 0
+	scrollBeam.Color = ColorSequence.new(tier.PrimaryColor, tier.AccentColor)
+	scrollBeam.Transparency = NumberSequence.new(0.08)
+	scrollBeam.Parent = belt
+
+	-- Neon Belt Chevron Strips underneath the scrolling Beam for crisp visibility from any camera angle
 	for s = -4, 4, 2 do
 		makePart({
 			Name = "BeltArrow",
-			Size = Vector3.new(0.85, 1.42, 10.6),
+			Size = Vector3.new(0.85, 1.42, 10.8),
 			Position = treadCenter + Vector3.new(s * 1.1, 0.86, 0),
-			Color = Color3.fromRGB(255, 245, 255),
+			Color = tier.AccentColor,
 			Material = Enum.Material.Neon,
+			Transparency = 0.25,
 			CanCollide = false,
-			Parent = dinoFolder,
+			Parent = tmModel,
 		})
 	end
 
-	local dinoGreen = Color3.fromRGB(58, 198, 68)
-	local dinoDark = Color3.fromRGB(38, 148, 48)
-	local mouthRed = Color3.fromRGB(195, 55, 65)
+	-- Authentic Creator Store Speed Aura `ParticleEmitter` (`rbxassetid://9129151031` / `7451822955`)
+	local auraEmitter = Instance.new("ParticleEmitter")
+	auraEmitter.Name = "TreadmillAuraEmitter"
+	auraEmitter.Texture = tier.ParticleTexture or "rbxassetid://9129151031"
+	auraEmitter.Color = ColorSequence.new(tier.PrimaryColor, tier.AccentColor)
+	auraEmitter.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.8),
+		NumberSequenceKeypoint.new(0.5, 1.6),
+		NumberSequenceKeypoint.new(1, 0.2),
+	})
+	auraEmitter.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.15),
+		NumberSequenceKeypoint.new(1, 1.0),
+	})
+	auraEmitter.Lifetime = NumberRange.new(0.55, 1.1)
+	auraEmitter.Rate = 12
+	auraEmitter.Speed = NumberRange.new(4, 9)
+	auraEmitter.SpreadAngle = Vector2.new(35, 35)
+	auraEmitter.LightEmission = 0.85
+	auraEmitter.Parent = belt
 
+	-- Authentic Creator Store 3D Treadmill Hood/Console Mesh (`PreserveCreatorStoreMesh = true`)
+	local consoleMeshPart = makePart({
+		Name = "CreatorStoreTreadmillMesh",
+		Size = Vector3.new(4.2, 6.5, 10.5),
+		Position = treadCenter + Vector3.new(-faceDir * 4.6, 4.2, 0),
+		Color = tier.PrimaryColor,
+		Material = Enum.Material.SmoothPlastic,
+		CanCollide = false,
+		Parent = tmModel,
+	})
+	local sm = Instance.new("SpecialMesh")
+	sm.Name = "CreatorStoreMesh"
+	sm.MeshType = Enum.MeshType.FileMesh
+	sm.MeshId = tier.MeshId or "rbxassetid://9507455017"
+	sm.TextureId = tier.TextureId or "rbxassetid://9507455143"
+	sm.Scale = Vector3.new(1.35, 1.35, 1.35)
+	sm:SetAttribute("PreserveCreatorStoreMesh", true)
+	sm.Parent = consoleMeshPart
+
+	-- Sculpted Arch Frame & Overhead Multiplier Display Sign (`[x1 SPEED]` -> `[x50M SPEED]`)
 	for _, sideZ in ipairs({ -6.4, 6.4 }) do
 		makePart({
-			Name = "DinoSidePillar",
-			Size = Vector3.new(5.5, 12.5, 2.4),
+			Name = "TreadmillArchPillar",
+			Size = Vector3.new(4.8, 12.5, 2.2),
 			Position = treadCenter + Vector3.new(-faceDir * 2.8, 6.25, sideZ),
-			Color = dinoGreen,
+			Color = tier.PrimaryColor,
 			Material = Enum.Material.SmoothPlastic,
-			Parent = dinoFolder,
+			Parent = tmModel,
 		})
 	end
 
 	local snout = makePart({
-		Name = "DinoUpperSnout",
-		Size = Vector3.new(9.5, 4.8, 15.2),
-		Position = treadCenter + Vector3.new(-faceDir * 1.6, 13.8, 0),
-		Color = dinoGreen,
+		Name = "TreadmillHeaderArch",
+		Size = Vector3.new(8.8, 4.6, 15.2),
+		Position = treadCenter + Vector3.new(-faceDir * 1.6, 13.6, 0),
+		Color = tier.PrimaryColor,
 		Material = Enum.Material.SmoothPlastic,
-		Parent = dinoFolder,
+		Parent = tmModel,
 	})
 	makePart({
-		Name = "DinoCrest",
-		Size = Vector3.new(6.8, 2.6, 12.0),
-		Position = treadCenter + Vector3.new(-faceDir * 2.5, 16.8, 0),
-		Color = dinoDark,
-		Material = Enum.Material.SmoothPlastic,
-		Parent = dinoFolder,
-	})
-	makePart({
-		Name = "DinoMouthRoof",
-		Size = Vector3.new(8.5, 0.9, 13.2),
-		Position = treadCenter + Vector3.new(-faceDir * 1.4, 11.2, 0),
-		Color = mouthRed,
-		Material = Enum.Material.SmoothPlastic,
-		Parent = dinoFolder,
+		Name = "TreadmillCrest",
+		Size = Vector3.new(6.2, 2.2, 12.2),
+		Position = treadCenter + Vector3.new(-faceDir * 2.4, 16.5, 0),
+		Color = tier.AccentColor,
+		Material = Enum.Material.Neon,
+		Parent = tmModel,
 	})
 
-	for zTooth = -5.2, 5.2, 2.6 do
-		makePart({
-			Name = "UpperTooth",
-			Size = Vector3.new(1.5, 2.4, 1.6),
-			Position = treadCenter + Vector3.new(faceDir * 2.2, 10.3, zTooth),
-			Color = Color3.fromRGB(250, 250, 255),
-			Material = Enum.Material.SmoothPlastic,
-			CanCollide = false,
-			Parent = dinoFolder,
-		})
-	end
+	local speedFormatted = SlimeData.FormatNumber(tier.SpeedPerSec)
+	local signLabelText = if isStageTreadmill
+		then string.format("⚡ STAGE %d %s [%s]\n🏃 Run Here = +%s Speed / Sec!", tierId, string.upper(tier.Name), tier.MultiplierText, speedFormatted)
+		else string.format("⚡ BASE %s [%s]\n🏃 Run Here = +%s Speed / Sec!", string.upper(tier.Name), tier.MultiplierText, speedFormatted)
 
-	for _, sideZ in ipairs({ -7.7, 7.7 }) do
-		makePart({
-			Name = "DinoEyeWhite",
-			Size = Vector3.new(2.6, 2.6, 0.5),
-			Position = treadCenter + Vector3.new(-faceDir * 1.2, 14.4, sideZ),
-			Color = Color3.fromRGB(255, 255, 255),
-			Material = Enum.Material.SmoothPlastic,
-			Parent = dinoFolder,
-		})
-		makePart({
-			Name = "DinoPupil",
-			Size = Vector3.new(1.3, 1.3, 0.65),
-			Position = treadCenter + Vector3.new(-faceDir * 0.8, 14.4, sideZ * 1.01),
-			Color = Color3.fromRGB(20, 20, 25),
-			Material = Enum.Material.SmoothPlastic,
-			Parent = dinoFolder,
-		})
-	end
-
-	createBillboardText(
+	local bb = createBillboardText(
 		snout,
-		"🦖 +1 SPEED TREADMILL\nRun on Pink Belt = Permanent +Speed!",
-		Color3.fromRGB(85, 255, 140),
-		Vector3.new(0, 4.6, 0),
-		UDim2.new(6.5, 0, 1.6, 0),
-		42
+		signLabelText,
+		tier.AccentColor,
+		Vector3.new(0, 4.8, 0),
+		UDim2.new(7.5, 0, 1.8, 0),
+		65
 	)
+	bb.Name = "TreadmillBillboard"
 
 	return belt
 end
@@ -1918,10 +2059,99 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 	local zStart = levelInfo.ZStart
 	local zNorth = zStart - 52
 	local zSouth = zStart - 86
+	local themeColor = levelInfo.ThemeColor or Color3.fromRGB(95, 225, 110)
+	local secColor = levelInfo.SecondaryColor or themeColor
 
 	local landmarksFolder = Instance.new("Folder")
 	landmarksFolder.Name = "BiomeLandmarks_" .. tostring(id)
 	landmarksFolder.Parent = parent
+
+	-- =========================================================================================
+	-- SECTOR 1 (Z = zStart - 12 to zStart - 34):
+	-- Uniform Entry Plaza in EVERY Stage (Stages 1–8):
+	-- 1. Left Side (X = -32, Z = zStart - 16): 3D Stage Completion Checklist Board (`StageChecklistBoard_<id>`)
+	-- 2. Right Side (X = +32, Z = zStart - 16): Stage Treadmill Plaza Pad (`TreadmillPlazaPad_<id>`)
+	-- 3. Center (X = 0, Z = zStart - 13): Timed Shortcut Bridge Button (`ShortcutBridgeButton_<id>`)
+	-- =========================================================================================
+	local totalEggsInStage = 0
+	local totalSquishiesInStage = 0
+	for _, sData in ipairs(SlimeData.Slimes) do
+		if sData.Level == id then
+			local numId = tonumber((sData :: any).UnlockOrder or (sData :: any).NumericId or sData.Id) or 1
+			if numId <= 35 then
+				totalEggsInStage += 1
+			else
+				totalSquishiesInStage += 1
+			end
+		end
+	end
+	local nextLevelInfo = SlimeData.Levels[id + 1]
+	local nextReqSpeed = if nextLevelInfo then (nextLevelInfo.RequiredSpeed or 0) else 0
+	local nextReqText = if nextLevelInfo
+		then string.format("⚡ Next Gate (Stage %d): %s Speed + 100%% Stage %d", id + 1, SlimeData.FormatNumber(nextReqSpeed), id)
+		else "👑 Final Stage: Complete 100% for Cosmic Mastery!"
+
+	local checklistPos = Vector3.new(-32, 0, zStart - 16)
+	buildGlowingNeonCircle(
+		landmarksFolder,
+		"StageChecklistPad_" .. tostring(id),
+		checklistPos + Vector3.new(0, 0.35, 0),
+		12.0,
+		themeColor,
+		secColor
+	)
+	for _, postSide in ipairs({ -1, 1 }) do
+		makePart({
+			Name = "ChecklistPost_" .. tostring(postSide),
+			Size = Vector3.new(1.4, 13.0, 1.4),
+			Position = checklistPos + Vector3.new(postSide * 7.8, 6.5, 0),
+			Color = secColor,
+			Material = Enum.Material.Metal,
+			Parent = landmarksFolder,
+		})
+	end
+	local checklistBoard = makePart({
+		Name = "StageChecklistBoard_" .. tostring(id),
+		Size = Vector3.new(17.5, 9.5, 1.2),
+		Position = checklistPos + Vector3.new(0, 8.2, 0),
+		Color = Color3.fromRGB(22, 26, 44),
+		Material = Enum.Material.SmoothPlastic,
+		Parent = landmarksFolder,
+	})
+	checklistBoard:SetAttribute("StageId", id)
+	checklistBoard:SetAttribute("TotalEggs", totalEggsInStage)
+	checklistBoard:SetAttribute("TotalSquishies", totalSquishiesInStage)
+	checklistBoard:SetAttribute("NextRequiredSpeed", nextReqSpeed)
+
+	createSurfaceSign(
+		checklistBoard,
+		string.format(
+			"📋 STAGE %d: %s\n🥚 Boss Eggs: 0/%d  |  🧸 Squishies: 0/%d\n%s\n🔓 STAGE %d COMPLETION: 0%%",
+			id,
+			string.upper(levelInfo.Name),
+			totalEggsInStage,
+			totalSquishiesInStage,
+			nextReqText,
+			id
+		),
+		Color3.fromRGB(255, 245, 125),
+		Color3.fromRGB(18, 22, 38),
+		{ Enum.NormalId.Back, Enum.NormalId.Front },
+		180
+	)
+
+	-- Dedicated Right-Side Sector 1 Creator Store 3D Treadmill at X = +32, Z = zStart - 16 (Tier 1..8: x1 SPEED -> x50M SPEED!)
+	local tmTier = SlimeData.TreadmillTiers[id] or SlimeData.TreadmillTiers[1]
+	local tmPlazaPad = buildGlowingNeonCircle(
+		landmarksFolder,
+		"TreadmillPlazaPad_" .. tostring(id),
+		Vector3.new(32, 0.35, zStart - 16),
+		16.5,
+		tmTier.PrimaryColor,
+		tmTier.AccentColor
+	)
+	tmPlazaPad:SetAttribute("TreadmillStageId", id)
+	buildDinoJawTreadmill(landmarksFolder, Vector3.new(32, 0.35, zStart - 16), -1, 0, id)
 
 	if id == 1 then
 		-- =========================================================================================
@@ -2111,7 +2341,7 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 
 	elseif id == 2 then
 		-- =========================================================================================
-		-- STAGE 2 (ASMR ISLAND & CHOCOLATE CANDY LAND):
+		-- STAGE 2 (CHOCOLATE CANDY KINGDOM):
 		-- Dedicated Right-Side Signature Landmarks: Giant 3-Tier Flowing Chocolate Fountain +
 		-- Giant Gumball Machine Tower + Spinning Peppermint Rollers + Creator Store Candy Props,
 		-- plus ASMR Island Giant Mechanical Keyboard (`fts_frame_09.png`) & Rainbow Pop-It Board!
@@ -2433,7 +2663,145 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 
 	elseif id == 4 then
 		-- =========================================================================================
-		-- STAGE 4 (CRYSTAL CAVERN):
+		-- STAGE 4 (WHISPERING BAMBOO FOREST):
+		-- Jade Koi Lotus Pond + Arched Red Torii Bridge, Giant Hollow Bamboo Grove Climb,
+		-- Spinning Jade Pagoda Tower (X = 64, zNorth), Glowing Zen Lantern Shrine (X = 64, zSouth),
+		-- and Bamboo Stepping Stalks + Bounce Lotus Pads (X = 46)!
+		-- =========================================================================================
+
+		-- 1. Jade Koi Lotus Pond + Arched Crimson Torii Bridge at X = -14, Z = zStart - 56
+		makePart({
+			Name = "BambooLotusPond",
+			Size = Vector3.new(38, 0.6, 30),
+			Position = Vector3.new(-14, 0.15, zStart - 56),
+			Color = Color3.fromRGB(55, 205, 175),
+			Material = Enum.Material.Neon,
+			Parent = landmarksFolder,
+		})
+		makePart({
+			Name = "ToriiBridgeDeck",
+			Size = Vector3.new(6.5, 1.2, 28),
+			Position = Vector3.new(-14, 1.8, zStart - 56),
+			Color = Color3.fromRGB(225, 58, 52),
+			Material = Enum.Material.WoodPlanks,
+			Parent = landmarksFolder,
+		})
+		for _, toriiZ in ipairs({ zStart - 44, zStart - 68 }) do
+			for _, pSide in ipairs({ -3.2, 3.2 }) do
+				makePart({
+					Name = "ToriiGatePillar",
+					Shape = Enum.PartType.Cylinder,
+					Size = Vector3.new(13, 1.4, 1.4),
+					CFrame = CFrame.new(-14 + pSide, 7.5, toriiZ) * CFrame.Angles(0, 0, math.rad(90)),
+					Color = Color3.fromRGB(225, 48, 42),
+					Material = Enum.Material.SmoothPlastic,
+					Parent = landmarksFolder,
+				})
+			end
+			makePart({
+				Name = "ToriiGateTopBeam",
+				Size = Vector3.new(10.5, 1.6, 1.8),
+				Position = Vector3.new(-14, 14.2, toriiZ),
+				Color = Color3.fromRGB(235, 55, 48),
+				Material = Enum.Material.SmoothPlastic,
+				Parent = landmarksFolder,
+			})
+		end
+
+		-- 2. Giant Hollow Bamboo Stalk Climb at X = 24, Z = zStart - 56
+		for bIdx = 1, 5 do
+			local bx = 20 + (bIdx % 2) * 8
+			local bz = (zStart - 42) - bIdx * 5.5
+			makePart({
+				Name = "GiantBambooStalk_" .. tostring(bIdx),
+				Shape = Enum.PartType.Cylinder,
+				Size = Vector3.new(4.5 + bIdx * 2.5, 5.2, 5.2),
+				CFrame = CFrame.new(bx, (4.5 + bIdx * 2.5) * 0.5, bz) * CFrame.Angles(0, 0, math.rad(90)),
+				Color = Color3.fromRGB(95, 225, 115),
+				Material = Enum.Material.SmoothPlastic,
+				Parent = landmarksFolder,
+			})
+		end
+
+		-- 3. Dedicated Right-Side Signature Landmark #1: 3-Tier Jade Pagoda Temple Tower (X = 64, zNorth)
+		for pTier = 1, 3 do
+			local w = 20 - (pTier - 1) * 4.5
+			makePart({
+				Name = "PagodaBody_" .. tostring(pTier),
+				Size = Vector3.new(w * 0.75, 5.5, w * 0.75),
+				Position = Vector3.new(64, (pTier - 0.5) * 6.5, zNorth),
+				Color = Color3.fromRGB(235, 225, 195),
+				Material = Enum.Material.SmoothPlastic,
+				Parent = landmarksFolder,
+			})
+			makePart({
+				Name = "PagodaJadeRoof_" .. tostring(pTier),
+				Size = Vector3.new(w, 1.6, w),
+				Position = Vector3.new(64, pTier * 6.5, zNorth),
+				Color = Color3.fromRGB(58, 195, 105),
+				Material = Enum.Material.SmoothPlastic,
+				Parent = landmarksFolder,
+			})
+		end
+		local pagodaOrb = makePart({
+			Name = "PagodaJadeFinial",
+			Shape = Enum.PartType.Ball,
+			Size = Vector3.new(4.8, 4.8, 4.8),
+			Position = Vector3.new(64, 23.0, zNorth),
+			Color = Color3.fromRGB(135, 255, 155),
+			Material = Enum.Material.Neon,
+			CanCollide = false,
+			Parent = obstaclesFolder,
+		})
+		pagodaOrb:SetAttribute("SpinSpeed", 1.5)
+
+		-- 4. Dedicated Right-Side Signature Landmark #2: Glowing Zen Lantern Shrine (X = 64, zSouth)
+		makePart({
+			Name = "ZenShrineBase",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(2.0, 16, 16),
+			CFrame = CFrame.new(64, 1.0, zSouth) * CFrame.Angles(0, 0, math.rad(90)),
+			Color = Color3.fromRGB(128, 138, 128),
+			Material = Enum.Material.Slate,
+			Parent = landmarksFolder,
+		})
+		makePart({
+			Name = "ZenLanternCore",
+			Shape = Enum.PartType.Ball,
+			Size = Vector3.new(9.5, 11.5, 9.5),
+			Position = Vector3.new(64, 9.5, zSouth),
+			Color = Color3.fromRGB(155, 255, 145),
+			Material = Enum.Material.Neon,
+			Parent = landmarksFolder,
+		})
+		makePart({
+			Name = "ZenLanternCap",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(2.4, 14, 14),
+			CFrame = CFrame.new(64, 15.8, zSouth) * CFrame.Angles(0, 0, math.rad(90)),
+			Color = Color3.fromRGB(68, 165, 88),
+			Material = Enum.Material.Slate,
+			Parent = landmarksFolder,
+		})
+
+		-- 5. Lotus Bounce Stepping Course (X = 46, Z = zStart - 36..-90) + Meadow/Bamboo Trees (X = 72)
+		for b = 1, 4 do
+			local bz = zStart - 24 - (b * 16)
+			local lotusPad = buildGlowingNeonCircle(
+				landmarksFolder,
+				"BouncePad",
+				Vector3.new(46, 1.2 + b * 0.5, bz),
+				6.2,
+				Color3.fromRGB(95, 245, 135),
+				Color3.fromRGB(255, 145, 205)
+			)
+			lotusPad:SetAttribute("BounceImpulse", 90)
+		end
+		placePrebuiltAsset("MeadowTrees", 2, landmarksFolder, Vector3.new(72, 0, zStart - 68), 45, 25.0, true)
+
+	elseif id == 5 then
+		-- =========================================================================================
+		-- STAGE 5 (CRYSTAL CYBER CAVERN):
 		-- Dedicated Right-Side Signature Landmarks: Levitating Cyber-Crystal Monolith Ring +
 		-- Glowing Geode Archway + Moving Crystal Platforms + Creator Store Crystals,
 		-- plus Underground Stone Wall-Jump Ledges over Glowing Cyan Pool (`full_frame_16.png`) & Laser Vault (`full_frame_20.png`)!
@@ -2488,7 +2856,7 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 		})
 		for lb = -2, 2 do
 			makePart({
-				Name = "Stage4LaserBar_" .. tostring(lb),
+				Name = "Stage5LaserBar_" .. tostring(lb),
 				Size = Vector3.new(0.45, 10.5, 0.45),
 				Position = Vector3.new(26 + lb * 2.2, 5.5, zStart - 48.8),
 				Color = Color3.fromRGB(255, 35, 45),
@@ -2568,9 +2936,105 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 		end
 		placePrebuiltAsset("Crystals", 1, landmarksFolder, Vector3.new(72, 0, zStart - 68), 15, 24.0, true)
 
-	else
+	elseif id == 6 then
 		-- =========================================================================================
-		-- STAGE 5 (VOLCANO DOOM):
+		-- STAGE 6 (CLOUD SKY SANCTUARY):
+		-- Floating Rainbow Cloud Lagoon + Starlight Balance Bridge, Golden Sky Pillar Steps,
+		-- Rotating Celestial Sun-Dial Observatory (X = 64, zNorth), Angelic Sky Temple Dome (X = 64, zSouth),
+		-- and Cloud Bounce Pads (X = 46)!
+		-- =========================================================================================
+
+		-- 1. Glowing Sky Mirror Pool + Golden Starlight Bridge at X = -14, Z = zStart - 56
+		makePart({
+			Name = "SkyMirrorPool",
+			Size = Vector3.new(38, 0.6, 30),
+			Position = Vector3.new(-14, 0.15, zStart - 56),
+			Color = Color3.fromRGB(155, 225, 255),
+			Material = Enum.Material.Neon,
+			Parent = landmarksFolder,
+		})
+		makePart({
+			Name = "StarlightBalanceBridge",
+			Size = Vector3.new(5.5, 1.2, 28),
+			Position = Vector3.new(-14, 1.8, zStart - 56),
+			Color = Color3.fromRGB(255, 230, 105),
+			Material = Enum.Material.Neon,
+			Parent = landmarksFolder,
+		})
+
+		-- 2. Golden Marble Pillar Climb at X = 24, Z = zStart - 56
+		for p = 1, 5 do
+			makePart({
+				Name = "SkySanctuaryPillar_" .. tostring(p),
+				Shape = Enum.PartType.Cylinder,
+				Size = Vector3.new(3.5 + p * 2.5, 5.5, 5.5),
+				CFrame = CFrame.new(20 + (p % 2) * 8, (3.5 + p * 2.5) * 0.5, (zStart - 42) - p * 5.5) * CFrame.Angles(0, 0, math.rad(90)),
+				Color = Color3.fromRGB(248, 250, 255),
+				Material = Enum.Material.Marble,
+				Parent = landmarksFolder,
+			})
+		end
+
+		-- 3. Dedicated Right-Side Signature Landmark #1: Celestial Sun-Dial Observatory (X = 64, zNorth)
+		makePart({
+			Name = "CelestialObservatoryBase",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(10, 16, 16),
+			CFrame = CFrame.new(64, 5.0, zNorth) * CFrame.Angles(0, 0, math.rad(90)),
+			Color = Color3.fromRGB(245, 248, 255),
+			Material = Enum.Material.Marble,
+			Parent = landmarksFolder,
+		})
+		local sunRing = makePart({
+			Name = "CelestialSunRing",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(2.2, 18, 18),
+			CFrame = CFrame.new(64, 18.5, zNorth),
+			Color = Color3.fromRGB(255, 225, 75),
+			Material = Enum.Material.Neon,
+			CanCollide = false,
+			Parent = obstaclesFolder,
+		})
+		sunRing:SetAttribute("SpinSpeed", 1.6)
+
+		-- 4. Dedicated Right-Side Signature Landmark #2: Angelic Sky Temple Dome (X = 64, zSouth)
+		makePart({
+			Name = "SkyTempleFloor",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(2.0, 18, 18),
+			CFrame = CFrame.new(64, 1.0, zSouth) * CFrame.Angles(0, 0, math.rad(90)),
+			Color = Color3.fromRGB(245, 248, 255),
+			Material = Enum.Material.Marble,
+			Parent = landmarksFolder,
+		})
+		makePart({
+			Name = "SkyTempleGoldenDome",
+			Shape = Enum.PartType.Ball,
+			Size = Vector3.new(16, 14, 16),
+			Position = Vector3.new(64, 13.5, zSouth),
+			Color = Color3.fromRGB(255, 225, 95),
+			Material = Enum.Material.Neon,
+			Parent = landmarksFolder,
+		})
+
+		-- 5. Cloud Bounce Course (X = 46, Z = zStart - 36..-90)
+		for c = 1, 4 do
+			local cz = zStart - 24 - (c * 16)
+			local cloudBounce = buildGlowingNeonCircle(
+				landmarksFolder,
+				"BouncePad",
+				Vector3.new(46, 1.5 + c * 0.6, cz),
+				6.6,
+				Color3.fromRGB(135, 220, 255),
+				Color3.fromRGB(255, 235, 95)
+			)
+			cloudBounce:SetAttribute("BounceImpulse", 96)
+		end
+		placePrebuiltAsset("Crystals", 2, landmarksFolder, Vector3.new(72, 0, zStart - 68), 30, 24.0, true)
+
+	elseif id == 7 then
+		-- =========================================================================================
+		-- STAGE 7 (MAGMA VOLCANO DOOM):
 		-- Dedicated Right-Side Signature Landmarks: Giant Erupting Magma Volcano Crater +
 		-- Obsidian Anvil Forge + Lava Geyser Jump Pads + Creator Store Volcano Rocks,
 		-- plus Stepped Basalt-and-Lava Cliff Hill & Tall Metal Truss Ladder Tower (`fts_frame_05.png`)!
@@ -2685,6 +3149,103 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 			geyser:SetAttribute("BounceImpulse", 108)
 		end
 		placePrebuiltAsset("VolcanoRocks", 1, landmarksFolder, Vector3.new(72, 0, zStart - 68), 75, 24.0, true)
+
+	else
+		-- =========================================================================================
+		-- STAGE 8 (COSMIC VOID CITADEL):
+		-- Zero-Gravity Nebula Rift Pool + Starlight Conduit Bridge, Quantum Forcefield Vault,
+		-- Rotating Black Hole Singularity Reactor (X = 64, zNorth), Astral Citadel Stargate Arch (X = 64, zSouth),
+		-- and Levitating Asteroid Jump Pads (X = 46)!
+		-- =========================================================================================
+
+		-- 1. Zero-Gravity Nebula Rift Pool + Starlight Conduit Bridge at X = -14, Z = zStart - 56
+		makePart({
+			Name = "CosmicNebulaPool",
+			Size = Vector3.new(38, 0.8, 30),
+			Position = Vector3.new(-14, 0.2, zStart - 56),
+			Color = Color3.fromRGB(185, 55, 255),
+			Material = Enum.Material.Neon,
+			Parent = landmarksFolder,
+		})
+		makePart({
+			Name = "CosmicConduitBridge",
+			Size = Vector3.new(5.5, 1.2, 28),
+			Position = Vector3.new(-14, 2.0, zStart - 56),
+			Color = Color3.fromRGB(85, 245, 255),
+			Material = Enum.Material.Neon,
+			Parent = landmarksFolder,
+		})
+
+		-- 2. Quantum Forcefield Citadel Vault at X = 26, Z = zStart - 56
+		makePart({
+			Name = "QuantumCitadelVault",
+			Size = Vector3.new(16, 14, 14),
+			Position = Vector3.new(26, 7.0, zStart - 56),
+			Color = Color3.fromRGB(28, 18, 48),
+			Material = Enum.Material.Basalt,
+			Parent = landmarksFolder,
+		})
+		for qb = -2, 2 do
+			makePart({
+				Name = "QuantumLaserBar_" .. tostring(qb),
+				Size = Vector3.new(0.5, 11.5, 0.5),
+				Position = Vector3.new(26 + qb * 2.2, 6.0, zStart - 48.8),
+				Color = Color3.fromRGB(85, 245, 255),
+				Material = Enum.Material.Neon,
+				CanCollide = false,
+				Parent = landmarksFolder,
+			})
+		end
+
+		-- 3. Dedicated Right-Side Signature Landmark #1: Black Hole Singularity Reactor (X = 64, zNorth)
+		local blackHoleCore = makePart({
+			Name = "SingularityCore",
+			Shape = Enum.PartType.Ball,
+			Size = Vector3.new(11, 11, 11),
+			Position = Vector3.new(64, 14.5, zNorth),
+			Color = Color3.fromRGB(16, 8, 28),
+			Material = Enum.Material.SmoothPlastic,
+			Parent = landmarksFolder,
+		})
+		local accretionDisk = makePart({
+			Name = "AccretionDiskRing",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(1.6, 22, 22),
+			CFrame = CFrame.new(64, 14.5, zNorth) * CFrame.Angles(math.rad(25), 0, math.rad(75)),
+			Color = Color3.fromRGB(235, 75, 255),
+			Material = Enum.Material.Neon,
+			CanCollide = false,
+			Parent = obstaclesFolder,
+		})
+		accretionDisk:SetAttribute("SpinSpeed", 2.4)
+
+		-- 4. Dedicated Right-Side Signature Landmark #2: Astral Citadel Stargate Arch (X = 64, zSouth)
+		for sIdx = 0, 7 do
+			local ang = math.rad(sIdx * 45)
+			makePart({
+				Name = "StargateSegment_" .. tostring(sIdx),
+				Size = Vector3.new(3.8, 3.8, 5.5),
+				Position = Vector3.new(64 + math.cos(ang) * 9.0, 11.5 + math.sin(ang) * 9.0, zSouth),
+				Color = if sIdx % 2 == 0 then Color3.fromRGB(195, 65, 255) else Color3.fromRGB(85, 245, 255),
+				Material = Enum.Material.Neon,
+				Parent = landmarksFolder,
+			})
+		end
+
+		-- 5. Cosmic Void Geyser Jump Pads (X = 46, Z = zStart - 36..-90)
+		for g = 1, 4 do
+			local gz = zStart - 24 - (g * 16)
+			local voidPad = buildGlowingNeonCircle(
+				landmarksFolder,
+				"BouncePad",
+				Vector3.new(46, 1.0, gz),
+				6.8,
+				Color3.fromRGB(195, 65, 255),
+				Color3.fromRGB(85, 245, 255)
+			)
+			voidPad:SetAttribute("BounceImpulse", 112)
+		end
+		placePrebuiltAsset("Crystals", 3, landmarksFolder, Vector3.new(72, 0, zStart - 68), 60, 25.0, true)
 	end
 
 	-- Chapter 1 & 4 Interactive Respawning Golden Squishy Coins along Obbies, Landmark Courses, Center Courses & Outer Side Mazes (6 per Stage = 30 Total)!
@@ -2976,20 +3537,115 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 		)
 		createAttachmentPrompt(upgStand, "UpgradeSpeedPrompt", "Upgrade Treadmill (+Speed)", "🦖 Cost: $50", Vector3.new(0, 2.5, 0), 14)
 
-		-- 4. 5 Newer Concentric Glowing Purple/Gold Hatch Incubator Circles Along the Front Edge of the Plot
+		-- 4. Fenced Squishy Hatchery & Roaming Ranch Pen (`HatcheryPen` — Walk-In Auto-Drop, Hatch Timer 00:05 -> Live Roaming & Growing Squishies!)
+		local penCenter = cfg.Center + Vector3.new(cfg.FaceDir * 6.5, 0.55, 5.0)
+		local penW = 23.0
+		local penD = 19.5
+
+		local hatcheryPen = Instance.new("Model")
+		hatcheryPen.Name = "HatcheryPen"
+		hatcheryPen:SetAttribute("PlotIndex", cfg.Index)
+		hatcheryPen.Parent = plotModel
+
+		local penFloor = makePart({
+			Name = "HatcheryPenFloor",
+			Size = Vector3.new(penW, 0.32, penD),
+			Position = penCenter,
+			Color = Color3.fromRGB(115, 228, 95),
+			Material = Enum.Material.Grass,
+			Parent = hatcheryPen,
+		})
+		hatcheryPen.PrimaryPart = penFloor
+
+		-- Glowing Golden Walk-In Auto-Drop Trigger Zone inside the Fenced Pen
+		local dropZone = makePart({
+			Name = "HatcheryDropZone",
+			Size = Vector3.new(penW - 1.2, 0.4, penD - 1.2),
+			Position = penCenter + Vector3.new(0, 0.08, 0),
+			Color = Color3.fromRGB(255, 225, 75),
+			Material = Enum.Material.Neon,
+			Transparency = 0.78,
+			CanCollide = false,
+			Parent = hatcheryPen,
+		})
+		dropZone:SetAttribute("PlotIndex", cfg.Index)
+
+		-- 4-Sided White & Gold Ranch Picket Enclosure around the Hatchery Pen (with wide walk-in Front Gate opening!)
+		local penFenceRailCol = Color3.fromRGB(255, 205, 65)
+		local penFencePicketCol = Color3.fromRGB(250, 248, 240)
+		local pFN = penCenter + Vector3.new(cfg.FaceDir * (penW * 0.5), 0.1, -penD * 0.5)
+		local pBN = penCenter + Vector3.new(-cfg.FaceDir * (penW * 0.5), 0.1, -penD * 0.5)
+		local pBS = penCenter + Vector3.new(-cfg.FaceDir * (penW * 0.5), 0.1, penD * 0.5)
+		local pFS = penCenter + Vector3.new(cfg.FaceDir * (penW * 0.5), 0.1, penD * 0.5)
+		local pGateNorth = penCenter + Vector3.new(cfg.FaceDir * (penW * 0.5), 0.1, -4.2)
+		local pGateSouth = penCenter + Vector3.new(cfg.FaceDir * (penW * 0.5), 0.1, 4.2)
+
+		buildProceduralPicketFence(hatcheryPen, pFN, pBN, 2.6, penFenceRailCol, penFencePicketCol)
+		buildProceduralPicketFence(hatcheryPen, pBN, pBS, 2.6, penFenceRailCol, penFencePicketCol)
+		buildProceduralPicketFence(hatcheryPen, pBS, pFS, 2.6, penFenceRailCol, penFencePicketCol)
+		buildProceduralPicketFence(hatcheryPen, pFN, pGateNorth, 2.6, penFenceRailCol, penFencePicketCol)
+		buildProceduralPicketFence(hatcheryPen, pGateSouth, pFS, 2.6, penFenceRailCol, penFencePicketCol)
+
+		-- Ranch Archway Gate & Overhead Sign at the Front Entrance of the Hatchery Pen
+		for _, gateZ in ipairs({ -4.2, 4.2 }) do
+			makePart({
+				Name = "HatcheryGatePost",
+				Size = Vector3.new(1.2, 8.8, 1.2),
+				Position = penCenter + Vector3.new(cfg.FaceDir * (penW * 0.5), 4.4, gateZ),
+				Color = penFenceRailCol,
+				Material = Enum.Material.WoodPlanks,
+				Parent = hatcheryPen,
+			})
+		end
+		local gateHeader = makePart({
+			Name = "HatcheryGateArch",
+			Size = Vector3.new(1.4, 2.8, 10.6),
+			Position = penCenter + Vector3.new(cfg.FaceDir * (penW * 0.5), 9.4, 0),
+			Color = Color3.fromRGB(32, 38, 64),
+			Material = Enum.Material.SmoothPlastic,
+			Parent = hatcheryPen,
+		})
+		createSurfaceSign(
+			gateHeader,
+			"🥚 SQUISHY HATCHERY & RANCH PEN\nWalk In With Eggs -> Hatch & Roam Inside Fence!",
+			Color3.fromRGB(255, 235, 85),
+			Color3.fromRGB(24, 30, 52),
+			{ Enum.NormalId.Left, Enum.NormalId.Right },
+			150
+		)
+
+		-- 🌱 Grow & Level Up Station Kiosk right next to the Hatchery Pen Entrance
+		local growStand = buildGlowingNeonCircle(
+			hatcheryPen,
+			"GrowSquishyStand",
+			penCenter + Vector3.new(cfg.FaceDir * (penW * 0.5 + 2.2), 0.15, -6.8),
+			4.6,
+			Color3.fromRGB(95, 245, 135),
+			Color3.fromRGB(255, 225, 75)
+		)
+		createAttachmentPrompt(
+			growStand,
+			"UpgradeSquishyPenPrompt",
+			"🌱 Grow & Level Up Squishy (+$/s & Size!)",
+			"🏡 Squishy Ranch Grow Station",
+			Vector3.new(0, 2.4, 0),
+			14
+		)
+
+		-- 5 Cozy Golden Hatching Nests inside the Front Edge of the Fenced Pen (`Incubators` / `Incubator_1..5`)
 		local incubatorsFolder = Instance.new("Folder")
 		incubatorsFolder.Name = "Incubators"
 		incubatorsFolder.Parent = plotModel
 
 		for incIdx = 1, 5 do
-			local zOff = -9.0 + (incIdx - 1) * 4.8
-			local incPos = cfg.Center + Vector3.new(cfg.FaceDir * 13.0, 0.6, zOff)
+			local zOff = -3.0 + (incIdx - 1) * 4.0
+			local incPos = cfg.Center + Vector3.new(cfg.FaceDir * 14.5, 0.6, zOff)
 
 			local incPad = buildGlowingNeonCircle(
 				incubatorsFolder,
 				"Incubator_" .. tostring(incIdx),
 				incPos,
-				4.4,
+				3.8,
 				Color3.fromRGB(195, 75, 255),
 				Color3.fromRGB(255, 220, 85)
 			)
@@ -2999,14 +3655,14 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 			createAttachmentPrompt(
 				incPad,
 				"IncubatorPrompt",
-				"Plant Carried Egg",
-				"Empty Incubator #" .. tostring(incIdx),
+				"Drop Egg in Hatchery Nest",
+				"Hatchery Nest #" .. tostring(incIdx),
 				Vector3.new(0, 2.2, 0),
-				13
+				14
 			)
 		end
 
-		-- 5. 12 Newer Concentric Glowing Neon Lawn Pedestal Circles (4x3 grid) for Placing Hatched Squishies
+		-- 12 Roaming Ranch Pasture Spots inside the Fenced Hatchery Pen (`Pedestals` / `Pedestal_1..12`)
 		local pedestalsFolder = Instance.new("Folder")
 		pedestalsFolder.Name = "Pedestals"
 		pedestalsFolder.Parent = plotModel
@@ -3014,15 +3670,15 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 		local slotIndex = 1
 		for row = 1, 3 do
 			for col = 1, 4 do
-				local xOff = cfg.FaceDir * (4.0 - (row - 1) * 4.8)
-				local zOff = 2.0 + (col - 1) * 4.2
+				local xOff = cfg.FaceDir * (9.5 - (row - 1) * 5.2)
+				local zOff = -2.2 + (col - 1) * 4.6
 				local pedPos = cfg.Center + Vector3.new(xOff, 0.58, zOff)
 
 				local ped = buildGlowingNeonCircle(
 					pedestalsFolder,
 					"Pedestal_" .. tostring(slotIndex),
 					pedPos,
-					3.9,
+					3.4,
 					Color3.fromRGB(85, 245, 145),
 					cfg.Color
 				)
@@ -3030,10 +3686,10 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 				createAttachmentPrompt(
 					ped,
 					"PlaceSquishyPrompt",
-					"Place Squishy on Pedestal",
-					"Pedestal #" .. tostring(slotIndex),
+					"Release Squishy in Ranch Pen",
+					"Ranch Pen Slot #" .. tostring(slotIndex),
 					Vector3.new(0, 2.2, 0),
-					12
+					13
 				)
 				slotIndex += 1
 			end
@@ -3046,7 +3702,7 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 	local id = levelInfo.Id or levelInfo.Level or 1
 	local zStart = levelInfo.ZStart
 	local zEnd = levelInfo.ZEnd
-	local zBoss = zStart - 112
+	local zBoss = zStart - 116
 	local secColor = levelInfo.SecondaryColor or levelInfo.ThemeColor or Color3.fromRGB(120, 220, 120)
 
 	-- 1. Front Hazard Moat + Procedural Plank Bridges at zStart - 24
@@ -3054,8 +3710,11 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 	local moatColor = if id == 1 then Color3.fromRGB(55, 175, 255)
 		elseif id == 2 then Color3.fromRGB(255, 95, 175)
 		elseif id == 3 then Color3.fromRGB(40, 210, 245)
-		elseif id == 4 then Color3.fromRGB(165, 75, 255)
-		else Color3.fromRGB(255, 75, 20)
+		elseif id == 4 then Color3.fromRGB(65, 225, 135)
+		elseif id == 5 then Color3.fromRGB(165, 75, 255)
+		elseif id == 6 then Color3.fromRGB(135, 220, 255)
+		elseif id == 7 then Color3.fromRGB(255, 75, 20)
+		else Color3.fromRGB(205, 55, 255)
 
 	local moat = makePart({
 		Name = "HazardMoat_" .. tostring(id),
@@ -3079,10 +3738,10 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 		)
 	end
 
-	-- Build Cooler Themed Landmarks (Windmill, Chocolate Fountain, Pirate Ship, Crystal Monoliths, Volcano Crater) + Coins & Shortcut Button!
+	-- Build Sector 1 (Checklist Board + Treadmill Plaza Pad + Shortcut Button) & Sector 2 Landmarks!
 	buildBiomeLandmarksAndInteractiveProps(parent, levelInfo, obstaclesFolder)
 
-	-- 2. Dedicated Left-Side Elevated Biome Sky Obby Gauntlet (`full_frame_04.png`: White-and-Blue Sky Obby Beams, Truss Ladder & Crate Steps at X = -62 to -38, Z = zStart - 34 to zStart - 95) holding the 15 Biome Obby Shining Squishies (#103-#117)!
+	-- 2. Dedicated Left-Side Elevated Biome Sky Obby Gauntlet (`full_frame_04.png`: White-and-Blue Sky Obby Beams, Truss Ladder & Crate Steps at X = -62 to -38, Z = zStart - 34 to zStart - 95) holding the Biome Obby Shining Squishies (#103-#117)!
 	local obbyTruss = Instance.new("TrussPart")
 	obbyTruss.Name = "ObbyStartTruss_" .. tostring(id)
 	obbyTruss.Anchored = true
@@ -3138,7 +3797,7 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 	placePrebuiltAsset("ObbyStages", ((id - 1) % 3) + 1, parent, Vector3.new(-62, 0, zStart - 28), 0, 11.0, true)
 	placePrebuiltAsset("ObbyStages", (id % 3) + 1, parent, Vector3.new(62, 0, zStart - 28), 180, 11.0, true)
 
-	-- 3. 4 Walk-Inside Biome Village Houses per Stage (20 Biome Houses total across Stages 1-5 at X = ±84, Z = zStart - 56 and Z = zStart - 94)!
+	-- 3. 4 Walk-Inside Biome Village Houses per Stage (32 Biome Houses total across Stages 1-8 at X = ±84, Z = zStart - 56 and Z = zStart - 94)!
 	local biomeHouseConfigs: { [number]: { { Side: number, Wall: Color3, Roof: Color3, Z: number } } } = {
 		[1] = {
 			{ Side = -1, Wall = Color3.fromRGB(225, 78, 68), Roof = Color3.fromRGB(145, 42, 38), Z = -56 },
@@ -3159,16 +3818,34 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 			{ Side = 1, Wall = Color3.fromRGB(255, 155, 175), Roof = Color3.fromRGB(215, 55, 85), Z = -414 },
 		},
 		[4] = {
-			{ Side = -1, Wall = Color3.fromRGB(195, 155, 255), Roof = Color3.fromRGB(105, 52, 205), Z = -536 },
-			{ Side = 1, Wall = Color3.fromRGB(125, 225, 255), Roof = Color3.fromRGB(45, 115, 215), Z = -536 },
-			{ Side = -1, Wall = Color3.fromRGB(155, 135, 235), Roof = Color3.fromRGB(75, 42, 165), Z = -574 },
-			{ Side = 1, Wall = Color3.fromRGB(225, 145, 255), Roof = Color3.fromRGB(145, 45, 195), Z = -574 },
+			{ Side = -1, Wall = Color3.fromRGB(185, 245, 175), Roof = Color3.fromRGB(48, 165, 78), Z = -536 },
+			{ Side = 1, Wall = Color3.fromRGB(245, 230, 185), Roof = Color3.fromRGB(215, 58, 52), Z = -536 },
+			{ Side = -1, Wall = Color3.fromRGB(155, 235, 195), Roof = Color3.fromRGB(38, 145, 95), Z = -574 },
+			{ Side = 1, Wall = Color3.fromRGB(215, 245, 155), Roof = Color3.fromRGB(65, 175, 68), Z = -574 },
 		},
 		[5] = {
-			{ Side = -1, Wall = Color3.fromRGB(115, 78, 88), Roof = Color3.fromRGB(215, 65, 28), Z = -696 },
-			{ Side = 1, Wall = Color3.fromRGB(95, 75, 92), Roof = Color3.fromRGB(235, 78, 32), Z = -696 },
-			{ Side = -1, Wall = Color3.fromRGB(82, 68, 82), Roof = Color3.fromRGB(255, 115, 28), Z = -734 },
-			{ Side = 1, Wall = Color3.fromRGB(108, 68, 72), Roof = Color3.fromRGB(195, 42, 32), Z = -734 },
+			{ Side = -1, Wall = Color3.fromRGB(195, 155, 255), Roof = Color3.fromRGB(105, 52, 205), Z = -696 },
+			{ Side = 1, Wall = Color3.fromRGB(125, 225, 255), Roof = Color3.fromRGB(45, 115, 215), Z = -696 },
+			{ Side = -1, Wall = Color3.fromRGB(155, 135, 235), Roof = Color3.fromRGB(75, 42, 165), Z = -734 },
+			{ Side = 1, Wall = Color3.fromRGB(225, 145, 255), Roof = Color3.fromRGB(145, 45, 195), Z = -734 },
+		},
+		[6] = {
+			{ Side = -1, Wall = Color3.fromRGB(245, 250, 255), Roof = Color3.fromRGB(255, 215, 75), Z = -856 },
+			{ Side = 1, Wall = Color3.fromRGB(225, 242, 255), Roof = Color3.fromRGB(95, 195, 255), Z = -856 },
+			{ Side = -1, Wall = Color3.fromRGB(255, 242, 225), Roof = Color3.fromRGB(255, 145, 195), Z = -894 },
+			{ Side = 1, Wall = Color3.fromRGB(235, 245, 255), Roof = Color3.fromRGB(165, 135, 255), Z = -894 },
+		},
+		[7] = {
+			{ Side = -1, Wall = Color3.fromRGB(115, 78, 88), Roof = Color3.fromRGB(215, 65, 28), Z = -1016 },
+			{ Side = 1, Wall = Color3.fromRGB(95, 75, 92), Roof = Color3.fromRGB(235, 78, 32), Z = -1016 },
+			{ Side = -1, Wall = Color3.fromRGB(82, 68, 82), Roof = Color3.fromRGB(255, 115, 28), Z = -1054 },
+			{ Side = 1, Wall = Color3.fromRGB(108, 68, 72), Roof = Color3.fromRGB(195, 42, 32), Z = -1054 },
+		},
+		[8] = {
+			{ Side = -1, Wall = Color3.fromRGB(52, 32, 88), Roof = Color3.fromRGB(195, 55, 255), Z = -1176 },
+			{ Side = 1, Wall = Color3.fromRGB(38, 42, 92), Roof = Color3.fromRGB(65, 225, 255), Z = -1176 },
+			{ Side = -1, Wall = Color3.fromRGB(64, 28, 96), Roof = Color3.fromRGB(255, 65, 195), Z = -1214 },
+			{ Side = 1, Wall = Color3.fromRGB(44, 34, 82), Roof = Color3.fromRGB(135, 85, 255), Z = -1214 },
 		},
 	}
 	local housesForLvl = biomeHouseConfigs[id]
@@ -3223,7 +3900,7 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 		bPad:SetAttribute("BounceImpulse", 98)
 	end
 
-	-- 5. Newer Concentric Glowing Boss Nest Arena Circle (78-stud diameter) under the 2 Giant Sleeping Bosses & Egg Cluster
+	-- 5. Sector 3: Concentric Glowing Boss Nest Arena Circle (78-stud diameter) under the 2 Giant Sleeping Bosses & Egg Cluster
 	buildGlowingNeonCircle(
 		parent,
 		"BossNestArenaPad",
@@ -3245,13 +3922,13 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 
 	for idx, sPos in ipairs(scenerySpots) do
 		local yaw = (idx * 53) % 360
-		if id == 1 then
+		if id == 1 or id == 4 then
 			placePrebuiltAsset("MeadowTrees", ((idx - 1) % 3) + 1, parent, sPos, yaw, 25.0, true)
 		elseif id == 2 then
 			placePrebuiltAsset("CandyProps", ((idx - 1) % 5) + 1, parent, sPos, yaw, 25.0, true)
 		elseif id == 3 then
 			placePrebuiltAsset("PalmTrees", ((idx - 1) % 3) + 1, parent, sPos, yaw, 26.0, true)
-		elseif id == 4 then
+		elseif id == 5 or id == 6 or id == 8 then
 			placePrebuiltAsset("Crystals", ((idx - 1) % 3) + 1, parent, sPos, yaw, 24.0, true)
 		else
 			placePrebuiltAsset("VolcanoRocks", ((idx - 1) % 3) + 1, parent, sPos, yaw, 25.0, true)
@@ -3305,10 +3982,16 @@ local function buildLevelGate(parent: Instance, levelInfo: any, halfW: number): 
 		Parent = gateModel,
 	})
 
-	local reqSpeed = levelInfo.RequiredSpeed or 16
-	local reqText = if reqSpeed <= 16
+	local reqSpeed = levelInfo.RequiredSpeed or 0
+	local reqText = if id <= 1
 		then string.format("STAGE %d: %s (OPEN!)", id, string.upper(levelInfo.Name))
-		else string.format("STAGE %d: %s  [⚡ %d SPEED REQUIRED]", id, string.upper(levelInfo.Name), reqSpeed)
+		else string.format(
+			"STAGE %d: %s  [100%% STAGE %d + ⚡ %s SPEED]",
+			id,
+			string.upper(levelInfo.Name),
+			id - 1,
+			SlimeData.FormatNumber(reqSpeed)
+		)
 
 	createSurfaceSign(
 		header,
@@ -3319,14 +4002,18 @@ local function buildLevelGate(parent: Instance, levelInfo: any, halfW: number): 
 		260
 	)
 
+	-- Full-width 360-stud x 42-stud ForceField barrier across the central road, Castle Walls, and Outer Side Mazes
+	-- so players cannot walk or jump around into a locked Stage before completing 100% of the previous Stage!
+	local barrierWidth = if id <= 1 then (doorWidth - 2) else 360
+	local barrierHeight = if id <= 1 then 18 else 42
 	local barrier = makePart({
 		Name = "GateBarrier_" .. tostring(id),
-		Size = Vector3.new(doorWidth - 2, 18, 1.8),
-		Position = Vector3.new(0, 9, zPos),
+		Size = Vector3.new(barrierWidth, barrierHeight, 2.2),
+		Position = Vector3.new(0, barrierHeight * 0.5, zPos),
 		Color = gateColor,
 		Material = Enum.Material.ForceField,
-		Transparency = if reqSpeed <= 16 then 1.0 else 0.55,
-		CanCollide = reqSpeed > 16,
+		Transparency = if id <= 1 then 1.0 else 0.45,
+		CanCollide = id > 1,
 		Parent = gateModel,
 	})
 	barrier:SetAttribute("LevelId", id)
@@ -3448,9 +4135,9 @@ function WorldBuilder.BuildWorld(): {
 		worldEggs[tostring(slime.Id)] = eggModel
 	end
 
-	-- Strict Visual Sanitizer: guarantee zero FileMesh instances anywhere in SquishyWorld
+	-- Strict Visual Sanitizer: preserve intentional Creator Store meshes while stripping accidental FileMeshes
 	for _, desc in ipairs(worldFolder:GetDescendants()) do
-		if desc:IsA("SpecialMesh") and desc.MeshType == Enum.MeshType.FileMesh then
+		if desc:IsA("SpecialMesh") and desc.MeshType == Enum.MeshType.FileMesh and not desc:GetAttribute("PreserveCreatorStoreMesh") then
 			desc:Destroy()
 		end
 	end

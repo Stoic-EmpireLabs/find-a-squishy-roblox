@@ -36,6 +36,7 @@ local RebirthRequestEvent = Remotes:WaitForChild("RebirthRequest") :: RemoteEven
 local ClaimDailyRewardEvent = Remotes:WaitForChild("ClaimDailyReward") :: RemoteEvent
 local ClaimPlaytimeRewardEvent = Remotes:WaitForChild("ClaimPlaytimeReward") :: RemoteEvent
 local ToggleSloMoEvent = Remotes:WaitForChild("ToggleSloMo") :: RemoteEvent
+local SetSpeedThrottleEvent = Remotes:WaitForChild("SetSpeedThrottle") :: RemoteEvent
 local SpinWheelRequestEvent = Remotes:WaitForChild("SpinWheelRequest") :: RemoteEvent
 local BuySpinCashEvent = Remotes:WaitForChild("BuySpinCash") :: RemoteEvent
 local BuyRobuxItemEvent = Remotes:WaitForChild("BuyRobuxItem") :: RemoteEvent
@@ -58,7 +59,15 @@ local function showToast(msg: string, bgColor: Color3?)
 	end)
 end
 
--- Wire Top-Bar, Left 2x3 Sidebar, Right Dock, Bottom-Left & Modal Buttons
+-- Wire Top-Bar, Left 2x3 Sidebar, Right Dock, Bottom-Left, Speed Throttle (25%/50%/75%/100%) & Modal Buttons
+if ui.SpeedThrottleButtons then
+	for pct, btn in pairs(ui.SpeedThrottleButtons) do
+		btn.MouseButton1Click:Connect(function()
+			SetSpeedThrottleEvent:FireServer(pct / 100)
+		end)
+	end
+end
+
 ui.TopIndexBtn.MouseButton1Click:Connect(function()
 	ui.IndexModal.Visible = not ui.IndexModal.Visible
 	ui.ShopModal.Visible = false
@@ -179,10 +188,11 @@ ui.ClaimDailyModalBtn.MouseButton1Click:Connect(function()
 	ClaimDailyRewardEvent:FireServer()
 end)
 
--- Cache cosmetic client-side rotors, Moving Crystal Platforms & GateBarriers once
+-- Cache cosmetic client-side rotors, Moving Crystal Platforms, GateBarriers & StageChecklistBoards once
 local cachedCosmeticRotors: { { Part: BasePart, Speed: number, Mode: string } } = {}
 local cachedCrystalPlatforms: { { Part: BasePart, Index: number, BaseX: number, BaseY: number, BaseZ: number } } = {}
 local cachedGateBarriers: { BasePart } = {}
+local cachedChecklistBoards: { BasePart } = {}
 
 local function refreshWorldCaches()
 	local squishyWorld = Workspace:FindFirstChild("SquishyWorld")
@@ -192,6 +202,7 @@ local function refreshWorldCaches()
 	table.clear(cachedCosmeticRotors)
 	table.clear(cachedCrystalPlatforms)
 	table.clear(cachedGateBarriers)
+	table.clear(cachedChecklistBoards)
 
 	local obsFolder = squishyWorld:FindFirstChild("DynamicObstacles")
 	if obsFolder then
@@ -226,8 +237,12 @@ local function refreshWorldCaches()
 	if levelsFolder then
 		for _, lvlFolder in ipairs(levelsFolder:GetChildren()) do
 			for _, desc in ipairs(lvlFolder:GetDescendants()) do
-				if desc:IsA("BasePart") and string.find(desc.Name, "^GateBarrier_") then
-					table.insert(cachedGateBarriers, desc)
+				if desc:IsA("BasePart") then
+					if string.find(desc.Name, "^GateBarrier_") then
+						table.insert(cachedGateBarriers, desc)
+					elseif string.find(desc.Name, "^StageChecklistBoard_") then
+						table.insert(cachedChecklistBoards, desc)
+					end
 				end
 			end
 		end
@@ -244,9 +259,68 @@ local clientStartClock = os.clock()
 local rotorAccum = 0
 local hoverSpinAngle = 0
 
+-- Authentic Creator Store Treadmill startRun(humanoid) animation controller (Asset 105125399134543 — RUN_ANIM_ID = "rbxassetid://507767714")
+local RUN_ANIM_ID = "rbxassetid://507767714"
+local activeTreadmillTrack: AnimationTrack? = nil
+local activeTreadmillHumanoid: Humanoid? = nil
+
+local function startRun(humanoid: Humanoid, animSpeed: number)
+	if activeTreadmillHumanoid == humanoid and activeTreadmillTrack and activeTreadmillTrack.IsPlaying then
+		activeTreadmillTrack:AdjustSpeed(animSpeed)
+		return
+	end
+	if activeTreadmillTrack then
+		pcall(function()
+			activeTreadmillTrack:Stop(0.15)
+		end)
+		activeTreadmillTrack = nil
+	end
+	activeTreadmillHumanoid = humanoid
+	local animator = humanoid:FindFirstChildOfClass("Animator")
+	if not animator then
+		animator = Instance.new("Animator")
+		animator.Parent = humanoid
+	end
+	local runAnim = humanoid:FindFirstChild("CreatorStoreTreadmillRunAnim") :: Animation?
+	if not runAnim then
+		runAnim = Instance.new("Animation")
+		runAnim.Name = "CreatorStoreTreadmillRunAnim"
+		runAnim.AnimationId = RUN_ANIM_ID
+		runAnim.Parent = humanoid
+	end
+	pcall(function()
+		local track = animator:LoadAnimation(runAnim :: Animation)
+		track.Priority = Enum.AnimationPriority.Action
+		track.Looped = true
+		track:Play(0.12)
+		track:AdjustSpeed(animSpeed)
+		activeTreadmillTrack = track
+	end)
+end
+
+local function stopRun()
+	if activeTreadmillTrack then
+		pcall(function()
+			activeTreadmillTrack:Stop(0.18)
+		end)
+		activeTreadmillTrack = nil
+		activeTreadmillHumanoid = nil
+	end
+end
+
 -- Rotate the hovered 3D ViewportFrame Squishy card + Featured 3D ViewportFrames + nearby cosmetic rotors at 30Hz
 RunService.RenderStepped:Connect(function(dt: number)
 	hoverSpinAngle += dt * 2.2
+
+	-- Check if LocalPlayer is running on any Creator Store Treadmill belt (Plot 1-4 or Stage 1-8)
+	local myChar = localPlayer.Character
+	local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
+	if myChar and myHum and myChar:GetAttribute("OnTreadmillBelt") == true then
+		local animSpd = (myChar:GetAttribute("TreadmillAnimSpeed") :: number?) or 1.45
+		startRun(myHum, animSpd)
+	else
+		stopRun()
+	end
 
 	if ui.IndexModal.Visible or ui.ShopModal.Visible or ui.SpinModal.Visible then
 		for _, entry in ipairs(ui.RotatingViewportModels) do
@@ -310,14 +384,26 @@ local function formatMMSS(sec: number): string
 	return string.format("%d:%02d", math.floor(s / 60), s % 60)
 end
 
+local latestState: any = nil
+
 local function applyStateToUI(state: any)
+	latestState = state
 	local spd = state.SpeedStat or 18
 	local cash = state.Coins or 0
 	local foundCount = state.FoundCount or 0
 	local totalSquishies = state.TotalSquishies or 117
 
-	ui.SpeedCounterLbl.Text = string.format("⚡ <b>%d</b>", spd)
-	ui.CashCounterLbl.Text = string.format("💰 <b>$%d</b>", cash)
+	ui.SpeedCounterLbl.Text = string.format("⚡ <b>%s</b>", SlimeData.FormatNumber(spd))
+	ui.CashCounterLbl.Text = string.format("💰 <b>$%s</b>", SlimeData.FormatNumber(cash))
+
+	-- Highlight active HUD WalkSpeed Control Selector (25% / 50% / 75% / 100%)
+	local activePct = math.round((state.SpeedThrottleRatio or 1.0) * 100)
+	if ui.SpeedThrottleButtons then
+		for pct, btn in pairs(ui.SpeedThrottleButtons) do
+			local isSelected = math.abs(pct - activePct) <= 5
+			btn.BackgroundColor3 = if isSelected then Color3.fromRGB(55, 215, 115) else Color3.fromRGB(34, 42, 68)
+		end
+	end
 
 	local carriedCount = state.CarriedEggCount or (if state.CarriedEggId then 1 else 0)
 	local maxCarry = state.MaxCarryCapacity or 1
@@ -328,7 +414,7 @@ local function applyStateToUI(state: any)
 		local eggName = if sData then string.upper(sData.Name) else "EGG"
 		local shieldTag = if shieldRem > 0 then string.format("  [🛡️ SHIELD %ds]", shieldRem) else ""
 		ui.TopBannerLabel.Text = string.format(
-			"🚨 <b>CARRYING %s (%d/%d EGGS)!</b> RUN TO PLOT #%d INCUBATOR!%s 🚨",
+			"🚨 <b>CARRYING %s (%d/%d EGGS)!</b> RUN TO PLOT #%d HATCHERY PEN!%s 🚨",
 			eggName,
 			carriedCount,
 			maxCarry,
@@ -345,9 +431,9 @@ local function applyStateToUI(state: any)
 			boostExtras ..= string.format("  |  🎡 <font color='#FF95FF'>%dx Cash (%ds)</font>", state.SpinCashMultiplier or 2, state.SpinCashBoostRemaining)
 		end
 		ui.TopBannerLabel.Text = string.format(
-			"✨ <b>FIND MY SQUISHY!</b>  |  Plot #%d  |  ⚡ <font color='#65FF8F'>$%d/sec</font>  |  Rebirths: %d%s",
+			"✨ <b>FIND MY SQUISHY!</b>  |  Plot #%d  |  ⚡ <font color='#65FF8F'>$%s/sec</font>  |  Rebirths: %d%s",
 			state.PlotIndex or 1,
-			state.PassiveIncomeRate or 0,
+			SlimeData.FormatNumber(state.PassiveIncomeRate or 0),
 			state.Rebirths or 0,
 			boostExtras
 		)
@@ -367,20 +453,23 @@ local function applyStateToUI(state: any)
 	)
 
 	-- 2. Next Stage Speed Unlock Progress Bar using math.clamp
-	local nextGoal = state.NextStageSpeedGoal or 140
+	local nextGoal = state.NextStageSpeedGoal or 250
 	local nextStageName = state.NextStageName or "MAX STAGE"
 	local speedRatio = math.clamp(spd / math.max(1, nextGoal), 0, 1)
 	TweenService:Create(ui.SpeedBarFill, barTweenInfo, {
 		Size = UDim2.fromScale(speedRatio, 1),
 	}):Play()
 	if nextStageName == "MAX STAGE" then
-		ui.SpeedBarText.Text = string.format("⚡ <b>ALL 5 BIOME STAGES UNLOCKED!</b> <font color='#FFE865'>(Speed: %d — 100%%)</font>", spd)
+		ui.SpeedBarText.Text = string.format(
+			"⚡ <b>ALL 8 BIOME STAGES UNLOCKED!</b> <font color='#FFE865'>(Speed: %s — 100%%)</font>",
+			SlimeData.FormatNumber(spd)
+		)
 	else
 		ui.SpeedBarText.Text = string.format(
-			"⚡ <b>NEXT STAGE SPEED UNLOCK (%s):</b> <font color='#FFE865'>%d / %d SPEED (%d%%)</font>",
+			"⚡ <b>NEXT STAGE UNLOCK (%s):</b> <font color='#FFE865'>%s / %s SPEED (%d%%)</font>",
 			nextStageName,
-			spd,
-			nextGoal,
+			SlimeData.FormatNumber(spd),
+			SlimeData.FormatNumber(nextGoal),
 			math.floor(speedRatio * 100)
 		)
 	end
@@ -390,9 +479,20 @@ local function applyStateToUI(state: any)
 		sloCap.Text = if state.SloMoActive then "<b>SloMo ON</b>" else "<b>SloMo</b>"
 	end
 
-	local spdGain = if state.OwnedPasses and state.OwnedPasses["2xSpeed"] then 8 else 4
-	ui.BuySpeedBtn.Text = string.format("🦖 <b>Upgrade Treadmill (+%d Speed) [Lv.%d] - $%d</b>", spdGain, state.SpeedLevel or 1, state.NextSpeedCost or 50)
-	ui.RebirthBtn.Text = string.format("✨ <b>Rebirth #%d (+50%% Cash) - $%d</b>", (state.Rebirths or 0) + 1, state.NextRebirthCost or 5000)
+	local curSpeedLvl = state.SpeedLevel or 1
+	local nextTierIdx = math.clamp(curSpeedLvl + 1, 1, #SlimeData.TreadmillTiers)
+	local nextTierData = SlimeData.TreadmillTiers[nextTierIdx] or SlimeData.TreadmillTiers[1]
+	ui.BuySpeedBtn.Text = string.format(
+		"🏃 <b>Upgrade Treadmill -> [%s] [Lv.%d] - $%s</b>",
+		nextTierData.MultiplierLabel,
+		curSpeedLvl + 1,
+		SlimeData.FormatNumber(state.NextSpeedCost or 100)
+	)
+	ui.RebirthBtn.Text = string.format(
+		"✨ <b>Rebirth #%d (+50%% Cash & Speed) - $%s</b>",
+		(state.Rebirths or 0) + 1,
+		SlimeData.FormatNumber(state.NextRebirthCost or 5000)
+	)
 	ui.IndexTitle.Text = string.format("📘 <b>3D SQUISHY & EGG INDEX (%d / %d)</b>", foundCount, totalSquishies)
 
 	-- Update Spin Wheel Free Spin (5m) & Bonus Spins Button
@@ -459,19 +559,114 @@ local function applyStateToUI(state: any)
 		end
 	end
 
-	-- Update cached Biome Gate Barriers locally based on player's SpeedStat
-	if #cachedGateBarriers == 0 then
+	-- Update cached Biome Gate Barriers & Sector 1 Stage Checklist Boards locally based on player's progress
+	if #cachedGateBarriers == 0 or #cachedChecklistBoards == 0 then
 		refreshWorldCaches()
 	end
 	if state.UnlockedLevels then
 		for _, desc in ipairs(cachedGateBarriers) do
 			if desc and desc.Parent then
-				local lvlId = tostring(desc:GetAttribute("LevelId") or 1)
+				local lvlNum = tonumber(desc:GetAttribute("LevelId")) or 1
+				local lvlId = tostring(lvlNum)
 				local unlocked = state.UnlockedLevels[lvlId] == true
 				desc.CanCollide = not unlocked
 				desc.Transparency = if unlocked then 0.88 else 0.32
-				if unlocked then
-					desc.Color = Color3.fromRGB(85, 255, 130)
+				desc.Color = if unlocked then Color3.fromRGB(85, 255, 130) else Color3.fromRGB(255, 65, 85)
+				local levelInfo = SlimeData.Levels[lvlNum]
+				if levelInfo and lvlNum > 1 then
+					local prevFound, prevTotal = SlimeData.CountLevelProgress(state.Found or {}, lvlNum - 1)
+					local prevPct = math.floor((prevFound / math.max(1, prevTotal)) * 100)
+					local reqSpd = levelInfo.RequiredSpeed or 0
+					local gateText = if unlocked
+						then string.format(
+							"✅ STAGE %d: %s — UNLOCKED!\n🏆 Stage %d 100%% Complete (%d/%d) • ⚡ %s Speed Reached!",
+							lvlNum,
+							string.upper(levelInfo.Name),
+							lvlNum - 1,
+							prevFound,
+							prevTotal,
+							SlimeData.FormatNumber(reqSpd)
+						)
+						else string.format(
+							"🔒 STAGE %d: %s\n🎯 Stage %d Progress: %d/%d (%d%% — Need 100%%!)  •  ⚡ Speed: %s / %s",
+							lvlNum,
+							string.upper(levelInfo.Name),
+							lvlNum - 1,
+							prevFound,
+							prevTotal,
+							prevPct,
+							SlimeData.FormatNumber(spd),
+							SlimeData.FormatNumber(reqSpd)
+						)
+					for _, gDesc in ipairs((desc.Parent or desc):GetDescendants()) do
+						if gDesc:IsA("TextLabel") then
+							gDesc.Text = gateText
+							gDesc.TextColor3 = if unlocked then Color3.fromRGB(115, 255, 150) else Color3.fromRGB(255, 240, 120)
+						end
+					end
+				end
+			end
+		end
+	end
+	if state.Found then
+		for _, board in ipairs(cachedChecklistBoards) do
+			if board and board.Parent then
+				local stageId = (board:GetAttribute("StageId") :: number?) or 1
+				local levelInfo = SlimeData.Levels[stageId]
+				local nextLevelInfo = SlimeData.Levels[stageId + 1]
+				if levelInfo then
+					local foundEggs = 0
+					local totalEggs = 0
+					local foundSquishies = 0
+					local totalSquishiesInStage = 0
+					for _, sData in ipairs(SlimeData.Slimes) do
+						if sData.Level == stageId then
+							local sKey = tostring(sData.Id)
+							local numId = tonumber((sData :: any).UnlockOrder or (sData :: any).NumericId or sData.Id) or 1
+							if numId <= 35 then
+								totalEggs += 1
+								if state.Found[sKey] then
+									foundEggs += 1
+								end
+							else
+								totalSquishiesInStage += 1
+								if state.Found[sKey] then
+									foundSquishies += 1
+								end
+							end
+						end
+					end
+					local totalItems = math.max(1, totalEggs + totalSquishiesInStage)
+					local pct = math.floor(((foundEggs + foundSquishies) / totalItems) * 100)
+					local nextReqSpeed = if nextLevelInfo then (nextLevelInfo.RequiredSpeed or 0) else 0
+					local nextReqText = if nextLevelInfo
+						then string.format(
+							"⚡ Next Gate (Stage %d): %s / %s Speed",
+							stageId + 1,
+							SlimeData.FormatNumber(spd),
+							SlimeData.FormatNumber(nextReqSpeed)
+						)
+						else "👑 Final Stage: Complete 100% for Cosmic Mastery!"
+					local statusPrefix = if pct >= 100 then "✅" else "🔓"
+					local newText = string.format(
+						"📋 STAGE %d: %s\n🥚 Boss Eggs: %d/%d  |  🧸 Squishies: %d/%d\n%s\n%s STAGE %d COMPLETION: %d%%",
+						stageId,
+						string.upper(levelInfo.Name),
+						foundEggs,
+						totalEggs,
+						foundSquishies,
+						totalSquishiesInStage,
+						nextReqText,
+						statusPrefix,
+						stageId,
+						pct
+					)
+					for _, d in ipairs(board:GetDescendants()) do
+						if d:IsA("TextLabel") then
+							d.Text = newText
+							d.TextColor3 = if pct >= 100 then Color3.fromRGB(95, 255, 140) else Color3.fromRGB(255, 245, 125)
+						end
+					end
 				end
 			end
 		end
@@ -492,6 +687,210 @@ OpenModalEvent.OnClientEvent:Connect(function(modalName: string)
 	end
 end)
 
+if ui.GuideToggleBtn and ui.HowToPlayModal then
+	ui.GuideToggleBtn.MouseButton1Click:Connect(function()
+		ui.HowToPlayModal.Visible = not ui.HowToPlayModal.Visible
+	end)
+end
+if ui.HowToPlayClose and ui.HowToPlayModal then
+	ui.HowToPlayClose.MouseButton1Click:Connect(function()
+		ui.HowToPlayModal.Visible = false
+	end)
+end
+
+local SoundService = game:GetService("SoundService")
+
+-- Phase 5: Layered ASMR Squish/Pop + Rising Harmonic Combo Chime + Rarity Fanfare Audio
+local function playLayeredASMRPickupSound(comboCount: number, rarity: string)
+	-- Layer 1: Tactile Jelly Squish / Pop
+	local squishSound = Instance.new("Sound")
+	squishSound.Name = "ASMRSquishPop"
+	squishSound.SoundId = "rbxassetid://9119713951"
+	squishSound.Volume = 0.85
+	squishSound.PlaybackSpeed = 0.95 + (math.random() * 0.14)
+	squishSound.Parent = SoundService
+	squishSound:Play()
+	task.delay(1.5, function()
+		if squishSound.Parent then
+			squishSound:Destroy()
+		end
+	end)
+
+	-- Layer 2: Rising-Pitch Harmonic Combo Chime (climbs in pitch with each consecutive pickup!)
+	local comboChime = Instance.new("Sound")
+	comboChime.Name = "ComboHarmonicChime"
+	comboChime.SoundId = "rbxassetid://9113883106"
+	comboChime.Volume = 0.75
+	comboChime.PlaybackSpeed = math.clamp(1.0 + (math.max(1, comboCount) - 1) * 0.08, 1.0, 2.0)
+	comboChime.Parent = SoundService
+	comboChime:Play()
+	task.delay(1.8, function()
+		if comboChime.Parent then
+			comboChime:Destroy()
+		end
+	end)
+
+	-- Layer 3: Rarity Fanfare Sparkle for Epic / Legendary / Mythic / Cosmic
+	if rarity == "Epic" or rarity == "Legendary" or rarity == "Mythic" or rarity == "Cosmic" then
+		local fanfare = Instance.new("Sound")
+		fanfare.Name = "RarityFanfare"
+		fanfare.SoundId = "rbxassetid://4612373815"
+		fanfare.Volume = 0.85
+		fanfare.PlaybackSpeed = if rarity == "Mythic" or rarity == "Cosmic" then 1.15 else 1.0
+		fanfare.Parent = SoundService
+		fanfare:Play()
+		task.delay(2.5, function()
+			if fanfare.Parent then
+				fanfare:Destroy()
+			end
+		end)
+	end
+end
+
+-- Phase 5: 3D Elastic Squash-and-Stretch + Fly-To-Player Animation + 3D Star/Confetti Burst + Camera FOV Punch!
+local function spawn3DDopaminePickupBurst(sData: any, info: any)
+	local char = localPlayer.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local startPos: Vector3 = if typeof(info.WorldPos) == "Vector3"
+		then info.WorldPos
+		elseif sData.SpawnOffset then sData.SpawnOffset
+		elseif hrp then (hrp.Position + Vector3.new(0, 3, -4))
+		else Vector3.new(0, 5, 0)
+
+	local bodyCol = sData.BodyColor or sData.Color or Color3.fromRGB(95, 225, 255)
+	local accentCol = sData.AccentColor or sData.SecondaryColor or Color3.fromRGB(255, 235, 85)
+	local earned = tonumber(info.CoinsEarned) or sData.CoinReward or 100
+	local comboCount = tonumber(info.ComboCount) or 1
+	local comboMult = tonumber(info.ComboMultiplier) or 1.0
+
+	-- Camera Micro FOV Punch (70 -> 74.5 -> 70)
+	local cam = Workspace.CurrentCamera
+	if cam then
+		TweenService:Create(cam, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { FieldOfView = 74.5 }):Play()
+		task.delay(0.09, function()
+			if cam then
+				TweenService:Create(cam, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { FieldOfView = 70 }):Play()
+			end
+		end)
+	end
+
+	-- 1. 3D Star/Confetti Burst Anchor + Rising 3D "+$Cash (xCombo!)" Floating Billboard at pickup spot
+	local fxAnchor = Instance.new("Part")
+	fxAnchor.Name = "DopaminePickupAnchor"
+	fxAnchor.Size = Vector3.new(1, 1, 1)
+	fxAnchor.Transparency = 1
+	fxAnchor.Anchored = true
+	fxAnchor.CanCollide = false
+	fxAnchor.CanQuery = false
+	fxAnchor.CanTouch = false
+	fxAnchor.Position = startPos + Vector3.new(0, 1.5, 0)
+	fxAnchor.Parent = Workspace
+
+	local burstParticles = Instance.new("ParticleEmitter")
+	burstParticles.Texture = "rbxassetid://243660364"
+	burstParticles.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, bodyCol),
+		ColorSequenceKeypoint.new(0.5, accentCol),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255)),
+	})
+	burstParticles.LightEmission = 1
+	burstParticles.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1.35),
+		NumberSequenceKeypoint.new(0.6, 0.85),
+		NumberSequenceKeypoint.new(1, 0),
+	})
+	burstParticles.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0),
+		NumberSequenceKeypoint.new(0.8, 0.2),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	burstParticles.Lifetime = NumberRange.new(0.45, 0.85)
+	burstParticles.Speed = NumberRange.new(14, 26)
+	burstParticles.SpreadAngle = Vector2.new(180, 180)
+	burstParticles.Drag = 3.5
+	burstParticles.Rate = 0
+	burstParticles.Parent = fxAnchor
+	burstParticles:Emit(24)
+
+	local bb = Instance.new("BillboardGui")
+	bb.Size = UDim2.new(9, 0, 2.4, 0)
+	bb.StudsOffset = Vector3.new(0, 2.2, 0)
+	bb.AlwaysOnTop = true
+	bb.LightInfluence = 0
+	bb.Parent = fxAnchor
+
+	local popLbl = Instance.new("TextLabel")
+	popLbl.Size = UDim2.fromScale(1, 1)
+	popLbl.BackgroundTransparency = 1
+	popLbl.Font = Enum.Font.FredokaOne
+	popLbl.TextScaled = true
+	popLbl.TextColor3 = if comboCount >= 2 then Color3.fromRGB(255, 235, 65) else Color3.fromRGB(95, 255, 145)
+	local comboTag = if comboCount >= 2 then string.format("\n🔥 x%.1f SQUISH FEVER!", comboMult) else ""
+	popLbl.Text = string.format("+$%s CASH!%s", SlimeData.FormatNumber(earned), comboTag)
+	popLbl.Parent = bb
+
+	local popStroke = Instance.new("UIStroke")
+	popStroke.Color = Color3.fromRGB(16, 18, 32)
+	popStroke.Thickness = 2.6
+	popStroke.Parent = popLbl
+
+	TweenService:Create(bb, TweenInfo.new(0.85, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+		StudsOffset = Vector3.new(0, 6.8, 0),
+	}):Play()
+	task.delay(0.90, function()
+		if fxAnchor.Parent then
+			fxAnchor:Destroy()
+		end
+	end)
+
+	-- 2. 3D Elastic Squash-and-Stretch + Fly-To-Player Orb
+	local flyOrb = Instance.new("Part")
+	flyOrb.Name = "SquishFlyOrb"
+	flyOrb.Shape = Enum.PartType.Ball
+	flyOrb.Size = Vector3.new(2.2, 2.2, 2.2)
+	flyOrb.Color = bodyCol
+	flyOrb.Material = Enum.Material.Neon
+	flyOrb.Anchored = true
+	flyOrb.CanCollide = false
+	flyOrb.CanQuery = false
+	flyOrb.CanTouch = false
+	flyOrb.CFrame = CFrame.new(startPos)
+	flyOrb.Parent = Workspace
+
+	-- Elastic squash-and-stretch pop (wide -> tall -> curve into player!)
+	flyOrb.Size = Vector3.new(3.6, 1.4, 3.6)
+	TweenService:Create(flyOrb, TweenInfo.new(0.11, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+		Size = Vector3.new(2.0, 3.2, 2.0),
+		CFrame = CFrame.new(startPos + Vector3.new(0, 2.6, 0)),
+	}):Play()
+
+	task.delay(0.11, function()
+		local flyStart = os.clock()
+		local flyDur = 0.24
+		local flyConn: RBXScriptConnection? = nil
+		flyConn = RunService.RenderStepped:Connect(function()
+			local alpha = math.clamp((os.clock() - flyStart) / flyDur, 0, 1)
+			local targetPos = if hrp and hrp.Parent then hrp.Position else (startPos + Vector3.new(0, 3, 0))
+			local arcPos = (startPos + Vector3.new(0, 2.6, 0)):Lerp(targetPos, alpha) + Vector3.new(0, math.sin(alpha * math.pi) * 3.2, 0)
+			local shrink = math.max(0.25, 2.4 * (1 - alpha * 0.75))
+			flyOrb.Size = Vector3.new(shrink, shrink, shrink)
+			flyOrb.CFrame = CFrame.new(arcPos)
+			if alpha >= 1 then
+				if flyConn then
+					flyConn:Disconnect()
+				end
+				if flyOrb.Parent then
+					flyOrb:Destroy()
+				end
+			end
+		end)
+	end)
+end
+
+-- Live Squish Fever Combo State (x1.5 -> x5.0 Cash)
+local activeComboExpiresAt = 0
+local activeComboWindow = 12.0
+
 local popupToken = 0
 local confettiColors = {
 	Color3.fromRGB(255, 85, 125),
@@ -501,13 +900,15 @@ local confettiColors = {
 	Color3.fromRGB(205, 105, 255),
 }
 
-local function showYouFoundPopup(sData: any)
+local function showYouFoundPopup(sData: any, comboCount: number?, comboMult: number?)
 	popupToken += 1
 	local myToken = popupToken
 	local rarity = tostring(sData.Rarity or "Common")
 	local bodyCol = sData.BodyColor or sData.Color or Color3.fromRGB(95, 225, 255)
 	ui.YfBadge.BackgroundColor3 = bodyCol
-	ui.YfRarityLbl.Text = string.format("<b>[%s]  •  +$%d/sec</b>", string.upper(rarity), sData.IncomePerSec or 10)
+	local cMult = comboMult or 1.0
+	local cTag = if (comboCount or 1) >= 2 then string.format("  •  🔥 x%.1f COMBO!", cMult) else ""
+	ui.YfRarityLbl.Text = string.format("<b>[%s]  •  +$%s/sec%s</b>", string.upper(rarity), SlimeData.FormatNumber(sData.IncomePerSec or 10), cTag)
 	ui.YfRarityLbl.TextColor3 = bodyCol:Lerp(Color3.fromRGB(255, 255, 255), 0.25)
 	ui.YfNameLbl.Text = "<b>" .. tostring(sData.Name) .. "</b>"
 
@@ -561,11 +962,45 @@ EggCapturedEvent.OnClientEvent:Connect(function(info: any)
 	if type(info) == "table" and info.SquishyId then
 		local sData = SlimeData.ById[info.SquishyId]
 		if sData then
-			showYouFoundPopup(sData)
-			showToast(
-				string.format("✨ YOU FOUND [%s] %s! Equip it from your Hotbar & place it on a Pedestal! (+$%d/s)", string.upper(tostring(sData.Rarity or "Common")), string.upper(sData.Name), sData.IncomePerSec),
-				Color3.fromRGB(45, 175, 85)
-			)
+			local comboCount = tonumber(info.ComboCount) or 1
+			local comboMult = tonumber(info.ComboMultiplier) or 1.0
+			activeComboWindow = tonumber(info.ComboWindowSec) or 12.0
+			activeComboExpiresAt = os.clock() + activeComboWindow
+
+			if ui.ComboFrame and ui.ComboLabel then
+				ui.ComboFrame.Visible = true
+				ui.ComboLabel.Text = string.format(
+					"🔥 <b>SQUISH FEVER COMBO: x%.1f CASH! (%dx CHAIN)</b> 🔥",
+					comboMult,
+					comboCount
+				)
+			end
+
+			local rarity = tostring(sData.Rarity or "Common")
+			playLayeredASMRPickupSound(comboCount, rarity)
+			spawn3DDopaminePickupBurst(sData, info)
+			showYouFoundPopup(sData, comboCount, comboMult)
+
+			if info.ActionType == "EggStolen" then
+				showToast(
+					string.format(
+						"🥚 STOLE [%s] %s! Follow the 3D Arrow into your Fenced Hatchery Pen to hatch it!",
+						string.upper(rarity),
+						string.upper(sData.Name)
+					),
+					Color3.fromRGB(255, 165, 45)
+				)
+			else
+				showToast(
+					string.format(
+						"✨ PICKED UP [%s] %s! Roaming in your Fenced Hatchery Pen (+$%s/s)!",
+						string.upper(rarity),
+						string.upper(sData.Name),
+						SlimeData.FormatNumber(sData.IncomePerSec)
+					),
+					Color3.fromRGB(45, 175, 85)
+				)
+			end
 		end
 	end
 end)
@@ -573,6 +1008,325 @@ end)
 GuardianAlertEvent.OnClientEvent:Connect(function(msg: string)
 	if type(msg) == "string" then
 		showToast(msg, Color3.fromRGB(215, 50, 65))
+	end
+end)
+
+-- =========================================================================
+-- PHASE 5: STAGE-BY-STAGE 3D GUIDING ARROWS (BEAM CHEVRONS + BOUNCING 3D TARGET ARROW ACROSS ALL 8 STAGES!)
+-- Points step-by-step from the player to:
+--   [Step 1] Stage / Plot Treadmill -> [Step 2] Stage N Squishies -> [Step 3] Stage N Boss Egg Nest ->
+--   [Step 4] Fenced Hatchery Pen -> [Step 5] Grow/Level Up & Cash Pad -> [Step 6] Unlocked Stage N+1 Gate
+-- =========================================================================
+local guidanceTargetPart = Instance.new("Part")
+guidanceTargetPart.Name = "GuidanceTargetMarker3D"
+guidanceTargetPart.Size = Vector3.new(2.2, 2.2, 2.2)
+guidanceTargetPart.Shape = Enum.PartType.Ball
+guidanceTargetPart.Color = Color3.fromRGB(85, 255, 165)
+guidanceTargetPart.Material = Enum.Material.Neon
+guidanceTargetPart.Transparency = 0.25
+guidanceTargetPart.Anchored = true
+guidanceTargetPart.CanCollide = false
+guidanceTargetPart.CanQuery = false
+guidanceTargetPart.CanTouch = false
+guidanceTargetPart.Position = Vector3.new(0, 6, 15)
+guidanceTargetPart.Parent = Workspace
+
+local targetAtt = Instance.new("Attachment")
+targetAtt.Name = "GuidanceTargetAtt"
+targetAtt.Parent = guidanceTargetPart
+
+-- Bouncing 3D Downward Pointer Cone above the Target
+local pointerShaft = Instance.new("Part")
+pointerShaft.Name = "PointerArrow3D"
+pointerShaft.Size = Vector3.new(1.2, 3.6, 1.2)
+pointerShaft.Color = Color3.fromRGB(255, 235, 65)
+pointerShaft.Material = Enum.Material.Neon
+pointerShaft.Anchored = true
+pointerShaft.CanCollide = false
+pointerShaft.CanQuery = false
+pointerShaft.CanTouch = false
+pointerShaft.Parent = guidanceTargetPart
+
+local pointerBB = Instance.new("BillboardGui")
+pointerBB.Name = "GuidanceTargetSign"
+pointerBB.Size = UDim2.new(10, 0, 2.6, 0)
+pointerBB.StudsOffset = Vector3.new(0, 4.8, 0)
+pointerBB.AlwaysOnTop = true
+pointerBB.LightInfluence = 0
+pointerBB.Parent = guidanceTargetPart
+
+local pointerSignLbl = Instance.new("TextLabel")
+pointerSignLbl.Size = UDim2.fromScale(1, 1)
+pointerSignLbl.BackgroundTransparency = 1
+pointerSignLbl.Font = Enum.Font.FredokaOne
+pointerSignLbl.TextScaled = true
+pointerSignLbl.TextColor3 = Color3.fromRGB(255, 245, 95)
+pointerSignLbl.Text = "⚡ STEP 1: RUN ON TREADMILL!"
+pointerSignLbl.Parent = pointerBB
+
+local pointerSignStroke = Instance.new("UIStroke")
+pointerSignStroke.Color = Color3.fromRGB(14, 18, 32)
+pointerSignStroke.Thickness = 2.6
+pointerSignStroke.Parent = pointerSignLbl
+
+local playerGuidanceAtt: Attachment? = nil
+local guidanceBeam = Instance.new("Beam")
+guidanceBeam.Name = "StageGuidanceBeam3D"
+guidanceBeam.Texture = "rbxassetid://4887782888"
+guidanceBeam.TextureMode = Enum.TextureMode.Wrap
+guidanceBeam.TextureLength = 5.0
+guidanceBeam.TextureSpeed = 3.4
+guidanceBeam.Width0 = 2.6
+guidanceBeam.Width1 = 2.6
+guidanceBeam.LightEmission = 1
+guidanceBeam.LightInfluence = 0
+guidanceBeam.FaceCamera = true
+guidanceBeam.Transparency = NumberSequence.new({
+	NumberSequenceKeypoint.new(0, 0.10),
+	NumberSequenceKeypoint.new(0.85, 0.05),
+	NumberSequenceKeypoint.new(1, 0.25),
+})
+guidanceBeam.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(85, 235, 255)),
+	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(95, 255, 145)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 235, 75)),
+})
+guidanceBeam.Attachment1 = targetAtt
+guidanceBeam.Parent = guidanceTargetPart
+
+local function getPlotStationPos(plotIdx: number, stationName: string): Vector3
+	local sw = Workspace:FindFirstChild("SquishyWorld")
+	local plots = sw and sw:FindFirstChild("PlayerPlots")
+	local pModel = plots and plots:FindFirstChild("Plot_" .. tostring(plotIdx))
+	if pModel then
+		if stationName == "HatcheryPen" then
+			local pen = pModel:FindFirstChild("HatcheryPen")
+			local floor = pen and pen:FindFirstChild("HatcheryPenFloor") :: BasePart?
+			if floor then
+				return floor.Position + Vector3.new(0, 2.5, 0)
+			end
+		elseif stationName == "GrowOrCash" then
+			local pen = pModel:FindFirstChild("HatcheryPen")
+			local growSign = pen and pen:FindFirstChild("GrowUpgradeStationSign") :: BasePart?
+			if growSign then
+				return growSign.Position
+			end
+			local cashPad = pModel:FindFirstChild("CollectCashPad") :: BasePart?
+			if cashPad then
+				return cashPad.Position + Vector3.new(0, 2.5, 0)
+			end
+		elseif stationName == "Treadmill" then
+			local belt = pModel:FindFirstChild("TreadmillBelt_" .. tostring(plotIdx), true) :: BasePart?
+			if belt then
+				return belt.Position + Vector3.new(0, 2.5, 0)
+			end
+		end
+	end
+	return Vector3.new(-66 + (plotIdx - 1) * 44, 4, 24)
+end
+
+local function getStageTreadmillPos(stageId: number, plotIdx: number): Vector3
+	local sw = Workspace:FindFirstChild("SquishyWorld")
+	local levelsFolder = sw and sw:FindFirstChild("Levels")
+	if levelsFolder then
+		local sBelt = levelsFolder:FindFirstChild("TreadmillBelt_Stage_" .. tostring(stageId), true) :: BasePart?
+		if sBelt then
+			return sBelt.Position + Vector3.new(0, 2.5, 0)
+		end
+	end
+	return getPlotStationPos(plotIdx, "Treadmill")
+end
+
+local function computeCurrent6StepTarget(hrpPos: Vector3): (Vector3, string, string, Color3)
+	if not latestState then
+		return Vector3.new(-66, 4, 24), "⚡ STEP 1: RUN ON TREADMILL!", "🧭 <b>FOLLOW 3D ARROW:</b> [Step 1] ⚡ Run on Treadmill to Train Speed!", Color3.fromRGB(85, 235, 255)
+	end
+
+	local plotIdx = tonumber(latestState.PlotIndex) or 1
+	local foundMap = latestState.Found or {}
+	local spd = tonumber(latestState.SpeedStat) or 18
+	local coins = tonumber(latestState.Coins) or 0
+	local carriedEggs = tonumber(latestState.CarriedEggCount) or 0
+	local hatchingCount = tonumber(latestState.HatchingCount) or 0
+	local ranchCount = tonumber(latestState.RanchSquishyCount) or 0
+	local minUpgradeCost = tonumber(latestState.MinSquishyUpgradeCost) or 0
+	local uncollectedCash = tonumber(latestState.UncollectedPlotCash) or 0
+	local unlockedMap = latestState.UnlockedLevels or { ["1"] = true }
+
+	-- [STEP 4] Carrying a stolen Boss Egg -> Go straight to your Plot's Fenced Hatchery Pen!
+	if carriedEggs > 0 then
+		local penPos = getPlotStationPos(plotIdx, "HatcheryPen")
+		return penPos,
+			"🏡 STEP 4: WALK INTO FENCED PEN TO HATCH!",
+			"🧭 <b>FOLLOW 3D ARROW:</b> [Step 4/6] 🏡 Walk into your Plot's <b>Fenced Hatchery Pen</b> to Auto-Drop & Hatch your Boss Egg!",
+			Color3.fromRGB(95, 255, 145)
+	end
+
+	-- [STEP 5] Eggs currently hatching in Fenced Pen OR player is near their plot and can Grow/Level Up a Roaming Squishy or Claim Cash!
+	local growPos = getPlotStationPos(plotIdx, "GrowOrCash")
+	if hatchingCount > 0 then
+		return growPos,
+			"⏳ STEP 4/5: HATCHING IN FENCED PEN!",
+			"🧭 <b>FOLLOW 3D ARROW:</b> [Step 4/6] 🐣 Watch your Egg wobble & hatch into a Roaming Squishy inside the Fence!",
+			Color3.fromRGB(255, 225, 75)
+	end
+	if ranchCount > 0 and minUpgradeCost > 0 and coins >= minUpgradeCost and (hrpPos - growPos).Magnitude <= 95 then
+		return growPos,
+			string.format("⬆️ STEP 5: GROW SQUISHY ($%s)!", SlimeData.FormatNumber(minUpgradeCost)),
+			string.format("🧭 <b>FOLLOW 3D ARROW:</b> [Step 5/6] 🌱 Grow & Level Up your Roaming Squishy in the Fenced Pen ($%s)!", SlimeData.FormatNumber(minUpgradeCost)),
+			Color3.fromRGB(115, 255, 140)
+	end
+	if uncollectedCash >= math.max(250, (tonumber(latestState.PassiveIncomeRate) or 10) * 8) and (hrpPos - growPos).Magnitude <= 95 then
+		local sw = Workspace:FindFirstChild("SquishyWorld")
+		local plots = sw and sw:FindFirstChild("PlayerPlots")
+		local pModel = plots and plots:FindFirstChild("Plot_" .. tostring(plotIdx))
+		local cashPad = pModel and pModel:FindFirstChild("CollectCashPad") :: BasePart?
+		local padPos = if cashPad then (cashPad.Position + Vector3.new(0, 2.5, 0)) else growPos
+		return padPos,
+			string.format("💰 STEP 5: CLAIM $%s CASH!", SlimeData.FormatNumber(uncollectedCash)),
+			string.format("🧭 <b>FOLLOW 3D ARROW:</b> [Step 5/6] 💰 Step on your Plot's Green Cash Pad to claim $%s!", SlimeData.FormatNumber(uncollectedCash)),
+			Color3.fromRGB(85, 255, 125)
+	end
+
+	-- Determine current active Stage (1..8): first stage that is not 100% completed OR whose next Stage Gate is still locked!
+	local activeStage = 8
+	for stageId = 1, #SlimeData.Levels do
+		local foundInStage, totalInStage = SlimeData.CountLevelProgress(foundMap, stageId)
+		local nextUnlocked = if stageId < #SlimeData.Levels then (unlockedMap[tostring(stageId + 1)] == true) else false
+		if foundInStage < totalInStage or (stageId < #SlimeData.Levels and not nextUnlocked) then
+			activeStage = stageId
+			break
+		end
+	end
+
+	local stageInfo = SlimeData.Levels[activeStage]
+	local nextStageInfo = SlimeData.Levels[activeStage + 1]
+	local foundInStage, totalInStage = SlimeData.CountLevelProgress(foundMap, activeStage)
+
+	-- [STEP 6] If the player just unlocked activeStage (activeStage > 1) and is still standing back in Stage (activeStage - 1), guide them through the newly unlocked Gate!
+	if activeStage > 1 and stageInfo and hrpPos.Z > (stageInfo.ZStart + 6) then
+		local gatePos = Vector3.new(0, 5, stageInfo.ZStart)
+		return gatePos,
+			string.format("🔓 STEP 6: ENTER STAGE %d (%s)!", activeStage, string.upper(stageInfo.Name)),
+			string.format("🧭 <b>FOLLOW 3D ARROW:</b> [Step 6/6] 🔓 Stage %d Gate is UNLOCKED! Run through the Gate into <b>%s</b>!", activeStage, stageInfo.Name),
+			Color3.fromRGB(95, 255, 145)
+	end
+
+	-- [STEP 1] If player is at very start of Stage 1 with low Speed (< 60) OR has 100% of activeStage items and needs Speed for Stage (activeStage + 1):
+	local nextReqSpeed = if nextStageInfo then (nextStageInfo.RequiredSpeed or 250) else 0
+	if (activeStage == 1 and spd < 45 and foundInStage == 0) or (foundInStage >= totalInStage and nextStageInfo and spd < nextReqSpeed) then
+		local tmPos = getStageTreadmillPos(activeStage, plotIdx)
+		local targetSpd = if foundInStage >= totalInStage then nextReqSpeed else 45
+		return tmPos,
+			string.format("⚡ STEP 1: RUN ON TREADMILL (%s / %s SPD)!", SlimeData.FormatNumber(spd), SlimeData.FormatNumber(targetSpd)),
+			string.format("🧭 <b>FOLLOW 3D ARROW:</b> [Step 1/6] ⚡ Run on the Stage %d Treadmill to reach <b>%s Speed</b>!", activeStage, SlimeData.FormatNumber(targetSpd)),
+			Color3.fromRGB(85, 235, 255)
+	end
+
+	-- Find nearest uncollected Collectible Squishy (#36-#117) and nearest available Boss Egg (#1-#35) in activeStage
+	local sw = Workspace:FindFirstChild("SquishyWorld")
+	local worldEggsFolder = sw and sw:FindFirstChild("WorldEggs")
+	local nearestSquishyPos: Vector3? = nil
+	local nearestSquishyDist = math.huge
+	local nearestSquishyName = ""
+	local nearestEggPos: Vector3? = nil
+	local nearestEggDist = math.huge
+	local nearestEggName = ""
+
+	for _, sData in ipairs(SlimeData.Slimes) do
+		if sData.Level == activeStage then
+			local sKey = tostring(sData.Id)
+			if not foundMap[sKey] then
+				local itemPos = sData.SpawnOffset
+				if worldEggsFolder then
+					local m = worldEggsFolder:FindFirstChild("WorldEgg_" .. sKey) or worldEggsFolder:FindFirstChild(sKey)
+					if m and m:IsA("Model") then
+						itemPos = m:GetPivot().Position
+					end
+				end
+				local d = (hrpPos - itemPos).Magnitude
+				local numId = tonumber((sData :: any).UnlockOrder or (sData :: any).NumericId or sData.Id) or 1
+				if numId > 35 then
+					if d < nearestSquishyDist then
+						nearestSquishyDist = d
+						nearestSquishyPos = itemPos
+						nearestSquishyName = sData.Name
+					end
+				else
+					if d < nearestEggDist then
+						nearestEggDist = d
+						nearestEggPos = itemPos
+						nearestEggName = sData.Name
+					end
+				end
+			end
+		end
+	end
+
+	-- [STEP 2] Collect Stage N Collectible Squishies (Walk-Over Auto-Pickup!)
+	if nearestSquishyPos then
+		return nearestSquishyPos,
+			string.format("🧸 STEP 2: WALK OVER %s (%d/%d)!", string.upper(nearestSquishyName), foundInStage, totalInStage),
+			string.format("🧭 <b>FOLLOW 3D ARROW:</b> [Step 2/6] 🧸 Walk over <b>%s</b> in Stage %d (%d/%d Found for 100%%)!", nearestSquishyName, activeStage, foundInStage, totalInStage),
+			Color3.fromRGB(255, 145, 235)
+	end
+
+	-- [STEP 3] Steal Stage N Boss Egg from Sector 3 Sleeping Boss Arena!
+	if nearestEggPos then
+		return nearestEggPos,
+			string.format("🥚 STEP 3: STEAL %s (%d/%d)!", string.upper(nearestEggName), foundInStage, totalInStage),
+			string.format("🧭 <b>FOLLOW 3D ARROW:</b> [Step 3/6] 🥚 Sneak into Stage %d Boss Nest & walk over <b>%s</b> (%d/%d Found)!", activeStage, nearestEggName, foundInStage, totalInStage),
+			Color3.fromRGB(255, 195, 65)
+	end
+
+	-- Fallback: Stage 8 100% Complete!
+	local tmPos = getStageTreadmillPos(activeStage, plotIdx)
+	return tmPos,
+		"👑 100% COSMIC MASTERY! TRAIN MAX SPEED!",
+		"🧭 <b>100% ALL 8 STAGES COMPLETE!</b> 👑 Keep running on the Cosmic Treadmill or Rebirth for massive multipliers!",
+		Color3.fromRGB(255, 225, 75)
+end
+
+RunService.RenderStepped:Connect(function()
+	local now = os.clock()
+
+	-- Update Squish Fever Combo Bar countdown
+	if ui.ComboFrame and ui.ComboFrame.Visible then
+		local rem = activeComboExpiresAt - now
+		if rem <= 0 then
+			ui.ComboFrame.Visible = false
+		elseif ui.ComboFill then
+			ui.ComboFill.Size = UDim2.fromScale(math.clamp(rem / math.max(1, activeComboWindow), 0, 1), 1)
+		end
+	end
+
+	-- Update 3D Guiding Arrow Beam + Bouncing 3D Target Marker
+	local char = localPlayer.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if hrp then
+		if not playerGuidanceAtt or playerGuidanceAtt.Parent ~= hrp then
+			if playerGuidanceAtt then
+				playerGuidanceAtt:Destroy()
+			end
+			local att = Instance.new("Attachment")
+			att.Name = "PlayerGuidanceAtt"
+			att.Position = Vector3.new(0, -1.2, 0)
+			att.Parent = hrp
+			playerGuidanceAtt = att
+			guidanceBeam.Attachment0 = att
+		end
+
+		local targetPos, signText, hudText, themeCol = computeCurrent6StepTarget(hrp.Position)
+		local bobY = math.sin(now * 4.5) * 1.15
+		guidanceTargetPart.Position = targetPos + Vector3.new(0, 1.4 + bobY * 0.35, 0)
+		guidanceTargetPart.Color = themeCol
+		pointerShaft.CFrame = CFrame.new(targetPos + Vector3.new(0, 4.4 + bobY, 0)) * CFrame.Angles(0, now * 2.4, 0)
+		pointerShaft.Color = themeCol
+		pointerSignLbl.Text = signText
+		pointerSignLbl.TextColor3 = themeCol:Lerp(Color3.fromRGB(255, 255, 255), 0.35)
+		if ui.ObjectiveText then
+			ui.ObjectiveText.Text = hudText
+		end
 	end
 end)
 
@@ -584,3 +1338,4 @@ task.spawn(function()
 		applyStateToUI(initData)
 	end
 end)
+
