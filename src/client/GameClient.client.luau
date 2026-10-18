@@ -15,11 +15,12 @@
 ]]
 
 local AvatarEditorService = game:GetService("AvatarEditorService")
-local ExperienceNotificationService = game:GetService("ExperienceNotificationService")
+local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
 local localPlayer = Players.LocalPlayer
@@ -118,156 +119,221 @@ local function showToast(msg: string, bgColor: Color3?)
 	end)
 end
 
+-- PS5 / Console / Gamepad & Cross-Platform Button Helper
+local function isConsoleOrGamepad(): boolean
+	local lastInput = UserInputService:GetLastInputType()
+	return GuiService:IsTenFootInterface()
+		or UserInputService.GamepadEnabled
+		or lastInput == Enum.UserInputType.Gamepad1
+		or lastInput == Enum.UserInputType.Gamepad2
+end
+
+local function closeAllModals()
+	ui.IndexModal.Visible = false
+	ui.ShopModal.Visible = false
+	ui.SpinModal.Visible = false
+	if ui.LikeFavoriteModal then
+		ui.LikeFavoriteModal.Visible = false
+	end
+	if ui.HowToPlayModal then
+		ui.HowToPlayModal.Visible = false
+	end
+	pcall(function()
+		GuiService.SelectedObject = nil
+	end)
+end
+
+local function openOnlyModal(targetModal: Frame?, defaultSelectBtn: GuiObject?)
+	if not targetModal then
+		return
+	end
+	local shouldShow = not targetModal.Visible
+	closeAllModals()
+	if shouldShow then
+		targetModal.Visible = true
+		if isConsoleOrGamepad() and defaultSelectBtn then
+			pcall(function()
+				GuiService.SelectedObject = defaultSelectBtn
+			end)
+		end
+	end
+end
+
+local function bindButton(btn: GuiButton?, fn: () -> ())
+	if not btn then
+		return
+	end
+	btn.Selectable = true
+	local lastClick = 0
+	local function onTrigger()
+		local now = os.clock()
+		if now - lastClick < 0.18 then
+			return
+		end
+		lastClick = now
+		fn()
+	end
+	btn.MouseButton1Click:Connect(onTrigger)
+	btn.Activated:Connect(onTrigger)
+end
+
+-- Allow PS5 Circle (ButtonB) / Escape to immediately close any open modal
+UserInputService.InputBegan:Connect(function(input: InputObject, _gameProcessed: boolean)
+	if input.KeyCode == Enum.KeyCode.ButtonB then
+		if
+			ui.IndexModal.Visible
+			or ui.ShopModal.Visible
+			or ui.SpinModal.Visible
+			or (ui.LikeFavoriteModal and ui.LikeFavoriteModal.Visible)
+			or (ui.HowToPlayModal and ui.HowToPlayModal.Visible)
+		then
+			closeAllModals()
+		end
+	end
+end)
+
 -- Wire Top-Bar, Left 2x3 Sidebar, Right Dock, Bottom-Left, Speed Throttle (25%/50%/75%/100%) & Modal Buttons
 if ui.SpeedThrottleButtons then
 	for pct, btn in pairs(ui.SpeedThrottleButtons) do
-		btn.MouseButton1Click:Connect(function()
+		bindButton(btn, function()
 			SetSpeedThrottleEvent:FireServer(pct / 100)
 		end)
 	end
 end
 
 if ui.TreadmillTurboBtn then
-	ui.TreadmillTurboBtn.Activated:Connect(function()
+	bindButton(ui.TreadmillTurboBtn, function()
 		TreadmillTapBoostEvent:FireServer()
 	end)
 end
 
-ui.TopIndexBtn.MouseButton1Click:Connect(function()
-	ui.IndexModal.Visible = not ui.IndexModal.Visible
-	ui.ShopModal.Visible = false
-	ui.SpinModal.Visible = false
+bindButton(ui.TopIndexBtn, function()
+	openOnlyModal(ui.IndexModal, ui.BuyHintIndexBtn or ui.IndexClose)
 end)
 
-ui.TopSpeedBtn.MouseButton1Click:Connect(function()
+bindButton(ui.TopSpeedBtn, function()
 	BuySpeedUpgradeEvent:FireServer()
 end)
 
-ui.ShopBtn.MouseButton1Click:Connect(function()
-	ui.ShopModal.Visible = not ui.ShopModal.Visible
-	ui.IndexModal.Visible = false
-	ui.SpinModal.Visible = false
+bindButton(ui.ShopBtn, function()
+	openOnlyModal(ui.ShopModal, ui.BuySpeedBtn or ui.ShopClose)
 end)
 
-ui.IndexBtn.MouseButton1Click:Connect(function()
-	ui.IndexModal.Visible = not ui.IndexModal.Visible
-	ui.ShopModal.Visible = false
-	ui.SpinModal.Visible = false
+bindButton(ui.IndexBtn, function()
+	openOnlyModal(ui.IndexModal, ui.BuyHintIndexBtn or ui.IndexClose)
 end)
 
-ui.DailyBtn.MouseButton1Click:Connect(function()
-	ui.SpinModal.Visible = not ui.SpinModal.Visible
-	ui.ShopModal.Visible = false
-	ui.IndexModal.Visible = false
+bindButton(ui.DailyBtn, function()
+	openOnlyModal(ui.SpinModal, ui.ClaimDailyModalBtn or ui.SpinNowBtn)
 end)
 
-ui.SloMoBtn.MouseButton1Click:Connect(function()
+bindButton(ui.SloMoBtn, function()
 	ToggleSloMoEvent:FireServer()
 end)
 
-ui.WheelBtn.MouseButton1Click:Connect(function()
-	ui.SpinModal.Visible = not ui.SpinModal.Visible
-	ui.ShopModal.Visible = false
-	ui.IndexModal.Visible = false
+bindButton(ui.WheelBtn, function()
+	openOnlyModal(ui.SpinModal, ui.SpinNowBtn)
 end)
 
-ui.VIPBtn.MouseButton1Click:Connect(function()
+bindButton(ui.VIPBtn, function()
+	closeAllModals()
 	ui.ShopModal.Visible = true
-	ui.IndexModal.Visible = false
-	ui.SpinModal.Visible = false
+	if isConsoleOrGamepad() and ui.BuySpeedBtn then
+		pcall(function()
+			GuiService.SelectedObject = ui.BuySpeedBtn
+		end)
+	end
 end)
 
-ui.EggsDockBtn.MouseButton1Click:Connect(function()
-	ui.IndexModal.Visible = not ui.IndexModal.Visible
-	ui.ShopModal.Visible = false
-	ui.SpinModal.Visible = false
+bindButton(ui.EggsDockBtn, function()
+	openOnlyModal(ui.IndexModal, ui.BuyHintIndexBtn or ui.IndexClose)
 end)
 
-ui.SpeedDockBtn.MouseButton1Click:Connect(function()
+bindButton(ui.SpeedDockBtn, function()
 	BuySpeedUpgradeEvent:FireServer()
 end)
 
-ui.RebirthDockBtn.MouseButton1Click:Connect(function()
+bindButton(ui.RebirthDockBtn, function()
 	RebirthRequestEvent:FireServer()
 end)
 
-ui.SpeedPlusBtn.MouseButton1Click:Connect(function()
+bindButton(ui.SpeedPlusBtn, function()
 	BuySpeedUpgradeEvent:FireServer()
 end)
 
-ui.CashPlusBtn.MouseButton1Click:Connect(function()
+bindButton(ui.CashPlusBtn, function()
 	BuyRobuxItemEvent:FireServer("CashPack5K")
 end)
 
-ui.IndexClose.MouseButton1Click:Connect(function()
-	ui.IndexModal.Visible = false
+bindButton(ui.IndexClose, function()
+	closeAllModals()
 end)
 
-ui.ShopClose.MouseButton1Click:Connect(function()
-	ui.ShopModal.Visible = false
+bindButton(ui.ShopClose, function()
+	closeAllModals()
 end)
 
-ui.SpinClose.MouseButton1Click:Connect(function()
-	ui.SpinModal.Visible = false
+bindButton(ui.SpinClose, function()
+	closeAllModals()
 end)
 
 for passKey, btn in pairs(ui.PassButtonsByKey) do
-	btn.MouseButton1Click:Connect(function()
+	bindButton(btn, function()
 		BuyRobuxItemEvent:FireServer(passKey)
 	end)
 end
 
 for dpKey, btn in pairs(ui.DevProductButtons) do
-	btn.MouseButton1Click:Connect(function()
+	bindButton(btn, function()
 		BuyRobuxItemEvent:FireServer(dpKey)
 	end)
 end
 
-ui.BuySpeedBtn.MouseButton1Click:Connect(function()
+bindButton(ui.BuySpeedBtn, function()
 	BuySpeedUpgradeEvent:FireServer()
 end)
 
 if ui.BuyFenceBtn then
-	ui.BuyFenceBtn.MouseButton1Click:Connect(function()
+	bindButton(ui.BuyFenceBtn, function()
 		BuyFenceUpgradeEvent:FireServer()
 	end)
 end
 
 if ui.BuyHintShopBtn then
-	ui.BuyHintShopBtn.MouseButton1Click:Connect(function()
+	bindButton(ui.BuyHintShopBtn, function()
 		BuySquishyHintEvent:FireServer()
 	end)
 end
 
 if ui.BuyHintIndexBtn then
-	ui.BuyHintIndexBtn.MouseButton1Click:Connect(function()
+	bindButton(ui.BuyHintIndexBtn, function()
 		BuySquishyHintEvent:FireServer()
 	end)
 end
 
-ui.RebirthBtn.MouseButton1Click:Connect(function()
+bindButton(ui.RebirthBtn, function()
 	RebirthRequestEvent:FireServer()
 end)
 
-ui.SpinNowBtn.MouseButton1Click:Connect(function()
+bindButton(ui.SpinNowBtn, function()
 	SpinWheelRequestEvent:FireServer()
 end)
 
-ui.BuySpinCashBtn.MouseButton1Click:Connect(function()
+bindButton(ui.BuySpinCashBtn, function()
 	BuySpinCashEvent:FireServer()
 end)
 
-ui.BuySpinRobuxBtn.MouseButton1Click:Connect(function()
+bindButton(ui.BuySpinRobuxBtn, function()
 	BuyRobuxItemEvent:FireServer("BuySpinRobux")
 end)
 
 for idx, ptBtn in ipairs(ui.PlaytimeButtons) do
-	ptBtn.MouseButton1Click:Connect(function()
+	bindButton(ptBtn, function()
 		ClaimPlaytimeRewardEvent:FireServer(idx)
 	end)
 end
 
-ui.ClaimDailyModalBtn.MouseButton1Click:Connect(function()
+bindButton(ui.ClaimDailyModalBtn, function()
 	ClaimDailyRewardEvent:FireServer()
 end)
 
@@ -842,13 +908,24 @@ local function applyStateToUI(state: any)
 		end
 	end
 
-	-- Update Like & Favorite VIP Reward Button State
+	-- Update Like & Favorite VIP Reward Button State (PS5/Console & PC/Mobile safe)
+	if ui.FavoriteNowBtn then
+		if state.ClaimedLikeReward then
+			ui.FavoriteNowBtn.Text = if isConsoleOrGamepad()
+				then "⭐ <b>VIP SUPPORTER PERKS ACTIVE! (PRESS [O] TO CLOSE)</b>"
+				else "⭐ <b>FAVORITE GAME ON ROBLOX!</b>"
+		else
+			ui.FavoriteNowBtn.Text = if isConsoleOrGamepad()
+				then "⭐ <b>PRESS [X] TO CLAIM +$5,000 + 2 SPINS + 💖 VIP TAG!</b>"
+				else "⭐ <b>FAVORITE GAME & CLAIM +$5,000 + 2 SPINS!</b>"
+		end
+	end
 	if ui.ClaimLikeFavRewardBtn then
 		if state.ClaimedLikeReward then
 			ui.ClaimLikeFavRewardBtn.Text = "✅ <b>VIP SUPPORTER REWARDS CLAIMED!</b>"
 			ui.ClaimLikeFavRewardBtn.BackgroundColor3 = Color3.fromRGB(65, 120, 95)
 		else
-			ui.ClaimLikeFavRewardBtn.Text = "🎁 <b>STEP 2: CLAIM +$5,000 + 2 SPINS + VIP TAG!</b>"
+			ui.ClaimLikeFavRewardBtn.Text = "🎁 <b>INSTANT CLAIM: +$5,000 + 2 SPINS + 💖 VIP TAG!</b>"
 			ui.ClaimLikeFavRewardBtn.BackgroundColor3 = Color3.fromRGB(55, 215, 115)
 		end
 	end
@@ -857,83 +934,83 @@ local function applyStateToUI(state: any)
 		if cap then
 			cap.Text = if state.ClaimedLikeReward then "<b>💖 VIP!</b>" else "<b>+$5K FREE!</b>"
 		end
+		ui.LikeFavHudBtn.Text = if state.ClaimedLikeReward
+			then "💖 <b>VIP SUPPORTER!</b>"
+			else "💖 <b>LIKE & FAV (+$5K!)</b>"
 	end
 end
 
 StateSyncEvent.OnClientEvent:Connect(applyStateToUI)
 
 OpenModalEvent.OnClientEvent:Connect(function(modalName: string)
+	closeAllModals()
 	if modalName == "SpinWheel" or modalName == "DailyRewards" then
 		ui.SpinModal.Visible = true
-		ui.ShopModal.Visible = false
-		ui.IndexModal.Visible = false
-		if ui.LikeFavoriteModal then
-			ui.LikeFavoriteModal.Visible = false
+		if isConsoleOrGamepad() and ui.SpinNowBtn then
+			pcall(function()
+				GuiService.SelectedObject = ui.SpinNowBtn
+			end)
 		end
 	elseif modalName == "RobuxShop" then
 		ui.ShopModal.Visible = true
-		ui.SpinModal.Visible = false
-		ui.IndexModal.Visible = false
-		if ui.LikeFavoriteModal then
-			ui.LikeFavoriteModal.Visible = false
+		if isConsoleOrGamepad() and ui.BuySpeedBtn then
+			pcall(function()
+				GuiService.SelectedObject = ui.BuySpeedBtn
+			end)
 		end
 	elseif modalName == "LikeFavorite" and ui.LikeFavoriteModal then
 		ui.LikeFavoriteModal.Visible = true
-		ui.SpinModal.Visible = false
-		ui.ShopModal.Visible = false
-		ui.IndexModal.Visible = false
+		if isConsoleOrGamepad() and ui.ClaimLikeFavRewardBtn then
+			pcall(function()
+				GuiService.SelectedObject = ui.ClaimLikeFavRewardBtn
+			end)
+		end
 	end
 end)
 
 if ui.LikeFavHudBtn and ui.LikeFavoriteModal then
-	ui.LikeFavHudBtn.MouseButton1Click:Connect(function()
-		ui.LikeFavoriteModal.Visible = not ui.LikeFavoriteModal.Visible
-		if ui.LikeFavoriteModal.Visible then
-			ui.SpinModal.Visible = false
-			ui.ShopModal.Visible = false
-			ui.IndexModal.Visible = false
-		end
+	bindButton(ui.LikeFavHudBtn, function()
+		openOnlyModal(ui.LikeFavoriteModal, ui.ClaimLikeFavRewardBtn or ui.FavoriteNowBtn)
 	end)
 end
 if ui.LikeFavClose and ui.LikeFavoriteModal then
-	ui.LikeFavClose.MouseButton1Click:Connect(function()
-		ui.LikeFavoriteModal.Visible = false
+	bindButton(ui.LikeFavClose, function()
+		closeAllModals()
 	end)
 end
 if ui.FavoriteNowBtn then
-	ui.FavoriteNowBtn.MouseButton1Click:Connect(function()
-		pcall(function()
-			AvatarEditorService:PromptSetFavorite(game.PlaceId, Enum.AvatarItemType.Asset, true)
-		end)
-		task.delay(0.8, function()
-			pcall(function()
-				if ExperienceNotificationService:CanPromptOptInAsync() then
-					ExperienceNotificationService:PromptOptIn()
-				end
+	bindButton(ui.FavoriteNowBtn, function()
+		-- 1. Always close all custom modals & clear gamepad selection first so CoreGui never collides with PlayerGui
+		closeAllModals()
+		-- 2. Immediately grant the +$5,000 Cash + 2 Spins + +15 Speed + 60s Shield + VIP Tag on 1st press!
+		ClaimLikeFavoriteEvent:FireServer()
+		-- 3. On PS5 / Console / Gamepad, NEVER call AvatarEditorService:PromptSetFavorite (CoreGui Favorite Item popup traps PS5 virtual cursor)
+		if isConsoleOrGamepad() then
+			showToast("💖 VIP SUPPORTER GIFT CLAIMED! +$5,000 Cash + 2 Spins + +15 Speed!", Color3.fromRGB(55, 215, 115))
+		else
+			task.delay(0.15, function()
+				pcall(function()
+					AvatarEditorService:PromptSetFavorite(game.PlaceId, Enum.AvatarItemType.Asset, true)
+				end)
 			end)
-		end)
-		showToast("⭐ Favorite & Notify Prompt Opened! Now click STEP 2 to claim +$5,000 Cash!", Color3.fromRGB(255, 195, 45))
+		end
 	end)
 end
 if ui.ClaimLikeFavRewardBtn then
-	ui.ClaimLikeFavRewardBtn.MouseButton1Click:Connect(function()
+	bindButton(ui.ClaimLikeFavRewardBtn, function()
+		closeAllModals()
 		ClaimLikeFavoriteEvent:FireServer()
-		if ui.LikeFavoriteModal then
-			task.delay(0.35, function()
-				ui.LikeFavoriteModal.Visible = false
-			end)
-		end
 	end)
 end
 
 if ui.GuideToggleBtn and ui.HowToPlayModal then
-	ui.GuideToggleBtn.MouseButton1Click:Connect(function()
-		ui.HowToPlayModal.Visible = not ui.HowToPlayModal.Visible
+	bindButton(ui.GuideToggleBtn, function()
+		openOnlyModal(ui.HowToPlayModal, ui.HowToPlayClose)
 	end)
 end
 if ui.HowToPlayClose and ui.HowToPlayModal then
-	ui.HowToPlayClose.MouseButton1Click:Connect(function()
-		ui.HowToPlayModal.Visible = false
+	bindButton(ui.HowToPlayClose, function()
+		closeAllModals()
 	end)
 end
 
@@ -1256,8 +1333,14 @@ EggCapturedEvent.OnClientEvent:Connect(function(info: any)
 					if numId <= 35 or foundTotal >= 2 then
 						_G.ShownLikeFavReminderOnce = true
 						task.delay(3.2, function()
-							if ui.LikeFavoriteModal and not (latestState and latestState.ClaimedLikeReward) then
-								ui.LikeFavoriteModal.Visible = true
+							if
+								ui.LikeFavoriteModal
+								and not (latestState and latestState.ClaimedLikeReward)
+								and not ui.ShopModal.Visible
+								and not ui.IndexModal.Visible
+								and not ui.SpinModal.Visible
+							then
+								openOnlyModal(ui.LikeFavoriteModal, ui.ClaimLikeFavRewardBtn or ui.FavoriteNowBtn)
 							end
 						end)
 					end

@@ -88,22 +88,28 @@ end
 
 local function bindHoverAndClickTween(btn: GuiButton, baseSize: UDim2, baseColor: Color3)
 	btn.AnchorPoint = Vector2.new(0.5, 0.5)
+	btn.Selectable = true
 	local hoverSize = scaleUDim2(baseSize, 1.08)
 	local downSize = scaleUDim2(baseSize, 0.94)
 	local hoverColor = baseColor:Lerp(Color3.fromRGB(255, 255, 255), 0.20)
 
-	btn.MouseEnter:Connect(function()
+	local function onHoverEnter()
 		TweenService:Create(btn, hoverTweenInfo, {
 			Size = hoverSize,
 			BackgroundColor3 = hoverColor,
 		}):Play()
-	end)
-	btn.MouseLeave:Connect(function()
+	end
+	local function onHoverLeave()
 		TweenService:Create(btn, hoverTweenInfo, {
 			Size = baseSize,
 			BackgroundColor3 = baseColor,
 		}):Play()
-	end)
+	end
+
+	btn.MouseEnter:Connect(onHoverEnter)
+	btn.MouseLeave:Connect(onHoverLeave)
+	btn.SelectionGained:Connect(onHoverEnter)
+	btn.SelectionLost:Connect(onHoverLeave)
 	btn.MouseButton1Down:Connect(function()
 		TweenService:Create(btn, clickTweenInfo, {
 			Size = downSize,
@@ -623,17 +629,20 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	htpTitle.Parent = howToPlayModal
 	addTextSizeConstraint(htpTitle, 13, 22)
 
+	local htpCloseSize = UDim2.fromOffset(34, 34)
 	local htpClose = Instance.new("TextButton")
 	htpClose.Name = "CloseBtn"
-	htpClose.Size = UDim2.fromOffset(34, 34)
+	htpClose.Size = htpCloseSize
 	htpClose.AnchorPoint = Vector2.new(0.5, 0.5)
 	htpClose.Position = UDim2.new(1, -26, 0, 26)
 	htpClose.BackgroundColor3 = Color3.fromRGB(235, 65, 75)
+	htpClose.AutoButtonColor = false
 	htpClose.Font = Enum.Font.FredokaOne
 	htpClose.TextColor3 = Color3.fromRGB(255, 255, 255)
 	htpClose.Text = "<b>X</b>"
 	htpClose.Parent = howToPlayModal
 	addCorner(htpClose, 8)
+	bindHoverAndClickTween(htpClose, htpCloseSize, Color3.fromRGB(235, 65, 75))
 
 	local htpBody = Instance.new("TextLabel")
 	htpBody.Size = UDim2.new(1, -36, 1, -62)
@@ -2082,7 +2091,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	favoriteNowBtn.AutoButtonColor = false
 	favoriteNowBtn.Font = Enum.Font.FredokaOne
 	favoriteNowBtn.TextColor3 = Color3.fromRGB(20, 24, 38)
-	favoriteNowBtn.Text = "⭐ <b>STEP 1: CLICK TO FAVORITE & 🔔 NOTIFY GAME!</b>"
+	favoriteNowBtn.Text = "⭐ <b>FAVORITE GAME & CLAIM +$5,000 + 2 SPINS!</b>"
 	favoriteNowBtn.Parent = likeFavoriteModal
 	addCorner(favoriteNowBtn, 12)
 	addStroke(favoriteNowBtn, Color3.fromRGB(255, 255, 255), 2.4)
@@ -2099,12 +2108,20 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	claimLikeFavRewardBtn.AutoButtonColor = false
 	claimLikeFavRewardBtn.Font = Enum.Font.FredokaOne
 	claimLikeFavRewardBtn.TextColor3 = Color3.fromRGB(16, 22, 34)
-	claimLikeFavRewardBtn.Text = "🎁 <b>STEP 2: 👍 LIKE GAME & CLAIM +$5,000 + 2 SPINS + 💖 VIP TAG!</b>"
+	claimLikeFavRewardBtn.Text = "🎁 <b>INSTANT CLAIM: +$5,000 + 2 SPINS + 💖 VIP TAG!</b>"
 	claimLikeFavRewardBtn.Parent = likeFavoriteModal
 	addCorner(claimLikeFavRewardBtn, 12)
 	addStroke(claimLikeFavRewardBtn, Color3.fromRGB(255, 255, 255), 2.4)
 	addTextSizeConstraint(claimLikeFavRewardBtn, 12, 22)
 	bindHoverAndClickTween(claimLikeFavRewardBtn, claimLfSize, Color3.fromRGB(65, 225, 115))
+
+	-- Wire explicit PS5 / Gamepad D-pad navigation links inside LikeFavoriteModal
+	favoriteNowBtn.NextSelectionDown = claimLikeFavRewardBtn
+	favoriteNowBtn.NextSelectionUp = likeFavClose
+	claimLikeFavRewardBtn.NextSelectionUp = favoriteNowBtn
+	claimLikeFavRewardBtn.NextSelectionDown = likeFavClose
+	likeFavClose.NextSelectionDown = favoriteNowBtn
+	likeFavClose.NextSelectionUp = claimLikeFavRewardBtn
 
 	return {
 		ScreenGui = screenGui,
