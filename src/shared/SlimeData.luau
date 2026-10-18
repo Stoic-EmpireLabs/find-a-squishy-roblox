@@ -44,8 +44,8 @@ SlimeData.Levels = {
 		Name = "Squishy Meadow",
 		Subtitle = "Steal & Hatch all 5 Meadow Eggs from the Sleeping Bear!",
 		ZStart = 0,
-		ZEnd = -95,
-		GateZ = -95,
+		ZEnd = -160,
+		GateZ = -160,
 		ThemeColor = Color3.fromRGB(95, 215, 110),
 		FloorColor = Color3.fromRGB(92, 198, 78),
 		RequiredPlantedCount = 0,
@@ -55,9 +55,9 @@ SlimeData.Levels = {
 		Level = 2,
 		Name = "Chocolate Candy Land",
 		Subtitle = "Steal & Hatch all 6 Candy Eggs from the Sleeping Shark!",
-		ZStart = -95,
-		ZEnd = -190,
-		GateZ = -190,
+		ZStart = -160,
+		ZEnd = -320,
+		GateZ = -320,
 		ThemeColor = Color3.fromRGB(255, 115, 190),
 		FloorColor = Color3.fromRGB(162, 108, 96),
 		RequiredPlantedCount = 5,
@@ -67,9 +67,9 @@ SlimeData.Levels = {
 		Level = 3,
 		Name = "Tropical Beach Lagoon",
 		Subtitle = "Steal & Hatch all 7 Beach Eggs from the Sleeping Dino!",
-		ZStart = -190,
-		ZEnd = -285,
-		GateZ = -285,
+		ZStart = -320,
+		ZEnd = -480,
+		GateZ = -480,
 		ThemeColor = Color3.fromRGB(255, 205, 75),
 		FloorColor = Color3.fromRGB(238, 210, 145),
 		RequiredPlantedCount = 11,
@@ -79,9 +79,9 @@ SlimeData.Levels = {
 		Level = 4,
 		Name = "Crystal Cavern",
 		Subtitle = "Steal & Hatch all 8 Crystal Eggs from the Sleeping Cyber-Croc!",
-		ZStart = -285,
-		ZEnd = -380,
-		GateZ = -380,
+		ZStart = -480,
+		ZEnd = -640,
+		GateZ = -640,
 		ThemeColor = Color3.fromRGB(65, 225, 255),
 		FloorColor = Color3.fromRGB(72, 65, 118),
 		RequiredPlantedCount = 18,
@@ -91,8 +91,8 @@ SlimeData.Levels = {
 		Level = 5,
 		Name = "Volcano Doom",
 		Subtitle = "Steal & Hatch all 9 Mythic Eggs from the Sleeping Magma Dragon!",
-		ZStart = -380,
-		ZEnd = -475,
+		ZStart = -640,
+		ZEnd = -800,
 		GateZ = nil,
 		ThemeColor = Color3.fromRGB(255, 95, 45),
 		FloorColor = Color3.fromRGB(78, 42, 42),
@@ -118,7 +118,7 @@ export type GuardianDef = {
 
 -- Giant Sleeping Bosses guarding each Biome's Egg Cluster ("Zzz" -> "!!" when you steal an Egg!)
 SlimeData.Guardians = {
-	-- Level 1 Bosses (Z: 0 to -95)
+	-- Level 1 Bosses (Z: 0 to -160, Boss Nest at Z = -112)
 	{
 		Id = "L1_Bear",
 		Name = "Grizzly Papa Bear",
@@ -130,8 +130,8 @@ SlimeData.Guardians = {
 		PatrolSpeed = 8,
 		ChaseSpeed = 19,
 		RequiredSpeedPower = 800,
-		HomePosition = Vector3.new(-16, 5, -56),
-		PatrolRadius = 22,
+		HomePosition = Vector3.new(-34, 5, -108),
+		PatrolRadius = 32,
 	},
 	{
 		Id = "L1_Brainrot",
@@ -144,11 +144,11 @@ SlimeData.Guardians = {
 		PatrolSpeed = 8,
 		ChaseSpeed = 21,
 		RequiredSpeedPower = 1_800,
-		HomePosition = Vector3.new(18, 5, -62),
-		PatrolRadius = 22,
+		HomePosition = Vector3.new(34, 5, -116),
+		PatrolRadius = 32,
 	},
 
-	-- Level 2 Bosses (Z: -95 to -190)
+	-- Level 2 Bosses (Z: -160 to -320, Boss Nest at Z = -272)
 	{
 		Id = "L2_Shark",
 		Name = "Sour Gummy Jaws",
@@ -160,8 +160,8 @@ SlimeData.Guardians = {
 		PatrolSpeed = 9,
 		ChaseSpeed = 26,
 		RequiredSpeedPower = 12_000,
-		HomePosition = Vector3.new(-18, 5, -150),
-		PatrolRadius = 24,
+		HomePosition = Vector3.new(-34, 5, -268),
+		PatrolRadius = 34,
 	},
 	{
 		Id = "L2_Brainrot",
@@ -174,11 +174,11 @@ SlimeData.Guardians = {
 		PatrolSpeed = 9,
 		ChaseSpeed = 29,
 		RequiredSpeedPower = 28_000,
-		HomePosition = Vector3.new(18, 5, -156),
-		PatrolRadius = 24,
+		HomePosition = Vector3.new(34, 5, -276),
+		PatrolRadius = 34,
 	},
 
-	-- Level 3 Bosses (Z: -190 to -285)
+	-- Level 3 Bosses (Z: -320 to -480, Boss Nest at Z = -432)
 	{
 		Id = "L3_Dino",
 		Name = "Stompy Beach T-Rex",
@@ -190,8 +190,8 @@ SlimeData.Guardians = {
 		PatrolSpeed = 10,
 		ChaseSpeed = 35,
 		RequiredSpeedPower = 150_000,
-		HomePosition = Vector3.new(-18, 5, -245),
-		PatrolRadius = 24,
+		HomePosition = Vector3.new(-34, 5, -428),
+		PatrolRadius = 34,
 	},
 	{
 		Id = "L3_Brainrot",
@@ -204,11 +204,11 @@ SlimeData.Guardians = {
 		PatrolSpeed = 10,
 		ChaseSpeed = 39,
 		RequiredSpeedPower = 350_000,
-		HomePosition = Vector3.new(18, 5, -252),
-		PatrolRadius = 24,
+		HomePosition = Vector3.new(34, 5, -436),
+		PatrolRadius = 34,
 	},
 
-	-- Level 4 Bosses (Z: -285 to -380)
+	-- Level 4 Bosses (Z: -480 to -640, Boss Nest at Z = -592)
 	{
 		Id = "L4_Croc",
 		Name = "Crystal Cyber-Croc",
@@ -220,8 +220,8 @@ SlimeData.Guardians = {
 		PatrolSpeed = 11,
 		ChaseSpeed = 46,
 		RequiredSpeedPower = 1_500_000,
-		HomePosition = Vector3.new(-18, 5, -340),
-		PatrolRadius = 25,
+		HomePosition = Vector3.new(-34, 5, -588),
+		PatrolRadius = 35,
 	},
 	{
 		Id = "L4_Hound",
@@ -234,11 +234,11 @@ SlimeData.Guardians = {
 		PatrolSpeed = 11,
 		ChaseSpeed = 51,
 		RequiredSpeedPower = 3_800_000,
-		HomePosition = Vector3.new(18, 5, -346),
-		PatrolRadius = 25,
+		HomePosition = Vector3.new(34, 5, -596),
+		PatrolRadius = 35,
 	},
 
-	-- Level 5 Bosses (Z: -380 to -475)
+	-- Level 5 Bosses (Z: -640 to -800, Boss Nest at Z = -752)
 	{
 		Id = "L5_Dragon",
 		Name = "Inferno Magma Dragon",
@@ -250,8 +250,8 @@ SlimeData.Guardians = {
 		PatrolSpeed = 12,
 		ChaseSpeed = 58,
 		RequiredSpeedPower = 8_500_000,
-		HomePosition = Vector3.new(-18, 5, -435),
-		PatrolRadius = 26,
+		HomePosition = Vector3.new(-34, 5, -748),
+		PatrolRadius = 36,
 	},
 	{
 		Id = "L5_Titan",
@@ -264,8 +264,8 @@ SlimeData.Guardians = {
 		PatrolSpeed = 12,
 		ChaseSpeed = 65,
 		RequiredSpeedPower = 15_000_000,
-		HomePosition = Vector3.new(18, 5, -442),
-		PatrolRadius = 26,
+		HomePosition = Vector3.new(34, 5, -756),
+		PatrolRadius = 36,
 	},
 }
 
@@ -841,25 +841,248 @@ for _, g in ipairs(SlimeData.Guardians) do
 	end
 end
 
+-- Position the 35 Boss Nest Eggs (#1 to #35) in wide, non-overlapping arcs around the Sleeping Bosses
 local levelEggIndices: { [number]: number } = { [1] = 0, [2] = 0, [3] = 0, [4] = 0, [5] = 0 }
+for _, slime in ipairs(SlimeData.Slimes) do
+	local anySlime = slime :: any
+	anySlime.IsShiningSquishy = false
+	anySlime.ZoneTag = "BossNest"
 
+	local lvlNum = slime.Level
+	local lvlDef = SlimeData.Levels[lvlNum]
+	levelEggIndices[lvlNum] = (levelEggIndices[lvlNum] or 0) + 1
+	local idxInLvl = levelEggIndices[lvlNum]
+	local totalInLvl = if lvlDef then lvlDef.EggCount else 6
+	local zCenter = if lvlDef then (lvlDef.ZStart - 112) else (-112 * lvlNum)
+	local frac = if totalInLvl > 1 then (idxInLvl - 1) / (totalInLvl - 1) else 0.5
+	local xPos = -58 + frac * 116
+	local zOffset = if idxInLvl % 2 == 0 then -14 else 12
+	slime.Position = Vector3.new(xPos, 3.8, zCenter + zOffset)
+	slime.Hint = string.format("Guarded by the Sleeping Boss in %s! Hold E to Steal!", if lvlDef then lvlDef.Name else ("Zone " .. lvlNum))
+end
+
+-- ============================================================================
+-- GENERATE 82 SHINING COLLECTIBLE SQUISHIES (#36 to #117) -> MAX = 117 TOTAL!
+-- Placed on House Rooftops, Giant Rainbow Disappearing Staircase, Outer Mazes,
+-- Castle Wall Battlements, and Themed Level Obby Obstacles!
+-- ============================================================================
+local shiningPalette = {
+	{ Color3.fromRGB(255, 95, 165), Color3.fromRGB(255, 235, 95) },
+	{ Color3.fromRGB(75, 225, 255), Color3.fromRGB(255, 130, 235) },
+	{ Color3.fromRGB(115, 250, 135), Color3.fromRGB(255, 220, 85) },
+	{ Color3.fromRGB(255, 185, 65), Color3.fromRGB(255, 85, 125) },
+	{ Color3.fromRGB(190, 105, 255), Color3.fromRGB(95, 245, 255) },
+	{ Color3.fromRGB(255, 95, 95), Color3.fromRGB(255, 240, 130) },
+}
+
+local hatRotation = { "Crown", "Halo", "Flower", "Sprout", "WizardHat", "Propeller", "ChefHat", "Horns" }
+
+local function appendShiningSquishy(
+	id: number,
+	name: string,
+	lvl: number,
+	rarity: string,
+	coinsPerSec: number,
+	pos: Vector3,
+	hint: string,
+	zoneTag: string
+)
+	local pal = shiningPalette[((id - 1) % #shiningPalette) + 1]
+	local entry: any = {
+		Id = id,
+		Name = name,
+		Level = lvl,
+		Rarity = rarity,
+		Color = pal[1],
+		SecondaryColor = pal[2],
+		HatType = hatRotation[((id - 1) % #hatRotation) + 1],
+		Behavior = "Static",
+		CoinsPerSec = coinsPerSec,
+		Hint = hint,
+		Position = pos,
+		IsShiningSquishy = true,
+		ZoneTag = zoneTag,
+		IsBoss = (rarity == "Mythic" or rarity == "Legendary"),
+	}
+	table.insert(SlimeData.Slimes, entry)
+end
+
+-- 1. HOUSE ROOFTOP SHINING SQUISHIES (16 Squishies: #36 to #51)
+-- Players jump up bounce awnings/crates onto the properly colored house rooftops to grab these!
+local rooftopPlacements = {
+	-- Safe Zone Village Houses (4 South Boulevard Houses at Z = 166 + 4 Plot Houses at X = ±78)
+	{ Name = "Sunny Roof Mallow", Lvl = 1, Rarity = "Common", CPS = 12, Pos = Vector3.new(-88, 24.5, 166), Hint = "Jump onto the Golden Cottage Roof on the South Boulevard of the Safe Zone!" },
+	{ Name = "Sky Gables Kitty", Lvl = 1, Rarity = "Common", CPS = 14, Pos = Vector3.new(-30, 23.5, 166), Hint = "Bounce up the awning onto the Rose Villa Roof in the Safe Zone!" },
+	{ Name = "Mint Chimney Puff", Lvl = 1, Rarity = "Common", CPS = 16, Pos = Vector3.new(30, 23.5, 166), Hint = "Parkour onto the Mint Cottage Roof in the Safe Zone!" },
+	{ Name = "Cobalt Shingle Pup", Lvl = 1, Rarity = "Rare", CPS = 20, Pos = Vector3.new(88, 24.5, 166), Hint = "Climb the crates onto the Blue Manor Roof on the South Boulevard of the Safe Zone!" },
+	{ Name = "Ranch Gables Cow", Lvl = 1, Rarity = "Rare", CPS = 22, Pos = Vector3.new(-78, 21.5, 53), Hint = "Perched atop the Plot #1 Ranch House Roof!" },
+	{ Name = "Blossom Attic Axolotl", Lvl = 1, Rarity = "Rare", CPS = 24, Pos = Vector3.new(78, 21.5, 53), Hint = "Perched atop the Plot #2 Ranch House Roof!" },
+	{ Name = "Clover Ridge Frog", Lvl = 1, Rarity = "Rare", CPS = 26, Pos = Vector3.new(-78, 21.5, 117), Hint = "Perched atop the Plot #3 Ranch House Roof!" },
+	{ Name = "Honeycomb Loft Bear", Lvl = 1, Rarity = "Epic", CPS = 32, Pos = Vector3.new(78, 21.5, 117), Hint = "Perched atop the Plot #4 Ranch House Roof!" },
+	-- Biome Village Parkour Houses (8 Houses at X = ±84 across the 5 Expanded Themed Levels)
+	{ Name = "Meadow Barn Loft", Lvl = 1, Rarity = "Rare", CPS = 36, Pos = Vector3.new(-84, 22.5, -56), Hint = "Jump onto the Red Meadow Barn Roof on the left of Stage 1!" },
+	{ Name = "Meadow Windmill Chick", Lvl = 1, Rarity = "Epic", CPS = 45, Pos = Vector3.new(84, 22.5, -56), Hint = "Jump onto the Yellow Meadow Cottage Roof on the right of Stage 1!" },
+	{ Name = "Gingerbread Roof Mallow", Lvl = 2, Rarity = "Epic", CPS = 95, Pos = Vector3.new(-84, 22.5, -216), Hint = "Bounce onto the Pink Candy Bakery Roof in Stage 2!" },
+	{ Name = "Frosting Chalet Bunny", Lvl = 2, Rarity = "Epic", CPS = 120, Pos = Vector3.new(84, 22.5, -216), Hint = "Bounce onto the Blue Icing Chalet Roof in Stage 2!" },
+	{ Name = "Cabana Thatch Gecko", Lvl = 3, Rarity = "Epic", CPS = 380, Pos = Vector3.new(-84, 22.5, -376), Hint = "Jump onto the Coral Beach Cabana Roof in Stage 3!" },
+	{ Name = "Tiki Bungalow Crab", Lvl = 3, Rarity = "Legendary", CPS = 520, Pos = Vector3.new(84, 22.5, -376), Hint = "Jump onto the Turquoise Surf Shack Roof in Stage 3!" },
+	{ Name = "Crystal Observatory Owl", Lvl = 4, Rarity = "Legendary", CPS = 1850, Pos = Vector3.new(-84, 22.5, -536), Hint = "Perched on the Amethyst Lodge Roof in Stage 4!" },
+	{ Name = "Magma Forge Wyvern", Lvl = 5, Rarity = "Mythic", CPS = 8500, Pos = Vector3.new(84, 22.5, -696), Hint = "Perched on the Obsidian Forge House Roof in Stage 5!" },
+}
+for i, r in ipairs(rooftopPlacements) do
+	appendShiningSquishy(35 + i, r.Name, r.Lvl, r.Rarity, r.CPS, r.Pos, r.Hint, "Rooftop")
+end
+
+-- 2. GIANT RAINBOW DISAPPEARING STAIRCASE SQUISHIES (12 Squishies: #52 to #63)
+-- Ascending from the dedicated Outer West Rainbow Plaza (X = -142, Z = 148) up 28 disappearing rainbow steps to the Sky Cloud Sanctuary (Z = 16)!
+for i = 1, 12 do
+	local stepFrac = i / 12
+	local s = math.floor(i * 2.3)
+	local yHeight = if i == 12 then 51.5 else (1.8 + s * 1.75)
+	local zPos = if i == 12 then 16 else (148 - s * 4.5)
+	local xPos = if i == 12 then -142 else (-142 + math.sin(s * 0.25) * 3.5)
+	local rarity = if i == 12 then "Mythic" elseif i >= 9 then "Legendary" elseif i >= 5 then "Epic" else "Rare"
+	local cps = math.floor(30 * (1.42 ^ i))
+	local nameList = {
+		"Red Beam Squishy",
+		"Tangerine Step Puff",
+		"Sunbeam Stair Mallow",
+		"Emerald Cloud Hopper",
+		"Sky-Blue Step Sprite",
+		"Indigo Prism Kitty",
+		"Violet Rainbow Boba",
+		"Starlight Step Unicorn",
+		"Aurora Stair Dragon",
+		"Prism Halo Axolotl",
+		"Celestial Cloud Bunny",
+		"Rainbow Staircase Sovereign",
+	}
+	appendShiningSquishy(
+		51 + i,
+		nameList[i],
+		math.clamp(math.ceil(stepFrac * 5), 1, 5),
+		rarity,
+		cps,
+		Vector3.new(xPos, yHeight, zPos),
+		"Run up the Giant Rainbow Disappearing Staircase on the West Plaza before the steps fade out!",
+		"RainbowStaircase"
+	)
+end
+
+-- 3. OUTER SIDE MAZES SHINING SQUISHIES (20 Squishies: #64 to #83)
+-- 10 inside the Left Outer Maze (X = -116 to -172) and 10 inside the Right Outer Maze (X = +116 to +172)!
+local mazeNames = {
+	"Hedge Labyrinth Sprout", "Clover Maze Mouse", "Bramble Secret Frog", "Fern Alley Duckling",
+	"Candy Cane Maze Bear", "Peppermint Turn Puff", "Licorice Dead-End Cat", "Gummy Corridor Pup",
+	"Bamboo Maze Gecko", "Sandbar Labyrinth Crab", "Palm Hedge Toucan", "Lagoon Maze Axolotl",
+	"Quartz Labyrinth Fox", "Prism Maze Spirit", "Geode Corner Golem", "Neon Hedge Moth",
+	"Obsidian Maze Imp", "Cinder Labyrinth Hound", "Basalt Turn Wyrm", "Volcano Maze Phoenix",
+}
+for i = 1, 20 do
+	local isRight = (i % 2 == 0)
+	local sideSign = if isRight then 1 else -1
+	local lvl = math.clamp(math.ceil(i / 4), 1, 5)
+	local idxInBiome = ((i - 1) % 4) + 1
+	local zBase = (SlimeData.Levels[lvl].ZStart - 26) - (idxInBiome - 1) * 34
+	local laneOffset = if idxInBiome % 2 == 1 then 130 else 156
+	local xPos = sideSign * laneOffset
+	local rarity = if lvl == 5 then "Legendary" elseif lvl >= 3 then "Epic" else "Rare"
+	local cps = math.floor(18 * (2.15 ^ (lvl - 1)) * (1 + idxInBiome * 0.25))
+	appendShiningSquishy(
+		63 + i,
+		mazeNames[i],
+		lvl,
+		rarity,
+		cps,
+		Vector3.new(xPos, 4.2, zBase),
+		string.format("Hidden inside the %s Outer Maze alongside Stage %d!", if isRight then "Right" else "Left", lvl),
+		"OuterMaze"
+	)
+end
+
+-- 4. CASTLE WALL BATTLEMENT SHINING SQUISHIES (19 Squishies: #84 to #102)
+-- Perched along the crenellated Medieval Castle Wall walkways & corner watchtowers at X = ±108!
+local castleNames = {
+	"Rampart Watch Knight", "Battlement Gargoyle Puff", "Turret Crown Slime", "Drawbridge Guard Pup",
+	"Parapet Archer Kitty", "Citadel Banner Cow", "Keep Tower Dragonet", "Fortress Torch Boba",
+	"Stone Crenel Frog", "Watchtower Bell Owl", "Bastion Shield Bear", "Moat Wall Axolotl",
+	"Royal Gatehouse Unicorn", "Spire Battlement Fox", "Garrison Wall Panda", "Crusader Crest Griffin",
+	"Obsidian Rampart Drake", "Volcano Bastion Wyvern", "Grand Castle Wall Emperor",
+}
+for i = 1, 19 do
+	local lvl = math.clamp(math.ceil((i / 19) * 5), 1, 5)
+	local isRight = (i % 2 == 1)
+	local sideSign = if isRight then 1 else -1
+	local zPos = -12 - (i - 1) * 42
+	local xPos = sideSign * 108
+	local yPos = if i % 4 == 1 then 23.5 else 18.8
+	local rarity = if i == 19 then "Mythic" elseif lvl >= 4 then "Legendary" elseif lvl >= 2 then "Epic" else "Rare"
+	local cps = math.floor(25 * (1.32 ^ i))
+	appendShiningSquishy(
+		83 + i,
+		castleNames[i],
+		lvl,
+		rarity,
+		cps,
+		Vector3.new(xPos, yPos, zPos),
+		"Climb the Castle Wall Battlement stairs and walk the ramparts to grab this Shining Squishy!",
+		"CastleWall"
+	)
+end
+
+-- 5. THEMED LEVEL OBBY OBSTACLE SHINING SQUISHIES (15 Squishies: #103 to #117)
+-- 3 per themed biome perched on wide, well-spaced elevated Obby platforms!
+local obbyNames = {
+	-- Level 1 Meadow Obby
+	"Lilypad Hopper Squishy", "Log Beam Balancer", "Honeycomb Ring Champ",
+	-- Level 2 Candy Obby
+	"Wafer Bridge Sprinter", "Peppermint Spinner Ace", "Gummy Bear Pillar Star",
+	-- Level 3 Beach Obby
+	"Surfboard Balance Puff", "Coral Archway Diver", "Tiki Totem Jumper",
+	-- Level 4 Crystal Obby
+	"Laser Grid Dodger", "Floating Geode Hopper", "Quantum Ring Glider",
+	-- Level 5 Volcano Obby
+	"Lava Geyser Leaper", "Obsidian Pendulum Pro", "Inferno Obby Grandmaster",
+}
+for i = 1, 15 do
+	local lvl = math.ceil(i / 3)
+	local subIdx = ((i - 1) % 3) + 1
+	local zStart = SlimeData.Levels[lvl].ZStart
+	local xPos = -72 + subIdx * 11 -- X = -61, -50, -39 (Dedicated Left-Side Obby Gauntlet X = -62 to -38)
+	local yPos = 9.5 + subIdx * 2.8
+	local zPos = zStart - 26 - subIdx * 22 -- Z = zStart - 48, -70, -92 (within zStart - 38 to zStart - 95)
+	local rarity = if lvl == 5 then "Mythic" elseif lvl >= 4 then "Legendary" elseif lvl >= 2 then "Epic" else "Rare"
+	local cps = math.floor(22 * (2.3 ^ (lvl - 1)) * subIdx)
+	appendShiningSquishy(
+		102 + i,
+		obbyNames[i],
+		lvl,
+		rarity,
+		cps,
+		Vector3.new(xPos, yPos, zPos),
+		string.format("Complete the Stage %d Left-Side Elevated Obby Gauntlet to grab this Shining Squishy!", lvl),
+		"BiomeObby"
+	)
+end
+
+-- Finalize metadata and lookup tables for all 117 Squishies & Eggs
 for _, slime in ipairs(SlimeData.Slimes) do
 	local anySlime = slime :: any
 	local numId = tonumber(slime.Id) or 1
 	anySlime.NumericId = numId
 	local sp = speciesRotation[((numId - 1) % #speciesRotation) + 1]
 	local nm = string.lower(slime.Name)
-	if string.find(nm, "frog") or string.find(nm, "sprout") or string.find(nm, "moss") then
+	if string.find(nm, "frog") or string.find(nm, "sprout") or string.find(nm, "moss") or string.find(nm, "lily") then
 		sp = "Frog"
-	elseif string.find(nm, "milk") or string.find(nm, "cow") or string.find(nm, "butter") or string.find(nm, "mochi") then
+	elseif string.find(nm, "milk") or string.find(nm, "cow") or string.find(nm, "butter") or string.find(nm, "ranch") then
 		sp = "Cow"
-	elseif string.find(nm, "boba") or string.find(nm, "soda") or string.find(nm, "slush") or string.find(nm, "cotton") or string.find(nm, "taffy") then
+	elseif string.find(nm, "boba") or string.find(nm, "soda") or string.find(nm, "cotton") or string.find(nm, "mallow") then
 		sp = "Boba"
-	elseif string.find(nm, "axolotl") or string.find(nm, "gummy") or string.find(nm, "bubble") or string.find(nm, "plasma") then
+	elseif string.find(nm, "axolotl") or string.find(nm, "gummy") or string.find(nm, "plasma") or string.find(nm, "gecko") then
 		sp = "Axolotl"
-	elseif string.find(nm, "cat") or string.find(nm, "teddy") or string.find(nm, "plush") or string.find(nm, "pixel") then
+	elseif string.find(nm, "cat") or string.find(nm, "kitty") or string.find(nm, "plush") or string.find(nm, "pixel") then
 		sp = "Cat"
-	elseif string.find(nm, "dragon") or string.find(nm, "magma") or string.find(nm, "lava") or string.find(nm, "obsidian") or string.find(nm, "cinder") then
+	elseif string.find(nm, "dragon") or string.find(nm, "magma") or string.find(nm, "wyvern") or string.find(nm, "drake") then
 		sp = "Dragon"
 	elseif string.find(nm, "sovereign") or string.find(nm, "star") or string.find(nm, "celestial") or string.find(nm, "unicorn") then
 		sp = "Unicorn"
@@ -867,25 +1090,11 @@ for _, slime in ipairs(SlimeData.Slimes) do
 	anySlime.Species = sp
 	anySlime.HatchTime = 3 + (slime.Level * 2)
 
-	-- Pure "Steal My Egg" layout: all Eggs sit in rich clusters right around the Sleeping Bosses!
 	slime.Behavior = "Static"
 	slime.IsCoopVault = false
 	slime.IsMicroVent = false
 	slime.DisguiseProp = nil
 
-	local lvlNum = slime.Level
-	local lvlDef = SlimeData.Levels[lvlNum]
-	levelEggIndices[lvlNum] = (levelEggIndices[lvlNum] or 0) + 1
-	local idxInLvl = levelEggIndices[lvlNum]
-	local totalInLvl = if lvlDef then lvlDef.EggCount else 6
-	local zCenter = if lvlDef then (lvlDef.ZStart - 56) else (-56 * lvlNum)
-	local frac = if totalInLvl > 1 then (idxInLvl - 1) / (totalInLvl - 1) else 0.5
-	local xPos = -36 + frac * 72
-	local zOffset = if idxInLvl % 2 == 0 then -8 else 6
-	slime.Position = Vector3.new(xPos, 3.8, zCenter + zOffset)
-	slime.Hint = string.format("Guarded by the Sleeping Boss in %s! Hold E to Steal!", if lvlDef then lvlDef.Name else ("Zone " .. lvlNum))
-
-	-- Alias fields for WorldBuilder / GameServer / GameClient compatibility
 	anySlime.Id = tostring(numId)
 	anySlime.BodyColor = slime.Color
 	anySlime.IncomePerSec = slime.CoinsPerSec
@@ -899,6 +1108,8 @@ for _, slime in ipairs(SlimeData.Slimes) do
 	end
 	table.insert(SlimeData.ByLevel[slime.Level], slime)
 end
+
+SlimeData.TotalSquishies = #SlimeData.Slimes -- Guaranteed 117!
 
 function SlimeData.CountFound(foundMap: { [any]: boolean }?): number
 	if not foundMap then
@@ -928,5 +1139,6 @@ function SlimeData.GetSquishyUpgradeCost(slimeDef: SlimeDef, currentLvl: number)
 end
 
 return SlimeData
+
 
 

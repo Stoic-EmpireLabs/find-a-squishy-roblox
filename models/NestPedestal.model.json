@@ -1,6 +1,5 @@
 {
   "ClassName": "Part",
-  "Name": "NestPedestalTemplate",
   "Properties": {
     "Anchored": true,
     "CanCollide": true,

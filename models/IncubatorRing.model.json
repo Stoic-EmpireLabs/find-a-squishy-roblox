@@ -1,6 +1,5 @@
 {
   "ClassName": "Model",
-  "Name": "IncubatorRingTemplate",
   "Children": [
     {
       "ClassName": "Part",
