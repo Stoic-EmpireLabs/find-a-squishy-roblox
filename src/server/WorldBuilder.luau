@@ -377,15 +377,50 @@ local function placeGameplayKit(
 		return nil
 	end
 	local cloned = kit:Clone()
+
+	-- 1. Strip scripts, spawns, and giant floor/baseplate slabs
+	for _, desc in ipairs(cloned:GetDescendants()) do
+		if desc:IsA("LuaSourceContainer") or desc:IsA("SpawnLocation") then
+			desc:Destroy()
+		elseif desc:IsA("BasePart") then
+			local lowerName = string.lower(desc.Name)
+			if (desc.Size.X > 85 and desc.Size.Z > 85)
+				or string.find(lowerName, "baseplate")
+				or string.find(lowerName, "ground")
+				or string.find(lowerName, "floor")
+			then
+				desc:Destroy()
+			end
+		end
+	end
+
 	if stageId then
 		applyStageThemeToModel(cloned, stageId)
 	end
-	if targetScale and targetScale > 0 and targetScale ~= 1.0 then
+
+	-- 2. Normalize cloned model using GetBoundingBox so targetScale is the target dimension in studs
+	local okBB, _, bbSize = pcall(function()
+		return cloned:GetBoundingBox()
+	end)
+	if okBB and bbSize.Magnitude > 0.05 then
+		local tDim = if targetScale and targetScale > 1.5 then targetScale else 14.0
+		local maxDim = math.max(bbSize.Y, bbSize.X * 0.65, bbSize.Z * 0.65)
+		local factor = math.clamp(tDim / math.max(maxDim, 0.5), 0.04, 2.5)
 		pcall(function()
-			cloned:ScaleTo(targetScale)
+			cloned:ScaleTo(cloned:GetScale() * factor)
 		end)
 	end
+
+	-- 3. Re-query BoundingBox and position cloned so bottom-center sits cleanly at pos with yawDeg rotation
+	local okBB2, bbCF2, bbSize2 = pcall(function()
+		return cloned:GetBoundingBox()
+	end)
+	if okBB2 and bbCF2 and bbSize2 then
+		local bottomCenter = bbCF2.Position - Vector3.new(0, bbSize2.Y * 0.5, 0)
+		cloned.WorldPivot = CFrame.new(bottomCenter)
+	end
 	cloned:PivotTo(CFrame.new(pos.X, pos.Y, pos.Z) * CFrame.Angles(0, math.rad(yawDeg), 0))
+
 	for _, d in ipairs(cloned:GetDescendants()) do
 		if d:IsA("BasePart") then
 			d.Anchored = true
@@ -4691,20 +4726,18 @@ local function buildLevelGate(parent: Instance, levelInfo: any, halfW: number): 
 		)
 
 		-- Paywall: Instant Gate Unlock ProximityPrompt (VIP / Skip Grind)
-		local attPay = barrier:FindFirstChild("UnlockStageGatePromptAttachment") :: Attachment?
-		if attPay then
-			local skipGatePrompt = Instance.new("ProximityPrompt")
-			skipGatePrompt.Name = "SkipStageGatePaywallPrompt"
-			skipGatePrompt.ActionText = string.format("💎 Instant Stage %d Gate Unlock (VIP / Robux)", id)
-			skipGatePrompt.ObjectText = "💎 Skip Grind & Open Immediately!"
-			skipGatePrompt.KeyboardKeyCode = Enum.KeyCode.F
-			skipGatePrompt.HoldDuration = 0
-			skipGatePrompt.MaxActivationDistance = 22
-			skipGatePrompt.UIOffset = Vector2.new(0, -65)
-			skipGatePrompt.RequiresLineOfSight = false
-			skipGatePrompt:SetAttribute("LevelId", id)
-			skipGatePrompt.Parent = attPay
-		end
+		local attPay = (barrier:FindFirstChild("UnlockStageGatePrompt_Attachment") or barrier:FindFirstChild("UnlockStageGatePromptAttachment")) :: Attachment?
+		local skipGatePrompt = Instance.new("ProximityPrompt")
+		skipGatePrompt.Name = "SkipStageGatePaywallPrompt"
+		skipGatePrompt.ActionText = string.format("💎 Instant Stage %d Gate Unlock (VIP / Robux)", id)
+		skipGatePrompt.ObjectText = "💎 Skip Grind & Open Immediately!"
+		skipGatePrompt.KeyboardKeyCode = Enum.KeyCode.F
+		skipGatePrompt.HoldDuration = 0
+		skipGatePrompt.MaxActivationDistance = 22
+		skipGatePrompt.UIOffset = Vector2.new(0, -65)
+		skipGatePrompt.RequiresLineOfSight = false
+		skipGatePrompt:SetAttribute("LevelId", id)
+		skipGatePrompt.Parent = if attPay then attPay else barrier
 	end
 
 	return barrier
@@ -4745,6 +4778,21 @@ function WorldBuilder.BuildWorld(): {
 		local baseMapClone = activeMap:Clone()
 		baseMapClone.Name = "ImportedBaseMap"
 		baseMapClone:PivotTo(CFrame.new(0, 0, 0))
+
+		-- Sanitize baseMapClone to prevent z-fighting or corridor blocking
+		for _, desc in ipairs(baseMapClone:GetDescendants()) do
+			if desc:IsA("LuaSourceContainer") or desc:IsA("SpawnLocation") then
+				desc:Destroy()
+			elseif desc:IsA("BasePart") then
+				desc.Anchored = true
+				if (math.abs(desc.Position.X) < 225 and desc.Position.Z > -1310 and desc.Position.Z < 250 and desc.Position.Y < 65)
+					or (desc.Size.X > 120 or desc.Size.Z > 120)
+				then
+					desc:Destroy()
+				end
+			end
+		end
+
 		baseMapClone.Parent = worldFolder
 	else
 		local baseMapFolder = Instance.new("Folder")

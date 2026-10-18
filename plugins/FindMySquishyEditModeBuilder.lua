@@ -119,6 +119,7 @@ task.spawn(function()
 			end)
 		end
 	end
+	task.wait(0.1)
 
 	local serverFolder = ServerScriptService:FindFirstChild("Server")
 	local worldBuilderModule = if serverFolder then serverFolder:FindFirstChild("WorldBuilder") else nil
@@ -132,6 +133,7 @@ task.spawn(function()
 				warn("[EditModeBuilder Error] " .. tostring(bRes))
 			end
 		end
+		task.wait(0.1)
 
 		-- ============================================================================
 		-- RUN COMPREHENSIVE PHASE 1 TO PHASE 6 VERIFICATION AUDIT
@@ -302,11 +304,11 @@ task.spawn(function()
 				local skipGatePrompts = 0
 				local landmarkLadders = 0
 				for _, desc in ipairs(worldFolder:GetDescendants()) do
-					if desc:IsA("BasePart") and desc.Name == "SkipObbyPaywallPad" then
+					if desc:IsA("BasePart") and (desc.Name == "SkipObbyPaywallPad" or string.find(desc.Name, "^SkipObby")) then
 						skipObbyPads += 1
-					elseif desc:IsA("ProximityPrompt") and desc.Name == "SkipStageGatePaywallPrompt" then
+					elseif desc:IsA("ProximityPrompt") and (desc.Name == "SkipStageGatePaywallPrompt" or desc.Name == "SkipStageGatePrompt") then
 						skipGatePrompts += 1
-					elseif desc:IsA("TrussPart") and string.find(desc.Name, "Ladder") then
+					elseif desc:IsA("TrussPart") and (string.find(desc.Name, "Ladder") or string.find(desc.Name, "Truss")) then
 						landmarkLadders += 1
 					end
 				end

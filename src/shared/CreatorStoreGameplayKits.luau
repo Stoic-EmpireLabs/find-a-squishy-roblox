@@ -234,6 +234,42 @@ CreatorStoreGameplayKits.KITS = {
 		Description = "Obby Gamepass",
 		Category = "Monetization",
 	},
+	FusionCoil = {
+		AssetId = 12124152417,
+		Name = "FusionCoil",
+		Description = "Fusion Coil Gamepass",
+		Category = "Gamepass",
+	},
+	SpeedCoil = {
+		AssetId = 11963709166,
+		Name = "SpeedCoil",
+		Description = "Speed Coil Gamepass",
+		Category = "Gamepass",
+	},
+	GravityCoil = {
+		AssetId = 11987698523,
+		Name = "GravityCoil",
+		Description = "Gravity Coil Gamepass",
+		Category = "Gamepass",
+	},
+	RainbowCarpet = {
+		AssetId = 17656533013,
+		Name = "RainbowCarpet",
+		Description = "Rainbow Magic Carpet Gamepass",
+		Category = "Gamepass",
+	},
+	SquishiesPack = {
+		AssetId = 133057503426008,
+		Name = "SquishiesPack",
+		Description = "Squishies ? Pack (3D Squishmallows)",
+		Category = "Squishies",
+	},
+	ObbyKitByJakeDev = {
+		AssetId = 140630477631657,
+		Name = "ObbyKitByJakeDev",
+		Description = "obby kit by jakedev",
+		Category = "Obby",
+	},
 
 	-- 2. Creator Store Treadmill & Speed Simulator Kits
 	TreadmillsBySystem = {
@@ -544,10 +580,61 @@ CreatorStoreGameplayKits.IngestAllKits = CreatorStoreGameplayKits.EnsureGameplay
 function CreatorStoreGameplayKits.GetKit(kitKey: string): Model?
 	local modelsFolder = ReplicatedStorage:FindFirstChild("Models")
 	local kitsFolder = modelsFolder and modelsFolder:FindFirstChild("GameplayKits")
-	local kitInfo = CreatorStoreGameplayKits.KITS[kitKey]
-	if kitsFolder and kitInfo then
-		return kitsFolder:FindFirstChild(kitInfo.Name) :: Model?
+	if kitsFolder then
+		local direct = kitsFolder:FindFirstChild(kitKey)
+		if direct and direct:IsA("Model") then
+			return direct
+		end
+		local kitInfo = CreatorStoreGameplayKits.KITS[kitKey]
+		if kitInfo then
+			local named = kitsFolder:FindFirstChild(kitInfo.Name)
+			if named and named:IsA("Model") then
+				return named
+			end
+		end
+		for _, child in ipairs(kitsFolder:GetChildren()) do
+			if child:IsA("Model") and (string.lower(child.Name) == string.lower(kitKey) or (kitInfo and string.lower(child.Name) == string.lower(kitInfo.Name))) then
+				return child
+			end
+		end
 	end
+
+	-- Fallback to ReplicatedStorage.Maps (MAP_TEMPLATES)
+	local mapTmpl = CreatorStoreGameplayKits.GetMapTemplate(kitKey)
+	if mapTmpl then
+		return mapTmpl
+	end
+
+	-- Also check ReplicatedStorage.Maps children directly
+	local mapsFolder = ReplicatedStorage:FindFirstChild("Maps")
+	if mapsFolder then
+		local directMap = mapsFolder:FindFirstChild(kitKey)
+		if directMap and directMap:IsA("Model") then
+			return directMap
+		end
+		for _, child in ipairs(mapsFolder:GetChildren()) do
+			if child:IsA("Model") and string.lower(child.Name) == string.lower(kitKey) then
+				return child
+			end
+		end
+	end
+
+	-- Fallback to ReplicatedStorage.Models.PrebuiltAssets
+	if modelsFolder then
+		local prebuilt = modelsFolder:FindFirstChild("PrebuiltAssets")
+		if prebuilt then
+			local pDirect = prebuilt:FindFirstChild(kitKey)
+			if pDirect and pDirect:IsA("Model") then
+				return pDirect
+			end
+			for _, child in ipairs(prebuilt:GetChildren()) do
+				if child:IsA("Model") and string.lower(child.Name) == string.lower(kitKey) then
+					return child
+				end
+			end
+		end
+	end
+
 	return nil
 end
 
