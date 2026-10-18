@@ -593,6 +593,29 @@ task.spawn(function()
 					)
 				)
 
+				-- ============================================================================
+				-- AUDIT SETTINGS PRO & PREMIUM HEALTH BAR & CREATOR STORE ASSETS (v34)
+				-- ============================================================================
+				local kitsMod = sharedFolder:FindFirstChild("CreatorStoreGameplayKits")
+				local kits = kitsMod and require(kitsMod)
+				local hasKits = kits ~= nil
+					and (kits.KITS.SettingsPanelPro ~= nil and ((kits.KITS.SettingsPanelPro.AssetId == 93583640955196) or (kits.KITS.SettingsPanelPro == 93583640955196)))
+					and (kits.KITS.SettingsGuiAdvanced ~= nil and ((kits.KITS.SettingsGuiAdvanced.AssetId == 94517727460767) or (kits.KITS.SettingsGuiAdvanced == 94517727460767)))
+					and (kits.KITS.PremiumHealthBar ~= nil and ((kits.KITS.PremiumHealthBar.AssetId == 96150583459141) or (kits.KITS.PremiumHealthBar == 96150583459141)))
+					and (kits.MAP_TEMPLATES.StealAnEggMapTemplate ~= nil and ((kits.MAP_TEMPLATES.StealAnEggMapTemplate.AssetId == 138241434644603) or (kits.MAP_TEMPLATES.StealAnEggMapTemplate == 138241434644603)))
+				local hasSettingsPro = ui.SettingsProBtn ~= nil and ui.SettingsProModal ~= nil
+				local hasHealthBar = ui.PremiumHealthBarFrame ~= nil and ui.PremiumHealthFill ~= nil and ui.PremiumHealthLabel ~= nil
+				local v34Ok = hasKits and hasSettingsPro and hasHealthBar
+				print(
+					string.format(
+						"[AUDIT SETTINGS PRO & HEALTH BAR v34] PASS=%s | CreatorStoreKits=%s | SettingsPanelProUI=%s | PremiumHealthBarHUD=%s",
+						tostring(v34Ok),
+						tostring(hasKits),
+						tostring(hasSettingsPro),
+						tostring(hasHealthBar)
+					)
+				)
+
 				tempFolder:Destroy()
 			end
 		end

@@ -16,9 +16,12 @@
 
 local AvatarEditorService = game:GetService("AvatarEditorService")
 local GuiService = game:GetService("GuiService")
+local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local SoundService = game:GetService("SoundService")
+local StarterGui = game:GetService("StarterGui")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
@@ -27,6 +30,7 @@ local localPlayer = Players.LocalPlayer
 local playerGui = localPlayer:WaitForChild("PlayerGui")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local CreatorStoreGameplayKits = require(Shared:WaitForChild("CreatorStoreGameplayKits"))
 local SlimeData = require(Shared:WaitForChild("SlimeData"))
 local UIBuilder = require(Shared:WaitForChild("UIBuilder"))
 
@@ -53,6 +57,42 @@ local OpenModalEvent = Remotes:WaitForChild("OpenModal") :: RemoteEvent
 local GetInitialStateFunc = Remotes:WaitForChild("GetInitialState") :: RemoteFunction
 
 local ui = UIBuilder.CreateHUD(playerGui)
+
+-- Disable default Roblox health bar in favor of Creator Store Premium Health Bar HUD
+pcall(function()
+	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
+end)
+
+-- Mount Creator Store assets into PlayerGui if available
+CreatorStoreGameplayKits.MountPremiumHealthBar(playerGui)
+CreatorStoreGameplayKits.MountSettingsPanelPro(playerGui)
+
+-- Wire dynamic updates to Premium Health Bar (Creator Store 96150583459141)
+local function bindHealth(character: Model)
+	local hum = character:WaitForChild("Humanoid", 8) :: Humanoid?
+	if not hum then
+		return
+	end
+	local function updateHp()
+		if not ui.PremiumHealthFill or not ui.PremiumHealthLabel then
+			return
+		end
+		local maxHp = math.max(hum.MaxHealth, 1)
+		local hp = math.clamp(hum.Health, 0, maxHp)
+		local ratio = math.clamp(hp / maxHp, 0, 1)
+		TweenService:Create(ui.PremiumHealthFill, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Size = UDim2.new(ratio, 0, 1, 0),
+			BackgroundColor3 = if ratio > 0.5 then Color3.fromRGB(80, 240, 120) elseif ratio > 0.25 then Color3.fromRGB(255, 200, 60) else Color3.fromRGB(240, 60, 70),
+		}):Play()
+		ui.PremiumHealthLabel.Text = string.format("❤️ %d / %d HP", math.ceil(hp), math.ceil(maxHp))
+	end
+	hum.HealthChanged:Connect(updateHp)
+	updateHp()
+end
+if localPlayer.Character then
+	task.spawn(bindHealth, localPlayer.Character)
+end
+localPlayer.CharacterAdded:Connect(bindHealth)
 
 local function hideWorldItemForLocalPlayer(target: Instance?)
 	if not target then
@@ -138,6 +178,9 @@ local function closeAllModals()
 	if ui.HowToPlayModal then
 		ui.HowToPlayModal.Visible = false
 	end
+	if ui.SettingsProModal then
+		ui.SettingsProModal.Visible = false
+	end
 	pcall(function()
 		GuiService.SelectedObject = nil
 	end)
@@ -179,13 +222,14 @@ end
 
 -- Allow PS5 Circle (ButtonB) / Escape to immediately close any open modal
 UserInputService.InputBegan:Connect(function(input: InputObject, _gameProcessed: boolean)
-	if input.KeyCode == Enum.KeyCode.ButtonB then
+	if input.KeyCode == Enum.KeyCode.ButtonB or input.KeyCode == Enum.KeyCode.Escape then
 		if
 			ui.IndexModal.Visible
 			or ui.ShopModal.Visible
 			or ui.SpinModal.Visible
 			or (ui.LikeFavoriteModal and ui.LikeFavoriteModal.Visible)
 			or (ui.HowToPlayModal and ui.HowToPlayModal.Visible)
+			or (ui.SettingsProModal and ui.SettingsProModal.Visible)
 		then
 			closeAllModals()
 		end
@@ -597,7 +641,7 @@ local function applyStateToUI(state: any)
 			boostExtras ..= string.format("  |  🎡 <font color='#FF95FF'>%dx Cash (%ds)</font>", state.SpinCashMultiplier or 2, state.SpinCashBoostRemaining)
 		end
 		ui.TopBannerLabel.Text = string.format(
-			"✨ <b>FIND MY SQUISHY & STEAL MY EGG (BRAINROT)!</b>  |  Plot #%d  |  ⚡ <font color='#65FF8F'>$%s/sec</font>  |  Rebirths: %d%s",
+			"✨ <b>FIND MY SQUISHY AND STEAL MY EGG (BRAINROT)</b>  |  Plot #%d  |  ⚡ <font color='#65FF8F'>$%s/sec</font>  |  Rebirths: %d%s",
 			state.PlotIndex or 1,
 			SlimeData.FormatNumber(state.PassiveIncomeRate or 0),
 			state.Rebirths or 0,
@@ -1022,7 +1066,174 @@ if ui.HowToPlayClose and ui.HowToPlayModal then
 	end)
 end
 
-local SoundService = game:GetService("SoundService")
+-- =========================================================================
+-- ⚙️ SETTINGS PRO MODAL & CONTROLS WIRING (Creator Store 93583640955196 / 94517727460767)
+-- =========================================================================
+local voiceMultiplier = 1.0
+
+if ui.SettingsProBtn and ui.SettingsProModal then
+	bindButton(ui.SettingsProBtn, function()
+		openOnlyModal(ui.SettingsProModal, ui.SettingsProClose)
+	end)
+end
+if ui.SettingsProClose and ui.SettingsProModal then
+	bindButton(ui.SettingsProClose, function()
+		closeAllModals()
+	end)
+end
+
+-- Row 1: 🧸 Kid-Friendly Easy Mode (Default ON: Gentle guidance & extra health)
+local kidFriendlyMode = true
+if ui.KidFriendlyToggleBtn then
+	bindButton(ui.KidFriendlyToggleBtn, function()
+		kidFriendlyMode = not kidFriendlyMode
+		if kidFriendlyMode then
+			ui.KidFriendlyToggleBtn.BackgroundColor3 = Color3.fromRGB(65, 215, 125)
+			ui.KidFriendlyToggleBtn.Text = "ON (Gentle & Guided 💖)"
+			local char = localPlayer.Character
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+			if hum then
+				hum.MaxHealth = 150
+				hum.Health = 150
+			end
+		else
+			ui.KidFriendlyToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 48, 68)
+			ui.KidFriendlyToggleBtn.Text = "OFF (Normal Mode)"
+			local char = localPlayer.Character
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+			if hum then
+				hum.MaxHealth = 100
+				hum.Health = math.min(hum.Health, 100)
+			end
+		end
+	end)
+end
+
+-- Row 2: Music & SFX Volume (0%, 50%, 100%)
+if ui.SettingsVolumeBtns then
+	for lvl, btn in pairs(ui.SettingsVolumeBtns) do
+		bindButton(btn, function()
+			local volFactor = lvl / 100
+			for _, sound in ipairs(SoundService:GetDescendants()) do
+				if sound:IsA("Sound") and not string.find(sound.Name, "BrainrotVoice") then
+					pcall(function()
+						sound.Volume = math.clamp(volFactor, 0, 1)
+					end)
+				end
+			end
+			for otherLvl, otherBtn in pairs(ui.SettingsVolumeBtns) do
+				otherBtn.BackgroundColor3 = if otherLvl == lvl then Color3.fromRGB(65, 185, 255) else Color3.fromRGB(40, 48, 68)
+			end
+		end)
+	end
+end
+
+-- Row 2: Brainrot Voice Volume (Mute / Normal / Boost)
+if ui.SettingsVoiceBtns then
+	for mode, btn in pairs(ui.SettingsVoiceBtns) do
+		bindButton(btn, function()
+			if mode == "Mute" then
+				voiceMultiplier = 0.0
+			elseif mode == "Boost" then
+				voiceMultiplier = 2.0
+			else
+				voiceMultiplier = 1.0
+			end
+			for otherMode, otherBtn in pairs(ui.SettingsVoiceBtns) do
+				otherBtn.BackgroundColor3 = if otherMode == mode then Color3.fromRGB(245, 95, 185) else Color3.fromRGB(40, 48, 68)
+			end
+		end)
+	end
+end
+
+-- Row 3: Global Shadows (FPS Boost)
+local shadowsEnabled = true
+if ui.SettingsShadowsBtn then
+	bindButton(ui.SettingsShadowsBtn, function()
+		shadowsEnabled = not shadowsEnabled
+		pcall(function()
+			Lighting.GlobalShadows = shadowsEnabled
+		end)
+		if shadowsEnabled then
+			ui.SettingsShadowsBtn.BackgroundColor3 = Color3.fromRGB(65, 215, 125)
+			ui.SettingsShadowsBtn.Text = "ON (High Quality)"
+		else
+			ui.SettingsShadowsBtn.BackgroundColor3 = Color3.fromRGB(235, 65, 75)
+			ui.SettingsShadowsBtn.Text = "OFF (FPS Boost 🚀)"
+		end
+	end)
+end
+
+-- Row 4: FOV (70, 80, 90)
+if ui.SettingsFovBtns then
+	for fovVal, btn in pairs(ui.SettingsFovBtns) do
+		bindButton(btn, function()
+			local cam = Workspace.CurrentCamera
+			if cam then
+				TweenService:Create(cam, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+					FieldOfView = fovVal,
+				}):Play()
+			end
+			for otherFov, otherBtn in pairs(ui.SettingsFovBtns) do
+				otherBtn.BackgroundColor3 = if otherFov == fovVal then Color3.fromRGB(255, 175, 45) else Color3.fromRGB(40, 48, 68)
+			end
+		end)
+	end
+end
+
+-- Row 5: Hide Other Players (Lag Reducer)
+local playersHidden = false
+local function updatePlayerVisibility(plr: Player, hide: boolean)
+	if plr == localPlayer then
+		return
+	end
+	local char = plr.Character
+	if not char then
+		return
+	end
+	for _, part in ipairs(char:GetDescendants()) do
+		if part:IsA("BasePart") or part:IsA("Decal") then
+			part.LocalTransparencyModifier = if hide then 1 else 0
+		end
+	end
+end
+if ui.SettingsHidePlayersBtn then
+	bindButton(ui.SettingsHidePlayersBtn, function()
+		playersHidden = not playersHidden
+		for _, plr in ipairs(Players:GetPlayers()) do
+			updatePlayerVisibility(plr, playersHidden)
+		end
+		if playersHidden then
+			ui.SettingsHidePlayersBtn.BackgroundColor3 = Color3.fromRGB(65, 215, 125)
+			ui.SettingsHidePlayersBtn.Text = "ON (Hidden 👻)"
+		else
+			ui.SettingsHidePlayersBtn.BackgroundColor3 = Color3.fromRGB(40, 48, 68)
+			ui.SettingsHidePlayersBtn.Text = "OFF (Show All)"
+		end
+	end)
+	Players.PlayerAdded:Connect(function(plr)
+		plr.CharacterAdded:Connect(function()
+			task.wait(0.5)
+			if playersHidden then
+				updatePlayerVisibility(plr, true)
+			end
+		end)
+	end)
+end
+
+-- Row 6: Top HUD Visibility
+if ui.SettingsTopHudToggleBtn then
+	bindButton(ui.SettingsTopHudToggleBtn, function()
+		ui.TopContainer.Visible = not ui.TopContainer.Visible
+		if ui.TopContainer.Visible then
+			ui.SettingsTopHudToggleBtn.BackgroundColor3 = Color3.fromRGB(65, 215, 125)
+			ui.SettingsTopHudToggleBtn.Text = "Visible"
+		else
+			ui.SettingsTopHudToggleBtn.BackgroundColor3 = Color3.fromRGB(235, 65, 75)
+			ui.SettingsTopHudToggleBtn.Text = "Hidden"
+		end
+	end)
+end
 
 local BRAINROT_VOICE_SOUND_IDS: { [string]: string } = {
 	["1"] = "rbxassetid://107015186635337", -- Tralalero Tralala
@@ -1097,6 +1308,9 @@ end
 
 local function playBrainrotVoiceAnnouncement(slimeId: string, slimeName: string)
 	cleanupActiveBrainrotAudio()
+	if voiceMultiplier <= 0 then
+		return
+	end
 
 	local sIdStr = tostring(slimeId)
 	local soundAsset = BRAINROT_VOICE_SOUND_IDS[sIdStr] or "rbxassetid://107015186635337"
@@ -1105,7 +1319,7 @@ local function playBrainrotVoiceAnnouncement(slimeId: string, slimeName: string)
 	local voiceSound = Instance.new("Sound")
 	voiceSound.Name = "BrainrotVoice_" .. sIdStr
 	voiceSound.SoundId = soundAsset
-	voiceSound.Volume = 2.4
+	voiceSound.Volume = 2.4 * voiceMultiplier
 	voiceSound.Parent = SoundService
 	voiceSound:Play()
 	activeBrainrotVoiceSound = voiceSound

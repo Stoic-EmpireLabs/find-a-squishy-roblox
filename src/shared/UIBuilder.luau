@@ -403,7 +403,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	topBannerLabel.Font = Enum.Font.FredokaOne
 	topBannerLabel.TextXAlignment = Enum.TextXAlignment.Left
 	topBannerLabel.TextColor3 = Color3.fromRGB(255, 245, 190)
-	topBannerLabel.Text = "✨ <b>FIND MY SQUISHY & STEAL MY EGG (BRAINROT)!</b>  |  Plot #1  |  ⚡ <font color='#65FF8F'>$0/sec</font>"
+	topBannerLabel.Text = "✨ <b>FIND MY SQUISHY AND STEAL MY EGG (BRAINROT)</b>  |  Plot #1  |  ⚡ <font color='#65FF8F'>$0/sec</font>"
 	topBannerLabel.Parent = topContainer
 	addTextSizeConstraint(topBannerLabel, 11, 18)
 	addTextStroke(topBannerLabel, Color3.fromRGB(10, 12, 22), 1.8)
@@ -690,7 +690,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	htpTitle.Font = Enum.Font.FredokaOne
 	htpTitle.TextXAlignment = Enum.TextXAlignment.Left
 	htpTitle.TextColor3 = Color3.fromRGB(255, 235, 85)
-	htpTitle.Text = "🧭 <b>HOW TO PLAY — 6-STEP STAGE MASTERY LOOP</b>"
+	htpTitle.Text = "🧭 <b>HOW TO PLAY — Find my Squishy and steal my egg (brainrot)</b>"
 	htpTitle.Parent = howToPlayModal
 	addTextSizeConstraint(htpTitle, 13, 22)
 
@@ -2200,6 +2200,273 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	likeFavClose.NextSelectionDown = favoriteNowBtn
 	likeFavClose.NextSelectionUp = claimLikeFavRewardBtn
 
+	-- =========================================================================
+	-- 10. ❤️ PREMIUM HEALTH BAR (Creator Store Asset 96150583459141 Inspired Widget)
+	-- =========================================================================
+	local healthBarSize = UDim2.fromScale(0.128, 0.044)
+	local healthBarFrame = Instance.new("Frame")
+	healthBarFrame.Name = "PremiumHealthBarFrame"
+	healthBarFrame.Size = healthBarSize
+	healthBarFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+	healthBarFrame.Position = UDim2.fromScale(0.928, 0.082)
+	healthBarFrame.BackgroundColor3 = Color3.fromRGB(20, 24, 36)
+	healthBarFrame.BackgroundTransparency = 0.08
+	healthBarFrame.Parent = screenGui
+	addCorner(healthBarFrame, 10)
+	addStroke(healthBarFrame, Color3.fromRGB(80, 240, 130), 2.4)
+
+	local healthBarBg = Instance.new("Frame")
+	healthBarBg.Name = "HealthBarBg"
+	healthBarBg.Size = UDim2.new(1, -8, 1, -8)
+	healthBarBg.Position = UDim2.fromOffset(4, 4)
+	healthBarBg.BackgroundColor3 = Color3.fromRGB(14, 16, 24)
+	healthBarBg.BorderSizePixel = 0
+	healthBarBg.Parent = healthBarFrame
+	addCorner(healthBarBg, 7)
+
+	local healthFill = Instance.new("Frame")
+	healthFill.Name = "PremiumHealthFill"
+	healthFill.Size = UDim2.fromScale(1.0, 1.0)
+	healthFill.Position = UDim2.fromScale(0, 0)
+	healthFill.BackgroundColor3 = Color3.fromRGB(80, 240, 120)
+	healthFill.BorderSizePixel = 0
+	healthFill.Parent = healthBarBg
+	addCorner(healthFill, 7)
+
+	local healthGrad = Instance.new("UIGradient")
+	healthGrad.Rotation = 90
+	healthGrad.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
+		ColorSequenceKeypoint.new(1.0, Color3.fromRGB(180, 255, 190)),
+	})
+	healthGrad.Parent = healthFill
+
+	local healthLabel = Instance.new("TextLabel")
+	healthLabel.Name = "PremiumHealthLabel"
+	healthLabel.Size = UDim2.fromScale(1.0, 1.0)
+	healthLabel.Position = UDim2.fromScale(0, 0)
+	healthLabel.BackgroundTransparency = 1
+	healthLabel.Font = Enum.Font.FredokaOne
+	healthLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	healthLabel.Text = "❤️ 100 / 100 HP"
+	healthLabel.TextScaled = true
+	healthLabel.ZIndex = 5
+	healthLabel.Parent = healthBarFrame
+	addTextStroke(healthLabel, Color3.fromRGB(10, 12, 18), 2.2)
+	addTextSizeConstraint(healthLabel, 10, 16)
+
+	-- =========================================================================
+	-- 11. ⚙️ SETTINGS PRO BUTTON & ADVANCED PANEL (Creator Store Asset 93583640955196 / 94517727460767 Inspired)
+	-- =========================================================================
+	local settingsProBtnSize = UDim2.fromScale(0.115, 0.048)
+	local settingsProBtn = Instance.new("TextButton")
+	settingsProBtn.Name = "SettingsProBtn"
+	settingsProBtn.Size = settingsProBtnSize
+	settingsProBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+	settingsProBtn.Position = UDim2.fromScale(0.928, 0.208)
+	settingsProBtn.BackgroundColor3 = Color3.fromRGB(48, 58, 82)
+	settingsProBtn.AutoButtonColor = false
+	settingsProBtn.Font = Enum.Font.FredokaOne
+	settingsProBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	settingsProBtn.Text = "⚙️ <b>SETTINGS PRO</b>"
+	settingsProBtn.Parent = screenGui
+	addCorner(settingsProBtn, 12)
+	addStroke(settingsProBtn, Color3.fromRGB(120, 175, 255), 2.4)
+	addTextSizeConstraint(settingsProBtn, 10, 18)
+	bindHoverAndClickTween(settingsProBtn, settingsProBtnSize, Color3.fromRGB(48, 58, 82))
+
+	local settingsProModal = Instance.new("Frame")
+	settingsProModal.Name = "SettingsProModal"
+	settingsProModal.Size = UDim2.fromScale(0.48, 0.58)
+	settingsProModal.Position = UDim2.fromScale(0.5, 0.50)
+	settingsProModal.AnchorPoint = Vector2.new(0.5, 0.5)
+	settingsProModal.BackgroundColor3 = Color3.fromRGB(20, 24, 38)
+	settingsProModal.BackgroundTransparency = 0.05
+	settingsProModal.Visible = false
+	settingsProModal.Parent = screenGui
+	addCorner(settingsProModal, 18)
+	addStroke(settingsProModal, Color3.fromRGB(120, 175, 255), 3.0)
+	addAspectRatio(settingsProModal, 1.42)
+
+	local spTitle = Instance.new("TextLabel")
+	spTitle.Size = UDim2.new(1, -60, 0, 40)
+	spTitle.Position = UDim2.fromOffset(20, 12)
+	spTitle.BackgroundTransparency = 1
+	spTitle.Font = Enum.Font.FredokaOne
+	spTitle.TextXAlignment = Enum.TextXAlignment.Left
+	spTitle.TextColor3 = Color3.fromRGB(255, 235, 95)
+	spTitle.Text = "⚙️ <b>SETTINGS PANEL PRO — ADVANCED</b>"
+	spTitle.Parent = settingsProModal
+	addTextSizeConstraint(spTitle, 13, 22)
+
+	local spCloseSize = UDim2.fromOffset(36, 36)
+	local spClose = Instance.new("TextButton")
+	spClose.Name = "SettingsProCloseBtn"
+	spClose.Size = spCloseSize
+	spClose.AnchorPoint = Vector2.new(0.5, 0.5)
+	spClose.Position = UDim2.new(1, -26, 0, 26)
+	spClose.BackgroundColor3 = Color3.fromRGB(235, 65, 75)
+	spClose.AutoButtonColor = false
+	spClose.Font = Enum.Font.FredokaOne
+	spClose.TextColor3 = Color3.fromRGB(255, 255, 255)
+	spClose.Text = "<b>X</b>"
+	spClose.Parent = settingsProModal
+	addCorner(spClose, 8)
+	bindHoverAndClickTween(spClose, spCloseSize, Color3.fromRGB(235, 65, 75))
+
+	local spContainer = Instance.new("ScrollingFrame")
+	spContainer.Name = "SettingsContainer"
+	spContainer.Size = UDim2.new(1, -36, 1, -70)
+	spContainer.Position = UDim2.fromOffset(18, 56)
+	spContainer.BackgroundTransparency = 1
+	spContainer.BorderSizePixel = 0
+	spContainer.CanvasSize = UDim2.new(0, 0, 0, 460)
+	spContainer.ScrollBarThickness = 6
+	spContainer.Parent = settingsProModal
+
+	local spLayout = Instance.new("UIListLayout")
+	spLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	spLayout.Padding = UDim.new(0, 10)
+	spLayout.Parent = spContainer
+
+	local function makeSettingRow(order: number, icon: string, titleText: string, descText: string): (Frame, Frame)
+		local row = Instance.new("Frame")
+		row.Name = "Row_" .. tostring(order)
+		row.LayoutOrder = order
+		row.Size = UDim2.new(1, -8, 0, 52)
+		row.BackgroundColor3 = Color3.fromRGB(28, 34, 52)
+		row.BackgroundTransparency = 0.2
+		row.Parent = spContainer
+		addCorner(row, 10)
+		addStroke(row, Color3.fromRGB(65, 80, 115), 1.6)
+
+		local infoLbl = Instance.new("TextLabel")
+		infoLbl.Size = UDim2.new(0.55, -12, 1, 0)
+		infoLbl.Position = UDim2.fromOffset(12, 0)
+		infoLbl.BackgroundTransparency = 1
+		infoLbl.Font = Enum.Font.FredokaOne
+		infoLbl.TextXAlignment = Enum.TextXAlignment.Left
+		infoLbl.TextColor3 = Color3.fromRGB(240, 245, 255)
+		infoLbl.Text = string.format("%s <b>%s</b>\n<font color='#A8B4CC' size='11'>%s</font>", icon, titleText, descText)
+		infoLbl.Parent = row
+		addTextSizeConstraint(infoLbl, 10, 15)
+
+		local ctrlContainer = Instance.new("Frame")
+		ctrlContainer.Name = "ControlArea"
+		ctrlContainer.Size = UDim2.new(0.42, -8, 1, -12)
+		ctrlContainer.Position = UDim2.new(0.58, 0, 0, 6)
+		ctrlContainer.BackgroundTransparency = 1
+		ctrlContainer.Parent = row
+
+		return row, ctrlContainer
+	end
+
+	-- Row 1: 🧸 Kid-Friendly Easy Mode (Big Arrows + Extra Hearts) - DEFAULT ON
+	local _, kidCtrl = makeSettingRow(1, "🧸", "Kid-Friendly Easy Mode", "Big guidance arrows, gentle gameplay & extra hearts")
+	local kidFriendlyToggleBtn = Instance.new("TextButton")
+	kidFriendlyToggleBtn.Name = "KidFriendlyToggleBtn"
+	kidFriendlyToggleBtn.Size = UDim2.new(0.96, 0, 1, 0)
+	kidFriendlyToggleBtn.BackgroundColor3 = Color3.fromRGB(65, 215, 125)
+	kidFriendlyToggleBtn.AutoButtonColor = false
+	kidFriendlyToggleBtn.Font = Enum.Font.FredokaOne
+	kidFriendlyToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	kidFriendlyToggleBtn.Text = "ON (Gentle & Guided 💖)"
+	kidFriendlyToggleBtn.Parent = kidCtrl
+	addCorner(kidFriendlyToggleBtn, 8)
+
+	-- Row 2: Music & SFX Volume (0%, 50%, 100%)
+	local _, volCtrl = makeSettingRow(2, "🎵", "Music & SFX Volume", "Game ambient background audio")
+	local volBtns = {}
+	for idx, lvl in ipairs({ 0, 50, 100 }) do
+		local b = Instance.new("TextButton")
+		b.Name = "Vol_" .. tostring(lvl)
+		b.Size = UDim2.new(0.31, 0, 1, 0)
+		b.Position = UDim2.new((idx - 1) * 0.35, 0, 0, 0)
+		b.BackgroundColor3 = if lvl == 100 then Color3.fromRGB(65, 185, 255) else Color3.fromRGB(40, 48, 68)
+		b.AutoButtonColor = false
+		b.Font = Enum.Font.FredokaOne
+		b.TextColor3 = Color3.fromRGB(255, 255, 255)
+		b.Text = tostring(lvl) .. "%"
+		b.Parent = volCtrl
+		addCorner(b, 8)
+		volBtns[lvl] = b
+	end
+
+	-- Row 3: Brainrot Voice Announcers (Mute / Normal / Boosted)
+	local _, voiceCtrl = makeSettingRow(3, "🗣️", "Brainrot Voice Sound", "Hatching & Index character calls")
+	local voiceBtns = {}
+	for idx, mode in ipairs({ "Mute", "Normal", "Boost" }) do
+		local b = Instance.new("TextButton")
+		b.Name = "Voice_" .. mode
+		b.Size = UDim2.new(0.31, 0, 1, 0)
+		b.Position = UDim2.new((idx - 1) * 0.35, 0, 0, 0)
+		b.BackgroundColor3 = if mode == "Normal" then Color3.fromRGB(245, 95, 185) else Color3.fromRGB(40, 48, 68)
+		b.AutoButtonColor = false
+		b.Font = Enum.Font.FredokaOne
+		b.TextColor3 = Color3.fromRGB(255, 255, 255)
+		b.Text = mode
+		b.Parent = voiceCtrl
+		addCorner(b, 8)
+		voiceBtns[mode] = b
+	end
+
+	-- Row 4: Global Shadows & Bloom (FPS Boost Toggle)
+	local _, shadowCtrl = makeSettingRow(4, "☀️", "Global Shadows (FPS Boost)", "Turn OFF for maximum performance")
+	local shadowsToggleBtn = Instance.new("TextButton")
+	shadowsToggleBtn.Name = "ShadowsToggleBtn"
+	shadowsToggleBtn.Size = UDim2.new(0.96, 0, 1, 0)
+	shadowsToggleBtn.BackgroundColor3 = Color3.fromRGB(65, 215, 125)
+	shadowsToggleBtn.AutoButtonColor = false
+	shadowsToggleBtn.Font = Enum.Font.FredokaOne
+	shadowsToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	shadowsToggleBtn.Text = "ON (High Quality)"
+	shadowsToggleBtn.Parent = shadowCtrl
+	addCorner(shadowsToggleBtn, 8)
+
+	-- Row 5: Camera FOV (70, 80, 90)
+	local _, fovCtrl = makeSettingRow(5, "📷", "Field of View (FOV)", "Wider view angle on screen")
+	local fovBtns = {}
+	for idx, fovVal in ipairs({ 70, 80, 90 }) do
+		local b = Instance.new("TextButton")
+		b.Name = "Fov_" .. tostring(fovVal)
+		b.Size = UDim2.new(0.31, 0, 1, 0)
+		b.Position = UDim2.new((idx - 1) * 0.35, 0, 0, 0)
+		b.BackgroundColor3 = if fovVal == 70 then Color3.fromRGB(255, 175, 45) else Color3.fromRGB(40, 48, 68)
+		b.AutoButtonColor = false
+		b.Font = Enum.Font.FredokaOne
+		b.TextColor3 = Color3.fromRGB(255, 255, 255)
+		b.Text = tostring(fovVal)
+		b.Parent = fovCtrl
+		addCorner(b, 8)
+		fovBtns[fovVal] = b
+	end
+
+	-- Row 6: Hide Other Players (Lag Reducer)
+	local _, hidePlayersCtrl = makeSettingRow(6, "👥", "Hide Other Players", "Reduce lag in crowded servers")
+	local hidePlayersToggleBtn = Instance.new("TextButton")
+	hidePlayersToggleBtn.Name = "HidePlayersToggleBtn"
+	hidePlayersToggleBtn.Size = UDim2.new(0.96, 0, 1, 0)
+	hidePlayersToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 48, 68)
+	hidePlayersToggleBtn.AutoButtonColor = false
+	hidePlayersToggleBtn.Font = Enum.Font.FredokaOne
+	hidePlayersToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	hidePlayersToggleBtn.Text = "OFF (Show All)"
+	hidePlayersToggleBtn.Parent = hidePlayersCtrl
+	addCorner(hidePlayersToggleBtn, 8)
+
+	-- Row 7: Top Progress HUD Visibility
+	local _, topHudCtrl = makeSettingRow(7, "📊", "Top Progress HUD", "Show/Hide the top statistics bar")
+	local topHudToggleBtn = Instance.new("TextButton")
+	topHudToggleBtn.Name = "TopHudToggleBtn"
+	topHudToggleBtn.Size = UDim2.new(0.96, 0, 1, 0)
+	topHudToggleBtn.BackgroundColor3 = Color3.fromRGB(65, 215, 125)
+	topHudToggleBtn.AutoButtonColor = false
+	topHudToggleBtn.Font = Enum.Font.FredokaOne
+	topHudToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	topHudToggleBtn.Text = "Visible"
+	topHudToggleBtn.Parent = topHudCtrl
+	addCorner(topHudToggleBtn, 8)
+
 	return {
 		ScreenGui = screenGui,
 		TopContainer = topContainer,
@@ -2272,6 +2539,18 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		YfRarityLbl = yfRarityLbl,
 		YfNameLbl = yfNameLbl,
 		RotatingViewportModels = rotatingViewportModels,
+		SettingsProBtn = settingsProBtn,
+		SettingsProModal = settingsProModal,
+		SettingsProClose = spClose,
+		SettingsVolumeBtns = volBtns,
+		SettingsVoiceBtns = voiceBtns,
+		SettingsShadowsBtn = shadowsToggleBtn,
+		SettingsFovBtns = fovBtns,
+		SettingsHidePlayersBtn = hidePlayersToggleBtn,
+		SettingsTopHudToggleBtn = topHudToggleBtn,
+		PremiumHealthBarFrame = healthBarFrame,
+		PremiumHealthFill = healthFill,
+		PremiumHealthLabel = healthLabel,
 		GetActiveHoveredCard = function(): IndexCardEntry?
 			return activeHoveredCard
 		end,

@@ -3780,7 +3780,7 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 	})
 	createBillboardText(
 		fountainTop,
-		"🥚 FIND MY SQUISHY & STEAL MY EGG (BRAINROT)!\nFollow the Central Highway -> Steal Brainrot Eggs & Find 117 Squishies Across Stages 1-8!",
+		"🥚 Find my Squishy and steal my egg (brainrot)\nFollow the Central Highway -> Steal Brainrot Eggs & Find 117 Squishies Across Stages 1-8!",
 		Color3.fromRGB(255, 235, 90),
 		Vector3.new(0, 2.5, 0),
 		UDim2.new(11.5, 0, 2.4, 0),

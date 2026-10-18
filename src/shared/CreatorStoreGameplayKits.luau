@@ -82,6 +82,12 @@ CreatorStoreGameplayKits.MAP_TEMPLATES = {
 		Description = "*Fixed!* Space Tycoon (Reserved for future version)",
 		Category = "ReservedMap",
 	},
+	StealAnEggMapTemplate = {
+		AssetId = 138241434644603,
+		Name = "StealAnEggMapTemplate",
+		Description = "Steal an Egg Map Template",
+		Category = "ReservedMap",
+	},
 }
 
 CreatorStoreGameplayKits.ACTIVE_MAP_KEY = "StealAnEgg"
@@ -269,6 +275,24 @@ CreatorStoreGameplayKits.KITS = {
 		Name = "ObbyKitByJakeDev",
 		Description = "obby kit by jakedev",
 		Category = "Obby",
+	},
+	SettingsPanelPro = {
+		AssetId = 93583640955196,
+		Name = "SettingsPanelPro",
+		Description = "Settings Panel Pro Advanced",
+		Category = "UI",
+	},
+	SettingsGuiAdvanced = {
+		AssetId = 94517727460767,
+		Name = "SettingsGuiAdvanced",
+		Description = "Settings GUI ADVANCED V1.6",
+		Category = "UI",
+	},
+	PremiumHealthBar = {
+		AssetId = 96150583459141,
+		Name = "PremiumHealthBar",
+		Description = "Premium Health Bar",
+		Category = "UI",
 	},
 
 	-- 2. Creator Store Treadmill & Speed Simulator Kits
@@ -488,6 +512,22 @@ function CreatorStoreGameplayKits.EnsureGameplayKits(customObjectFetcher: ((numb
 							print(string.format("     -> %s (%s)", sub.Name, sub.ClassName))
 						end
 					end
+				elseif kitInfo.AssetId == 93583640955196 or kitInfo.AssetId == 94517727460767 then
+					print(string.format("[SETTINGS PANEL PRO %d] Inspected children:", kitInfo.AssetId))
+					for _, ch in ipairs(container:GetChildren()) do
+						print(string.format("  -> %s (%s)", ch.Name, ch.ClassName))
+						for _, sub in ipairs(ch:GetChildren()) do
+							print(string.format("     -> %s (%s)", sub.Name, sub.ClassName))
+						end
+					end
+				elseif kitInfo.AssetId == 96150583459141 then
+					print(string.format("[PREMIUM HEALTH BAR %d] Inspected children:", kitInfo.AssetId))
+					for _, ch in ipairs(container:GetChildren()) do
+						print(string.format("  -> %s (%s)", ch.Name, ch.ClassName))
+						for _, sub in ipairs(ch:GetChildren()) do
+							print(string.format("     -> %s (%s)", sub.Name, sub.ClassName))
+						end
+					end
 				end
 
 				-- Check for monetization items (DeveloperProducts or GamePasses)
@@ -659,6 +699,90 @@ end
 
 function CreatorStoreGameplayKits.GetActiveMap(): Model?
 	return CreatorStoreGameplayKits.GetMapTemplate(CreatorStoreGameplayKits.ACTIVE_MAP_KEY)
+end
+
+function CreatorStoreGameplayKits.MountSettingsPanelPro(playerGui: PlayerGui): Instance?
+	local modelsFolder = ReplicatedStorage:FindFirstChild("Models")
+	local kitsFolder = modelsFolder and modelsFolder:FindFirstChild("GameplayKits")
+	local kit = kitsFolder and (kitsFolder:FindFirstChild("SettingsPanelPro") or kitsFolder:FindFirstChild("SettingsGuiAdvanced"))
+	if not kit then
+		return nil
+	end
+
+	for _, child in ipairs(kit:GetChildren()) do
+		if child:IsA("ScreenGui") then
+			local cloned = child:Clone()
+			cloned.ResetOnSpawn = false
+			cloned.Parent = playerGui
+			return cloned
+		elseif child:IsA("GuiObject") then
+			local sg = playerGui:FindFirstChild("SettingsProScreenGui")
+			if not sg then
+				local newSg = Instance.new("ScreenGui")
+				newSg.Name = "SettingsProScreenGui"
+				newSg.ResetOnSpawn = false
+				newSg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+				newSg.Parent = playerGui
+				sg = newSg
+			end
+			local cloned = child:Clone()
+			cloned.Parent = sg
+			return cloned
+		end
+	end
+
+	for _, desc in ipairs(kit:GetDescendants()) do
+		if desc:IsA("ScreenGui") then
+			local cloned = desc:Clone()
+			cloned.ResetOnSpawn = false
+			cloned.Parent = playerGui
+			return cloned
+		end
+	end
+
+	return nil
+end
+
+function CreatorStoreGameplayKits.MountPremiumHealthBar(playerGui: PlayerGui): Instance?
+	local modelsFolder = ReplicatedStorage:FindFirstChild("Models")
+	local kitsFolder = modelsFolder and modelsFolder:FindFirstChild("GameplayKits")
+	local kit = kitsFolder and kitsFolder:FindFirstChild("PremiumHealthBar")
+	if not kit then
+		return nil
+	end
+
+	for _, child in ipairs(kit:GetChildren()) do
+		if child:IsA("ScreenGui") then
+			local cloned = child:Clone()
+			cloned.ResetOnSpawn = false
+			cloned.Parent = playerGui
+			return cloned
+		elseif child:IsA("GuiObject") then
+			local sg = playerGui:FindFirstChild("HealthBarScreenGui")
+			if not sg then
+				local newSg = Instance.new("ScreenGui")
+				newSg.Name = "HealthBarScreenGui"
+				newSg.ResetOnSpawn = false
+				newSg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+				newSg.Parent = playerGui
+				sg = newSg
+			end
+			local cloned = child:Clone()
+			cloned.Parent = sg
+			return cloned
+		end
+	end
+
+	for _, desc in ipairs(kit:GetDescendants()) do
+		if desc:IsA("ScreenGui") then
+			local cloned = desc:Clone()
+			cloned.ResetOnSpawn = false
+			cloned.Parent = playerGui
+			return cloned
+		end
+	end
+
+	return nil
 end
 
 return CreatorStoreGameplayKits
