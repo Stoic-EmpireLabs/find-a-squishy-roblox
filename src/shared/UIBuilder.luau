@@ -29,7 +29,7 @@ export type RotatingViewportEntry = {
 }
 
 export type IndexCardEntry = {
-	Frame: Frame,
+	Frame: TextButton,
 	Status: TextLabel,
 	Viewport: ViewportFrame,
 	Camera: Camera,
@@ -1043,6 +1043,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	indexScroll.ScrollBarThickness = 10
 	indexScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	indexScroll.CanvasSize = UDim2.fromScale(0, 0)
+	indexScroll.Selectable = false
 	indexScroll.Parent = indexModal
 
 	local gridLayout = Instance.new("UIGridLayout")
@@ -1057,9 +1058,12 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 
 	for idx, slime in ipairs(SlimeData.Slimes) do
 		local anySlime = slime :: any
-		local card = Instance.new("Frame")
+		local card = Instance.new("TextButton")
 		card.Name = "SquishyCard_" .. tostring(idx)
 		card.LayoutOrder = idx
+		card.Text = ""
+		card.AutoButtonColor = false
+		card.Selectable = true
 		card.BackgroundColor3 = Color3.fromRGB(32, 38, 64)
 		card.Parent = indexScroll
 		addCorner(card, 12)
@@ -1068,7 +1072,11 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		local aColor = anySlime.AccentColor or slime.SecondaryColor or Color3.fromRGB(255, 230, 85)
 		local rarity = tostring(anySlime.Rarity or "Common")
 		local isBossEgg = idx <= 35
-		addStroke(card, pColor, 2.2)
+		local cardStroke = Instance.new("UIStroke")
+		cardStroke.Color = pColor
+		cardStroke.Thickness = 2.2
+		cardStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		cardStroke.Parent = card
 
 		-- Real 3D ViewportFrame inside every single card (#1–#117) that zooms & spins on hover!
 		local cardVF = Instance.new("ViewportFrame")
@@ -1081,6 +1089,8 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		cardVF.Ambient = Color3.fromRGB(215, 222, 242)
 		cardVF.LightColor = Color3.fromRGB(255, 255, 255)
 		cardVF.LightDirection = Vector3.new(-1, -1.2, -1)
+		cardVF.Active = false
+		cardVF.Selectable = false
 		cardVF.Parent = card
 		addCorner(cardVF, 12)
 		addStroke(cardVF, aColor, 2.0)
@@ -1099,6 +1109,8 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 			slimeIcon.Size = UDim2.fromScale(0.42, 0.42)
 			slimeIcon.Position = UDim2.fromScale(0.56, 0.56)
 			slimeIcon.BackgroundTransparency = 1
+			slimeIcon.Active = false
+			slimeIcon.Selectable = false
 			slimeIcon.Image = PrebuiltLoader.GetCuteSlimeIconId(idx)
 			slimeIcon.Parent = cardVF
 		end
@@ -1121,6 +1133,8 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		nameLbl.TextXAlignment = Enum.TextXAlignment.Left
 		nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
 		nameLbl.Text = string.format("<b>#%d %s</b>\n<font color='#A5E5FF'>[Stage %d • %s]</font>", idx, slime.Name, slime.Level, rarity)
+		nameLbl.Active = false
+		nameLbl.Selectable = false
 		nameLbl.Parent = card
 		addTextSizeConstraint(nameLbl, 11, 18)
 
@@ -1133,6 +1147,8 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		statusLbl.TextXAlignment = Enum.TextXAlignment.Left
 		statusLbl.TextColor3 = Color3.fromRGB(170, 180, 205)
 		statusLbl.Text = string.format("🔒 <b>$%d/s</b>", anySlime.IncomePerSec or slime.CoinsPerSec or 10)
+		statusLbl.Active = false
+		statusLbl.Selectable = false
 		statusLbl.Parent = card
 		addTextSizeConstraint(statusLbl, 10, 16)
 
@@ -1146,8 +1162,12 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		}
 		indexCards[tostring(slime.Id)] = cardEntry
 
-		card.MouseEnter:Connect(function()
+		local function onCardFocus()
 			activeHoveredCard = cardEntry
+			card.BackgroundColor3 = Color3.fromRGB(52, 64, 108)
+			cardStroke.Color = Color3.fromRGB(255, 245, 95)
+			cardStroke.Thickness = 3.5
+
 			TweenService:Create(cardVF, hoverTweenInfo, {
 				Size = cardViewportHoverSize,
 				BackgroundColor3 = Color3.fromRGB(28, 36, 66),
@@ -1171,12 +1191,21 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 				rarity,
 				hintDesc
 			)
-		end)
 
-		card.MouseLeave:Connect(function()
+			local rowIdx = math.floor((idx - 1) / 3)
+			local targetY = math.max(0, rowIdx * 116 - 116)
+			if math.abs(indexScroll.CanvasPosition.Y - targetY) > 180 then
+				indexScroll.CanvasPosition = Vector2.new(0, targetY)
+			end
+		end
+
+		local function onCardBlur()
 			if activeHoveredCard == cardEntry then
 				activeHoveredCard = nil
 			end
+			card.BackgroundColor3 = Color3.fromRGB(32, 38, 64)
+			cardStroke.Color = pColor
+			cardStroke.Thickness = 2.2
 			TweenService:Create(cardVF, hoverTweenInfo, {
 				Size = cardViewportBaseSize,
 				BackgroundColor3 = Color3.fromRGB(16, 20, 36),
@@ -1185,7 +1214,46 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 				FieldOfView = 50,
 			}):Play()
 			squishy3DModel:PivotTo(basePivot)
-		end)
+		end
+
+		card.MouseEnter:Connect(onCardFocus)
+		card.SelectionGained:Connect(onCardFocus)
+		card.MouseLeave:Connect(onCardBlur)
+		card.SelectionLost:Connect(onCardBlur)
+	end
+
+	-- Wire explicit 3-column grid NextSelection links across all 117 cards (#1..#117)
+	for sIdx = 1, #SlimeData.Slimes do
+		local sEntry = indexCards[tostring(SlimeData.Slimes[sIdx].Id)]
+		if sEntry then
+			local cBtn = sEntry.Frame
+			if sIdx > 1 then
+				local prevE = indexCards[tostring(SlimeData.Slimes[sIdx - 1].Id)]
+				if prevE then
+					cBtn.NextSelectionLeft = prevE.Frame
+				end
+			end
+			if sIdx < #SlimeData.Slimes then
+				local nextE = indexCards[tostring(SlimeData.Slimes[sIdx + 1].Id)]
+				if nextE then
+					cBtn.NextSelectionRight = nextE.Frame
+				end
+			end
+			if sIdx > 3 then
+				local upE = indexCards[tostring(SlimeData.Slimes[sIdx - 3].Id)]
+				if upE then
+					cBtn.NextSelectionUp = upE.Frame
+				end
+			else
+				cBtn.NextSelectionUp = if sIdx == 3 then indexClose else buyHintIndexBtn
+			end
+			if sIdx + 3 <= #SlimeData.Slimes then
+				local downE = indexCards[tostring(SlimeData.Slimes[sIdx + 3].Id)]
+				if downE then
+					cBtn.NextSelectionDown = downE.Frame
+				end
+			end
+		end
 	end
 
 	local firstCard = indexCards[tostring(SlimeData.Slimes[1].Id)]
@@ -1193,6 +1261,10 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		activeHoveredCard = firstCard
 		firstCard.Camera.FieldOfView = 50
 	end
+	buyHintIndexBtn.NextSelectionDown = if firstCard then firstCard.Frame else nil
+	indexClose.NextSelectionDown = (indexCards["3"] and indexCards["3"].Frame) or (if firstCard then firstCard.Frame else nil)
+	buyHintIndexBtn.NextSelectionRight = indexClose
+	indexClose.NextSelectionLeft = buyHintIndexBtn
 
 	-- =========================================================================
 	-- 5. MODAL #2: 💎 FRONT-PAGE SIMULATOR SUPER SHOP (100% Scale-Responsive, Zero Empty Space, Hero VIP Banner, 2x2 Power Passes, 5 Treasure Boost Cards & Dual Upgrade Bar)
@@ -1790,6 +1862,57 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	addTextStroke(rebirthBtn, Color3.fromRGB(38, 12, 32), 2.0)
 	bindHoverAndClickTween(rebirthBtn, powerBtnSize, Color3.fromRGB(255, 95, 195))
 
+	-- ShopModal Console NextSelection Wiring
+	shopClose.NextSelectionDown = vipBuyBtn
+	vipBuyBtn.NextSelectionUp = shopClose
+	vipBuyBtn.NextSelectionDown = passButtonsByKey["2xCash"]
+
+	if passButtonsByKey["2xCash"] and passButtonsByKey["2xSpeed"] and passButtonsByKey["AutoHatch"] and passButtonsByKey["Carry2Eggs"] then
+		passButtonsByKey["2xCash"].NextSelectionUp = vipBuyBtn
+		passButtonsByKey["2xCash"].NextSelectionRight = passButtonsByKey["2xSpeed"]
+		passButtonsByKey["2xCash"].NextSelectionDown = passButtonsByKey["AutoHatch"]
+
+		passButtonsByKey["2xSpeed"].NextSelectionUp = vipBuyBtn
+		passButtonsByKey["2xSpeed"].NextSelectionLeft = passButtonsByKey["2xCash"]
+		passButtonsByKey["2xSpeed"].NextSelectionDown = passButtonsByKey["Carry2Eggs"]
+
+		passButtonsByKey["AutoHatch"].NextSelectionUp = passButtonsByKey["2xCash"]
+		passButtonsByKey["AutoHatch"].NextSelectionRight = passButtonsByKey["Carry2Eggs"]
+		passButtonsByKey["AutoHatch"].NextSelectionDown = devProductButtons["InstantHatchAll"] or buySpeedBtn
+
+		passButtonsByKey["Carry2Eggs"].NextSelectionUp = passButtonsByKey["2xSpeed"]
+		passButtonsByKey["Carry2Eggs"].NextSelectionLeft = passButtonsByKey["AutoHatch"]
+		passButtonsByKey["Carry2Eggs"].NextSelectionDown = devProductButtons["CashPack25K"] or buyHintShopBtn
+	end
+
+	local dpKeys = { "InstantHatchAll", "BossShield60s", "LuckyEggRoll", "CashPack5K", "CashPack25K", "CashPack100K" }
+	for dIdx, dKey in ipairs(dpKeys) do
+		local dpB = devProductButtons[dKey]
+		if dpB then
+			dpB.Selectable = true
+			dpB.NextSelectionUp = if dIdx <= 3 then passButtonsByKey["AutoHatch"] else passButtonsByKey["Carry2Eggs"]
+			if dIdx > 1 and devProductButtons[dpKeys[dIdx - 1]] then
+				dpB.NextSelectionLeft = devProductButtons[dpKeys[dIdx - 1]]
+			end
+			if dIdx < #dpKeys and devProductButtons[dpKeys[dIdx + 1]] then
+				dpB.NextSelectionRight = devProductButtons[dpKeys[dIdx + 1]]
+			end
+			dpB.NextSelectionDown = if dIdx <= 2 then buySpeedBtn elseif dIdx <= 4 then buyFenceBtn elseif dIdx == 5 then buyHintShopBtn else rebirthBtn
+		end
+	end
+
+	buySpeedBtn.NextSelectionRight = buyFenceBtn
+	buyFenceBtn.NextSelectionLeft = buySpeedBtn
+	buyFenceBtn.NextSelectionRight = buyHintShopBtn
+	buyHintShopBtn.NextSelectionLeft = buyFenceBtn
+	buyHintShopBtn.NextSelectionRight = rebirthBtn
+	rebirthBtn.NextSelectionLeft = buyHintShopBtn
+
+	buySpeedBtn.NextSelectionUp = devProductButtons["InstantHatchAll"] or passButtonsByKey["AutoHatch"]
+	buyFenceBtn.NextSelectionUp = devProductButtons["BossShield60s"] or passButtonsByKey["AutoHatch"]
+	buyHintShopBtn.NextSelectionUp = devProductButtons["LuckyEggRoll"] or passButtonsByKey["Carry2Eggs"]
+	rebirthBtn.NextSelectionUp = devProductButtons["CashPack100K"] or passButtonsByKey["Carry2Eggs"]
+
 	-- =========================================================================
 	-- 6. MODAL #3: 🎡 LUCKY SQUISHY SPIN WHEEL & 🎁 PLAYTIME REWARDS CHEST (100% Scale-Responsive!)
 	-- =========================================================================
@@ -2006,6 +2129,40 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	addTextSizeConstraint(claimDailyModalBtn, 12, 24)
 	addTextStroke(claimDailyModalBtn, Color3.fromRGB(12, 42, 20), 2.0)
 	bindHoverAndClickTween(claimDailyModalBtn, dailyBtnSize, Color3.fromRGB(65, 235, 115))
+
+	-- SpinModal Console NextSelection Wiring
+	spinClose.NextSelectionDown = buySpinRobuxBtn
+	spinNowBtn.NextSelectionUp = spinClose
+	buySpinCashBtn.NextSelectionUp = spinClose
+	buySpinRobuxBtn.NextSelectionUp = spinClose
+
+	spinNowBtn.NextSelectionRight = buySpinCashBtn
+	buySpinCashBtn.NextSelectionLeft = spinNowBtn
+	buySpinCashBtn.NextSelectionRight = buySpinRobuxBtn
+	buySpinRobuxBtn.NextSelectionLeft = buySpinCashBtn
+
+	spinNowBtn.NextSelectionDown = playtimeButtons[1] or claimDailyModalBtn
+	buySpinCashBtn.NextSelectionDown = playtimeButtons[3] or claimDailyModalBtn
+	buySpinRobuxBtn.NextSelectionDown = playtimeButtons[5] or claimDailyModalBtn
+
+	for pIdx = 1, 5 do
+		local ptB = playtimeButtons[pIdx]
+		if ptB then
+			ptB.Selectable = true
+			ptB.NextSelectionUp = if pIdx <= 2 then spinNowBtn elseif pIdx <= 4 then buySpinCashBtn else buySpinRobuxBtn
+			if pIdx > 1 and playtimeButtons[pIdx - 1] then
+				ptB.NextSelectionLeft = playtimeButtons[pIdx - 1]
+			end
+			if pIdx < 5 and playtimeButtons[pIdx + 1] then
+				ptB.NextSelectionRight = playtimeButtons[pIdx + 1]
+			end
+			ptB.NextSelectionDown = claimDailyModalBtn
+		end
+	end
+
+	claimDailyModalBtn.NextSelectionUp = playtimeButtons[3] or buySpinCashBtn
+	claimDailyModalBtn.NextSelectionDown = spinClose
+	spinClose.NextSelectionUp = claimDailyModalBtn
 
 	-- =========================================================================
 	-- 7. CENTER-SCREEN "🎉 YOU FOUND 🎉" CELEBRATION POPUP
@@ -2322,12 +2479,39 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	spContainer.BorderSizePixel = 0
 	spContainer.CanvasSize = UDim2.new(0, 0, 0, 460)
 	spContainer.ScrollBarThickness = 6
+	spContainer.Selectable = false
 	spContainer.Parent = settingsProModal
 
 	local spLayout = Instance.new("UIListLayout")
 	spLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	spLayout.Padding = UDim.new(0, 10)
 	spLayout.Parent = spContainer
+
+	local function setupSettingsFocusStroke(btn: TextButton)
+		btn.Selectable = true
+		local st = Instance.new("UIStroke")
+		st.Color = Color3.fromRGB(80, 100, 140)
+		st.Thickness = 1.6
+		st.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		st.Parent = btn
+
+		btn.SelectionGained:Connect(function()
+			st.Color = Color3.fromRGB(255, 240, 95)
+			st.Thickness = 2.8
+		end)
+		btn.MouseEnter:Connect(function()
+			st.Color = Color3.fromRGB(255, 240, 95)
+			st.Thickness = 2.8
+		end)
+		btn.SelectionLost:Connect(function()
+			st.Color = Color3.fromRGB(80, 100, 140)
+			st.Thickness = 1.6
+		end)
+		btn.MouseLeave:Connect(function()
+			st.Color = Color3.fromRGB(80, 100, 140)
+			st.Thickness = 1.6
+		end)
+	end
 
 	local function makeSettingRow(order: number, icon: string, titleText: string, descText: string): (Frame, Frame)
 		local row = Instance.new("Frame")
@@ -2348,6 +2532,8 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		infoLbl.TextXAlignment = Enum.TextXAlignment.Left
 		infoLbl.TextColor3 = Color3.fromRGB(240, 245, 255)
 		infoLbl.Text = string.format("%s <b>%s</b>\n<font color='#A8B4CC' size='11'>%s</font>", icon, titleText, descText)
+		infoLbl.Active = false
+		infoLbl.Selectable = false
 		infoLbl.Parent = row
 		addTextSizeConstraint(infoLbl, 10, 15)
 
@@ -2363,9 +2549,12 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 
 	-- Row 1: 🧸 Kid-Friendly Easy Mode (Big Arrows + Extra Hearts) - DEFAULT ON
 	local _, kidCtrl = makeSettingRow(1, "🧸", "Kid-Friendly Easy Mode", "Big guidance arrows, gentle gameplay & extra hearts")
+	local kidBtnSize = UDim2.fromScale(0.96, 0.92)
 	local kidFriendlyToggleBtn = Instance.new("TextButton")
 	kidFriendlyToggleBtn.Name = "KidFriendlyToggleBtn"
-	kidFriendlyToggleBtn.Size = UDim2.new(0.96, 0, 1, 0)
+	kidFriendlyToggleBtn.Size = kidBtnSize
+	kidFriendlyToggleBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+	kidFriendlyToggleBtn.Position = UDim2.fromScale(0.5, 0.5)
 	kidFriendlyToggleBtn.BackgroundColor3 = Color3.fromRGB(65, 215, 125)
 	kidFriendlyToggleBtn.AutoButtonColor = false
 	kidFriendlyToggleBtn.Font = Enum.Font.FredokaOne
@@ -2373,15 +2562,19 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	kidFriendlyToggleBtn.Text = "ON (Gentle & Guided 💖)"
 	kidFriendlyToggleBtn.Parent = kidCtrl
 	addCorner(kidFriendlyToggleBtn, 8)
+	setupSettingsFocusStroke(kidFriendlyToggleBtn)
+	bindHoverAndClickTween(kidFriendlyToggleBtn, kidBtnSize, Color3.fromRGB(65, 215, 125))
 
 	-- Row 2: Music & SFX Volume (0%, 50%, 100%)
 	local _, volCtrl = makeSettingRow(2, "🎵", "Music & SFX Volume", "Game ambient background audio")
+	local volBtnSize = UDim2.fromScale(0.30, 0.92)
 	local volBtns = {}
 	for idx, lvl in ipairs({ 0, 50, 100 }) do
 		local b = Instance.new("TextButton")
 		b.Name = "Vol_" .. tostring(lvl)
-		b.Size = UDim2.new(0.31, 0, 1, 0)
-		b.Position = UDim2.new((idx - 1) * 0.35, 0, 0, 0)
+		b.Size = volBtnSize
+		b.AnchorPoint = Vector2.new(0.5, 0.5)
+		b.Position = UDim2.fromScale(0.16 + (idx - 1) * 0.34, 0.5)
 		b.BackgroundColor3 = if lvl == 100 then Color3.fromRGB(65, 185, 255) else Color3.fromRGB(40, 48, 68)
 		b.AutoButtonColor = false
 		b.Font = Enum.Font.FredokaOne
@@ -2389,17 +2582,21 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		b.Text = tostring(lvl) .. "%"
 		b.Parent = volCtrl
 		addCorner(b, 8)
+		setupSettingsFocusStroke(b)
+		bindHoverAndClickTween(b, volBtnSize, if lvl == 100 then Color3.fromRGB(65, 185, 255) else Color3.fromRGB(40, 48, 68))
 		volBtns[lvl] = b
 	end
 
 	-- Row 3: Brainrot Voice Announcers (Mute / Normal / Boosted)
 	local _, voiceCtrl = makeSettingRow(3, "🗣️", "Brainrot Voice Sound", "Hatching & Index character calls")
+	local voiceBtnSize = UDim2.fromScale(0.30, 0.92)
 	local voiceBtns = {}
 	for idx, mode in ipairs({ "Mute", "Normal", "Boost" }) do
 		local b = Instance.new("TextButton")
 		b.Name = "Voice_" .. mode
-		b.Size = UDim2.new(0.31, 0, 1, 0)
-		b.Position = UDim2.new((idx - 1) * 0.35, 0, 0, 0)
+		b.Size = voiceBtnSize
+		b.AnchorPoint = Vector2.new(0.5, 0.5)
+		b.Position = UDim2.fromScale(0.16 + (idx - 1) * 0.34, 0.5)
 		b.BackgroundColor3 = if mode == "Normal" then Color3.fromRGB(245, 95, 185) else Color3.fromRGB(40, 48, 68)
 		b.AutoButtonColor = false
 		b.Font = Enum.Font.FredokaOne
@@ -2407,14 +2604,19 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		b.Text = mode
 		b.Parent = voiceCtrl
 		addCorner(b, 8)
+		setupSettingsFocusStroke(b)
+		bindHoverAndClickTween(b, voiceBtnSize, if mode == "Normal" then Color3.fromRGB(245, 95, 185) else Color3.fromRGB(40, 48, 68))
 		voiceBtns[mode] = b
 	end
 
 	-- Row 4: Global Shadows & Bloom (FPS Boost Toggle)
 	local _, shadowCtrl = makeSettingRow(4, "☀️", "Global Shadows (FPS Boost)", "Turn OFF for maximum performance")
+	local shadowBtnSize = UDim2.fromScale(0.96, 0.92)
 	local shadowsToggleBtn = Instance.new("TextButton")
 	shadowsToggleBtn.Name = "ShadowsToggleBtn"
-	shadowsToggleBtn.Size = UDim2.new(0.96, 0, 1, 0)
+	shadowsToggleBtn.Size = shadowBtnSize
+	shadowsToggleBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+	shadowsToggleBtn.Position = UDim2.fromScale(0.5, 0.5)
 	shadowsToggleBtn.BackgroundColor3 = Color3.fromRGB(65, 215, 125)
 	shadowsToggleBtn.AutoButtonColor = false
 	shadowsToggleBtn.Font = Enum.Font.FredokaOne
@@ -2422,15 +2624,19 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	shadowsToggleBtn.Text = "ON (High Quality)"
 	shadowsToggleBtn.Parent = shadowCtrl
 	addCorner(shadowsToggleBtn, 8)
+	setupSettingsFocusStroke(shadowsToggleBtn)
+	bindHoverAndClickTween(shadowsToggleBtn, shadowBtnSize, Color3.fromRGB(65, 215, 125))
 
 	-- Row 5: Camera FOV (70, 80, 90)
 	local _, fovCtrl = makeSettingRow(5, "📷", "Field of View (FOV)", "Wider view angle on screen")
+	local fovBtnSize = UDim2.fromScale(0.30, 0.92)
 	local fovBtns = {}
 	for idx, fovVal in ipairs({ 70, 80, 90 }) do
 		local b = Instance.new("TextButton")
 		b.Name = "Fov_" .. tostring(fovVal)
-		b.Size = UDim2.new(0.31, 0, 1, 0)
-		b.Position = UDim2.new((idx - 1) * 0.35, 0, 0, 0)
+		b.Size = fovBtnSize
+		b.AnchorPoint = Vector2.new(0.5, 0.5)
+		b.Position = UDim2.fromScale(0.16 + (idx - 1) * 0.34, 0.5)
 		b.BackgroundColor3 = if fovVal == 70 then Color3.fromRGB(255, 175, 45) else Color3.fromRGB(40, 48, 68)
 		b.AutoButtonColor = false
 		b.Font = Enum.Font.FredokaOne
@@ -2438,14 +2644,19 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		b.Text = tostring(fovVal)
 		b.Parent = fovCtrl
 		addCorner(b, 8)
+		setupSettingsFocusStroke(b)
+		bindHoverAndClickTween(b, fovBtnSize, if fovVal == 70 then Color3.fromRGB(255, 175, 45) else Color3.fromRGB(40, 48, 68))
 		fovBtns[fovVal] = b
 	end
 
 	-- Row 6: Hide Other Players (Lag Reducer)
 	local _, hidePlayersCtrl = makeSettingRow(6, "👥", "Hide Other Players", "Reduce lag in crowded servers")
+	local hideBtnSize = UDim2.fromScale(0.96, 0.92)
 	local hidePlayersToggleBtn = Instance.new("TextButton")
 	hidePlayersToggleBtn.Name = "HidePlayersToggleBtn"
-	hidePlayersToggleBtn.Size = UDim2.new(0.96, 0, 1, 0)
+	hidePlayersToggleBtn.Size = hideBtnSize
+	hidePlayersToggleBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+	hidePlayersToggleBtn.Position = UDim2.fromScale(0.5, 0.5)
 	hidePlayersToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 48, 68)
 	hidePlayersToggleBtn.AutoButtonColor = false
 	hidePlayersToggleBtn.Font = Enum.Font.FredokaOne
@@ -2453,12 +2664,17 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	hidePlayersToggleBtn.Text = "OFF (Show All)"
 	hidePlayersToggleBtn.Parent = hidePlayersCtrl
 	addCorner(hidePlayersToggleBtn, 8)
+	setupSettingsFocusStroke(hidePlayersToggleBtn)
+	bindHoverAndClickTween(hidePlayersToggleBtn, hideBtnSize, Color3.fromRGB(40, 48, 68))
 
 	-- Row 7: Top Progress HUD Visibility
 	local _, topHudCtrl = makeSettingRow(7, "📊", "Top Progress HUD", "Show/Hide the top statistics bar")
+	local topHudBtnSize = UDim2.fromScale(0.96, 0.92)
 	local topHudToggleBtn = Instance.new("TextButton")
 	topHudToggleBtn.Name = "TopHudToggleBtn"
-	topHudToggleBtn.Size = UDim2.new(0.96, 0, 1, 0)
+	topHudToggleBtn.Size = topHudBtnSize
+	topHudToggleBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+	topHudToggleBtn.Position = UDim2.fromScale(0.5, 0.5)
 	topHudToggleBtn.BackgroundColor3 = Color3.fromRGB(65, 215, 125)
 	topHudToggleBtn.AutoButtonColor = false
 	topHudToggleBtn.Font = Enum.Font.FredokaOne
@@ -2466,6 +2682,77 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	topHudToggleBtn.Text = "Visible"
 	topHudToggleBtn.Parent = topHudCtrl
 	addCorner(topHudToggleBtn, 8)
+	setupSettingsFocusStroke(topHudToggleBtn)
+	bindHoverAndClickTween(topHudToggleBtn, topHudBtnSize, Color3.fromRGB(65, 215, 125))
+
+	-- SettingsPro NextSelection Linking
+	spClose.NextSelectionDown = kidFriendlyToggleBtn
+	kidFriendlyToggleBtn.NextSelectionUp = spClose
+	kidFriendlyToggleBtn.NextSelectionDown = volBtns[50] or volBtns[0]
+
+	volBtns[0].NextSelectionRight = volBtns[50]
+	volBtns[50].NextSelectionLeft = volBtns[0]
+	volBtns[50].NextSelectionRight = volBtns[100]
+	volBtns[100].NextSelectionLeft = volBtns[50]
+
+	volBtns[0].NextSelectionUp = kidFriendlyToggleBtn
+	volBtns[50].NextSelectionUp = kidFriendlyToggleBtn
+	volBtns[100].NextSelectionUp = kidFriendlyToggleBtn
+
+	volBtns[0].NextSelectionDown = voiceBtns["Mute"]
+	volBtns[50].NextSelectionDown = voiceBtns["Normal"]
+	volBtns[100].NextSelectionDown = voiceBtns["Boost"]
+
+	voiceBtns["Mute"].NextSelectionRight = voiceBtns["Normal"]
+	voiceBtns["Normal"].NextSelectionLeft = voiceBtns["Mute"]
+	voiceBtns["Normal"].NextSelectionRight = voiceBtns["Boost"]
+	voiceBtns["Boost"].NextSelectionLeft = voiceBtns["Normal"]
+
+	voiceBtns["Mute"].NextSelectionUp = volBtns[0]
+	voiceBtns["Normal"].NextSelectionUp = volBtns[50]
+	voiceBtns["Boost"].NextSelectionUp = volBtns[100]
+
+	voiceBtns["Mute"].NextSelectionDown = shadowsToggleBtn
+	voiceBtns["Normal"].NextSelectionDown = shadowsToggleBtn
+	voiceBtns["Boost"].NextSelectionDown = shadowsToggleBtn
+
+	shadowsToggleBtn.NextSelectionUp = voiceBtns["Normal"]
+	shadowsToggleBtn.NextSelectionDown = fovBtns[80] or fovBtns[70]
+
+	fovBtns[70].NextSelectionRight = fovBtns[80]
+	fovBtns[80].NextSelectionLeft = fovBtns[70]
+	fovBtns[80].NextSelectionRight = fovBtns[90]
+	fovBtns[90].NextSelectionLeft = fovBtns[80]
+
+	fovBtns[70].NextSelectionUp = shadowsToggleBtn
+	fovBtns[80].NextSelectionUp = shadowsToggleBtn
+	fovBtns[90].NextSelectionUp = shadowsToggleBtn
+
+	fovBtns[70].NextSelectionDown = hidePlayersToggleBtn
+	fovBtns[80].NextSelectionDown = hidePlayersToggleBtn
+	fovBtns[90].NextSelectionDown = hidePlayersToggleBtn
+
+	hidePlayersToggleBtn.NextSelectionUp = fovBtns[80] or fovBtns[70]
+	hidePlayersToggleBtn.NextSelectionDown = topHudToggleBtn
+
+	topHudToggleBtn.NextSelectionUp = hidePlayersToggleBtn
+	topHudToggleBtn.NextSelectionDown = spClose
+	spClose.NextSelectionUp = topHudToggleBtn
+
+	-- Global Console & Input Sanitization: ensure buttons are Selectable, scrolling frames are not, and child elements don't block input
+	for _, desc in ipairs(screenGui:GetDescendants()) do
+		if desc:IsA("GuiButton") then
+			desc.Active = true
+			desc.Selectable = true
+		elseif desc:IsA("ScrollingFrame") then
+			desc.Selectable = false
+		elseif desc:IsA("GuiObject") then
+			desc.Selectable = false
+			if desc.Parent and desc.Parent:IsA("GuiButton") then
+				desc.Active = false
+			end
+		end
+	end
 
 	return {
 		ScreenGui = screenGui,
@@ -2542,6 +2829,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		SettingsProBtn = settingsProBtn,
 		SettingsProModal = settingsProModal,
 		SettingsProClose = spClose,
+		KidFriendlyToggleBtn = kidFriendlyToggleBtn,
 		SettingsVolumeBtns = volBtns,
 		SettingsVoiceBtns = voiceBtns,
 		SettingsShadowsBtn = shadowsToggleBtn,

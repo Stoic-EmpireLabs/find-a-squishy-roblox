@@ -894,11 +894,6 @@ local function updateSpeedUpgradePrompt(player: Player)
 			)
 			bbLbl.TextColor3 = tierData.AccentColor or tierData.Color
 		end
-		local cMesh = tmModel:FindFirstChild("CreatorStoreMesh", true) :: SpecialMesh?
-		if cMesh and tierData.MeshId then
-			cMesh.MeshId = tierData.MeshId
-			cMesh.TextureId = tierData.TextureId or ""
-		end
 		local screen = tmModel:FindFirstChild("TreadmillConsoleScreen", true) :: BasePart?
 		if screen then
 			local speedFormatted = SlimeData.FormatNumber(tierData.SpeedPerSec)
@@ -3985,7 +3980,7 @@ Players.PlayerRemoving:Connect(function(player: Player)
 				if pr then
 					pr.ActionText = "Plant Carried Egg"
 					pr.ObjectText = "Empty Incubator #" .. tostring(incIdx)
-					pr.Enabled = true
+					pr.Enabled = false
 				end
 			end
 		end

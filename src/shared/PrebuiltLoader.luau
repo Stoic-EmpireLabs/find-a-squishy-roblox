@@ -794,8 +794,8 @@ local function buildObbyStageTemplate(idx: number): Model
 		makePart({
 			Name = "ObbyPad_" .. i,
 			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(1.6, 5.5, 5.5),
-			CFrame = CFrame.new((i - 2.5) * 4.2, i * 2.2, (i % 2) * 2.4) * CFrame.Angles(0, 0, math.rad(90)),
+			Size = Vector3.new(2.0, 7.5, 7.5),
+			CFrame = CFrame.new((i - 2.5) * 6.5, i * 2.8, (i % 2) * 3.5) * CFrame.Angles(0, 0, math.rad(90)),
 			Color = padColors[((idx + i - 2) % #padColors) + 1],
 			Material = Enum.Material.WoodPlanks,
 			CanCollide = true,
@@ -1561,9 +1561,20 @@ function PrebuiltLoader.CloneNormalizedTemplate(
 	local ok, _, bbSize = pcall(function()
 		return cloned:GetBoundingBox()
 	end)
+	local isObby = categoryName == "ObbyPieces"
+		or categoryName == "ObbyStages"
+		or categoryName == "Obstacles"
+		or string.find(string.lower(categoryName), "obby") ~= nil
 	if ok and bbSize.Magnitude > 0.05 then
 		local currentDim = math.max(bbSize.Y, bbSize.X * 0.72, bbSize.Z * 0.72)
-		local factor = math.clamp(targetScale / math.max(currentDim, 0.5), 0.08, 3.2)
+		local factor = 1.0
+		if isObby then
+			-- Obby courses must maintain full human R15 playable scale and never shrink into miniatures!
+			local minPlayableSpan = math.max(targetScale, 36.0)
+			factor = math.clamp(minPlayableSpan / math.max(currentDim, 12.0), 0.75, 4.0)
+		else
+			factor = math.clamp(targetScale / math.max(currentDim, 0.5), 0.08, 3.2)
+		end
 		pcall(function()
 			cloned:ScaleTo(cloned:GetScale() * factor)
 		end)
@@ -1581,7 +1592,8 @@ function PrebuiltLoader.CloneNormalizedTemplate(
 		else Vector3.new(2, 2, 2)
 	root.Transparency = 1
 	root.Anchored = true
-	root.CanCollide = if canCollide ~= nil then canCollide else false
+	-- Root is an invisible bounding anchor part. It MUST ALWAYS have CanCollide = false to prevent blocking players!
+	root.CanCollide = false
 	root.CanTouch = false
 	root.CanQuery = true
 	root.Massless = true
@@ -1593,7 +1605,12 @@ function PrebuiltLoader.CloneNormalizedTemplate(
 	for _, desc in ipairs(cloned:GetDescendants()) do
 		if desc:IsA("BasePart") and desc ~= root then
 			desc.Anchored = true
-			desc.CanCollide = if canCollide ~= nil then canCollide else false
+			if isObby then
+				-- Keep obby platforms, steps, and trusses solid so players can walk and jump on them
+				desc.CanCollide = if canCollide ~= nil then canCollide else true
+			else
+				desc.CanCollide = if canCollide ~= nil then canCollide else false
+			end
 			desc.CanTouch = false
 			desc.CanQuery = false
 			desc.CastShadow = false

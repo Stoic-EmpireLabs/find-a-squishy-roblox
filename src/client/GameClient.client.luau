@@ -15,6 +15,7 @@
 ]]
 
 local AvatarEditorService = game:GetService("AvatarEditorService")
+local ContextActionService = game:GetService("ContextActionService")
 local GuiService = game:GetService("GuiService")
 local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
@@ -159,13 +160,82 @@ local function showToast(msg: string, bgColor: Color3?)
 	end)
 end
 
--- PS5 / Console / Gamepad & Cross-Platform Button Helper
+-- PS5 / Xbox Console Controller Navigation System & Cross-Platform Button Helper
+local buttonCallbacks: { [GuiButton]: () -> () } = {}
+local pinnedGuideSquishyId: string? = nil
+
 local function isConsoleOrGamepad(): boolean
 	local lastInput = UserInputService:GetLastInputType()
 	return GuiService:IsTenFootInterface()
 		or UserInputService.GamepadEnabled
+		or #UserInputService:GetConnectedGamepads() > 0
 		or lastInput == Enum.UserInputType.Gamepad1
 		or lastInput == Enum.UserInputType.Gamepad2
+		or lastInput == Enum.UserInputType.Focus
+end
+
+pcall(function()
+	GuiService.AutoSelectGuiEnabled = true
+	GuiService.GuiNavigationEnabled = true
+end)
+
+local currentConsoleFocus: GuiButton? = nil
+local consoleFocusStroke: UIStroke = Instance.new("UIStroke")
+consoleFocusStroke.Name = "ConsoleFocusHighlightStroke"
+consoleFocusStroke.Color = Color3.fromRGB(255, 235, 65)
+consoleFocusStroke.Thickness = 3.5
+consoleFocusStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+local function setConsoleFocus(btn: GuiButton?)
+	currentConsoleFocus = btn
+	if btn then
+		consoleFocusStroke.Parent = btn
+		pcall(function()
+			GuiService.SelectedObject = btn
+		end)
+		-- If this is an IndexScroll card, auto-scroll to keep it centered in view
+		if btn.Parent and btn.Parent.Name == "IndexScroll" then
+			local scroll = btn.Parent :: ScrollingFrame
+			local numStr = string.match(btn.Name, "%d+")
+			local idx = tonumber(numStr) or 1
+			local rowIdx = math.floor((idx - 1) / 3)
+			local targetY = math.max(0, rowIdx * 116 - 116)
+			if math.abs(scroll.CanvasPosition.Y - targetY) > 180 then
+				scroll.CanvasPosition = Vector2.new(0, targetY)
+			end
+		end
+	else
+		consoleFocusStroke.Parent = nil
+		pcall(function()
+			GuiService.SelectedObject = nil
+		end)
+	end
+end
+
+GuiService:GetPropertyChangedSignal("SelectedObject"):Connect(function()
+	local sel = GuiService.SelectedObject
+	if sel and sel:IsA("GuiButton") then
+		if currentConsoleFocus ~= sel then
+			currentConsoleFocus = sel
+			consoleFocusStroke.Parent = sel
+			if sel.Parent and sel.Parent.Name == "IndexScroll" then
+				local scroll = sel.Parent :: ScrollingFrame
+				local numStr = string.match(sel.Name, "%d+")
+				local idx = tonumber(numStr) or 1
+				local rowIdx = math.floor((idx - 1) / 3)
+				local targetY = math.max(0, rowIdx * 116 - 116)
+				if math.abs(scroll.CanvasPosition.Y - targetY) > 180 then
+					scroll.CanvasPosition = Vector2.new(0, targetY)
+				end
+			end
+		end
+	end
+end)
+
+local function unbindConsoleModalControls()
+	pcall(function()
+		ContextActionService:UnbindAction("ConsoleModalControl")
+	end)
 end
 
 local function closeAllModals()
@@ -181,8 +251,82 @@ local function closeAllModals()
 	if ui.SettingsProModal then
 		ui.SettingsProModal.Visible = false
 	end
+	setConsoleFocus(nil)
+	unbindConsoleModalControls()
+end
+
+local function getActiveModal(): Frame?
+	if ui.IndexModal.Visible then return ui.IndexModal end
+	if ui.ShopModal.Visible then return ui.ShopModal end
+	if ui.SpinModal.Visible then return ui.SpinModal end
+	if ui.SettingsProModal and ui.SettingsProModal.Visible then return ui.SettingsProModal end
+	if ui.LikeFavoriteModal and ui.LikeFavoriteModal.Visible then return ui.LikeFavoriteModal end
+	if ui.HowToPlayModal and ui.HowToPlayModal.Visible then return ui.HowToPlayModal end
+	return nil
+end
+
+local function handleModalControllerInput(_actionName: string, inputState: Enum.UserInputState, inputObj: InputObject): Enum.ContextActionResult
+	if inputState ~= Enum.UserInputState.Begin then
+		return Enum.ContextActionResult.Sink
+	end
+
+	local kc = inputObj.KeyCode
+	if kc == Enum.KeyCode.ButtonA or kc == Enum.KeyCode.Return then
+		local activeBtn = (GuiService.SelectedObject and GuiService.SelectedObject:IsA("GuiButton") and GuiService.SelectedObject :: GuiButton) or currentConsoleFocus
+		if activeBtn then
+			if buttonCallbacks[activeBtn] then
+				buttonCallbacks[activeBtn]()
+			elseif (activeBtn :: any).Activate then
+				(activeBtn :: any):Activate()
+			end
+		end
+		return Enum.ContextActionResult.Sink
+	elseif kc == Enum.KeyCode.ButtonB or kc == Enum.KeyCode.Escape then
+		closeAllModals()
+		return Enum.ContextActionResult.Sink
+	elseif kc == Enum.KeyCode.DPadUp then
+		local cur = if currentConsoleFocus then currentConsoleFocus else activeBtn
+		if cur and cur.NextSelectionUp and cur.NextSelectionUp:IsA("GuiButton") then
+			setConsoleFocus(cur.NextSelectionUp :: GuiButton)
+		end
+		return Enum.ContextActionResult.Sink
+	elseif kc == Enum.KeyCode.DPadDown then
+		local cur = if currentConsoleFocus then currentConsoleFocus else activeBtn
+		if cur and cur.NextSelectionDown and cur.NextSelectionDown:IsA("GuiButton") then
+			setConsoleFocus(cur.NextSelectionDown :: GuiButton)
+		end
+		return Enum.ContextActionResult.Sink
+	elseif kc == Enum.KeyCode.DPadLeft then
+		local cur = if currentConsoleFocus then currentConsoleFocus else activeBtn
+		if cur and cur.NextSelectionLeft and cur.NextSelectionLeft:IsA("GuiButton") then
+			setConsoleFocus(cur.NextSelectionLeft :: GuiButton)
+		end
+		return Enum.ContextActionResult.Sink
+	elseif kc == Enum.KeyCode.DPadRight then
+		local cur = if currentConsoleFocus then currentConsoleFocus else activeBtn
+		if cur and cur.NextSelectionRight and cur.NextSelectionRight:IsA("GuiButton") then
+			setConsoleFocus(cur.NextSelectionRight :: GuiButton)
+		end
+		return Enum.ContextActionResult.Sink
+	end
+
+	return Enum.ContextActionResult.Sink
+end
+
+local function bindConsoleModalControls()
 	pcall(function()
-		GuiService.SelectedObject = nil
+		ContextActionService:BindActionAtPriority(
+			"ConsoleModalControl",
+			handleModalControllerInput,
+			false,
+			3000,
+			Enum.KeyCode.ButtonA,
+			Enum.KeyCode.ButtonB,
+			Enum.KeyCode.DPadUp,
+			Enum.KeyCode.DPadDown,
+			Enum.KeyCode.DPadLeft,
+			Enum.KeyCode.DPadRight
+		)
 	end)
 end
 
@@ -194,11 +338,15 @@ local function openOnlyModal(targetModal: Frame?, defaultSelectBtn: GuiObject?)
 	closeAllModals()
 	if shouldShow then
 		targetModal.Visible = true
-		if isConsoleOrGamepad() and defaultSelectBtn then
-			pcall(function()
-				GuiService.SelectedObject = defaultSelectBtn
-			end)
+		bindConsoleModalControls()
+		if defaultSelectBtn and defaultSelectBtn:IsA("GuiButton") then
+			setConsoleFocus(defaultSelectBtn :: GuiButton)
 		end
+		task.delay(0.05, function()
+			if targetModal and targetModal.Visible and defaultSelectBtn and defaultSelectBtn:IsA("GuiButton") then
+				setConsoleFocus(defaultSelectBtn :: GuiButton)
+			end
+		end)
 	end
 end
 
@@ -216,22 +364,65 @@ local function bindButton(btn: GuiButton?, fn: () -> ())
 		lastClick = now
 		fn()
 	end
+	buttonCallbacks[btn] = onTrigger
 	btn.MouseButton1Click:Connect(onTrigger)
 	btn.Activated:Connect(onTrigger)
 end
 
--- Allow PS5 Circle (ButtonB) / Escape to immediately close any open modal
+local firstIndexCardBtn = (ui.IndexCards and ui.IndexCards["1"] and ui.IndexCards["1"].Frame) or ui.BuyHintIndexBtn or ui.IndexClose
+
+local TAB_ORDER = {
+	{ Modal = ui.IndexModal, DefaultBtn = firstIndexCardBtn },
+	{ Modal = ui.ShopModal, DefaultBtn = (ui.PassButtonsByKey and ui.PassButtonsByKey["VIP"]) or ui.BuySpeedBtn or ui.ShopClose },
+	{ Modal = ui.SpinModal, DefaultBtn = ui.SpinNowBtn or ui.BuySpinCashBtn or ui.SpinClose },
+	{ Modal = ui.SettingsProModal, DefaultBtn = ui.KidFriendlyToggleBtn or ui.SettingsProClose },
+	{ Modal = ui.LikeFavoriteModal, DefaultBtn = ui.FavoriteNowBtn or ui.ClaimLikeFavRewardBtn or ui.LikeFavClose },
+}
+
+local function cycleConsoleTab(direction: number)
+	local curIndex = 0
+	for i, tab in ipairs(TAB_ORDER) do
+		if tab.Modal and tab.Modal.Visible then
+			curIndex = i
+			break
+		end
+	end
+	local nextIndex = 1
+	if curIndex == 0 then
+		nextIndex = if direction > 0 then 1 else #TAB_ORDER
+	else
+		nextIndex = curIndex + direction
+		if nextIndex > #TAB_ORDER then
+			nextIndex = 1
+		elseif nextIndex < 1 then
+			nextIndex = #TAB_ORDER
+		end
+	end
+	local targetTab = TAB_ORDER[nextIndex]
+	if targetTab and targetTab.Modal then
+		openOnlyModal(targetTab.Modal, targetTab.DefaultBtn)
+	end
+end
+
 UserInputService.InputBegan:Connect(function(input: InputObject, _gameProcessed: boolean)
-	if input.KeyCode == Enum.KeyCode.ButtonB or input.KeyCode == Enum.KeyCode.Escape then
-		if
-			ui.IndexModal.Visible
-			or ui.ShopModal.Visible
-			or ui.SpinModal.Visible
-			or (ui.LikeFavoriteModal and ui.LikeFavoriteModal.Visible)
-			or (ui.HowToPlayModal and ui.HowToPlayModal.Visible)
-			or (ui.SettingsProModal and ui.SettingsProModal.Visible)
-		then
+	if input.KeyCode == Enum.KeyCode.ButtonR1 then
+		cycleConsoleTab(1)
+	elseif input.KeyCode == Enum.KeyCode.ButtonL1 then
+		cycleConsoleTab(-1)
+	elseif input.KeyCode == Enum.KeyCode.ButtonB or input.KeyCode == Enum.KeyCode.Escape then
+		if getActiveModal() then
 			closeAllModals()
+		end
+	elseif not getActiveModal() then
+		-- DPad shortcuts when NO modal is open
+		if input.KeyCode == Enum.KeyCode.DPadUp then
+			openOnlyModal(ui.IndexModal, firstIndexCardBtn)
+		elseif input.KeyCode == Enum.KeyCode.DPadRight then
+			openOnlyModal(ui.ShopModal, (ui.PassButtonsByKey and ui.PassButtonsByKey["VIP"]) or ui.BuySpeedBtn or ui.ShopClose)
+		elseif input.KeyCode == Enum.KeyCode.DPadDown then
+			openOnlyModal(ui.SpinModal, ui.SpinNowBtn or ui.BuySpinCashBtn or ui.SpinClose)
+		elseif input.KeyCode == Enum.KeyCode.DPadLeft then
+			openOnlyModal(ui.SettingsProModal, ui.KidFriendlyToggleBtn or ui.SettingsProClose)
 		end
 	end
 end)
@@ -252,7 +443,7 @@ if ui.TreadmillTurboBtn then
 end
 
 bindButton(ui.TopIndexBtn, function()
-	openOnlyModal(ui.IndexModal, ui.BuyHintIndexBtn or ui.IndexClose)
+	openOnlyModal(ui.IndexModal, firstIndexCardBtn)
 end)
 
 bindButton(ui.TopSpeedBtn, function()
@@ -260,11 +451,11 @@ bindButton(ui.TopSpeedBtn, function()
 end)
 
 bindButton(ui.ShopBtn, function()
-	openOnlyModal(ui.ShopModal, ui.BuySpeedBtn or ui.ShopClose)
+	openOnlyModal(ui.ShopModal, (ui.PassButtonsByKey and ui.PassButtonsByKey["VIP"]) or ui.BuySpeedBtn or ui.ShopClose)
 end)
 
 bindButton(ui.IndexBtn, function()
-	openOnlyModal(ui.IndexModal, ui.BuyHintIndexBtn or ui.IndexClose)
+	openOnlyModal(ui.IndexModal, firstIndexCardBtn)
 end)
 
 bindButton(ui.DailyBtn, function()
@@ -276,21 +467,15 @@ bindButton(ui.SloMoBtn, function()
 end)
 
 bindButton(ui.WheelBtn, function()
-	openOnlyModal(ui.SpinModal, ui.SpinNowBtn)
+	openOnlyModal(ui.SpinModal, ui.SpinNowBtn or ui.BuySpinCashBtn or ui.SpinClose)
 end)
 
 bindButton(ui.VIPBtn, function()
-	closeAllModals()
-	ui.ShopModal.Visible = true
-	if isConsoleOrGamepad() and ui.BuySpeedBtn then
-		pcall(function()
-			GuiService.SelectedObject = ui.BuySpeedBtn
-		end)
-	end
+	openOnlyModal(ui.ShopModal, (ui.PassButtonsByKey and ui.PassButtonsByKey["VIP"]) or ui.BuySpeedBtn or ui.ShopClose)
 end)
 
 bindButton(ui.EggsDockBtn, function()
-	openOnlyModal(ui.IndexModal, ui.BuyHintIndexBtn or ui.IndexClose)
+	openOnlyModal(ui.IndexModal, firstIndexCardBtn)
 end)
 
 bindButton(ui.SpeedDockBtn, function()
@@ -1381,20 +1566,40 @@ local function playBrainrotVoiceAnnouncement(slimeId: string, slimeName: string)
 	end)
 end
 
--- Wire clicking on Brainrot cards (#1–#35) in the 3D Index Modal to play the Voice Announcement
+-- Wire clicking on all 117 Egg / Squishy cards in the Index Modal:
+-- 1) Registers with bindButton for Console ButtonA + Mouse/Touch activation
+-- 2) Sets pinnedGuideSquishyId = tostring(sId) so 3D arrow guides the player directly to that egg/squishy in the world!
+-- 3) Plays authentic voice announcement for #1..#35 or satisfying pop for #36..#117
+-- 4) Displays tracking toast
 if ui.IndexCards then
 	for sId, cardInfo in pairs(ui.IndexCards) do
+		local sKey = tostring(sId)
 		local numId = tonumber(sId) or 0
-		if numId >= 1 and numId <= 35 then
-			local sData = SlimeData.ById[sId]
-			local sName = if sData then sData.Name else ("Brainrot #" .. sId)
-			cardInfo.Frame.InputBegan:Connect(function(input)
-				if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-					playBrainrotVoiceAnnouncement(tostring(sId), sName)
-					showToast("🗣️🔊 " .. string.upper(sName) .. "!!", Color3.fromRGB(255, 215, 45))
-				end
-			end)
-		end
+		local sData = SlimeData.ById[sKey]
+		local sName = if sData then sData.Name else ("Squishy #" .. sKey)
+		local stageNum = if sData then sData.Level else 1
+
+		bindButton(cardInfo.Frame, function()
+			pinnedGuideSquishyId = sKey
+			setConsoleFocus(cardInfo.Frame)
+
+			if numId >= 1 and numId <= 35 then
+				playBrainrotVoiceAnnouncement(sKey, sName)
+				showToast("🎯 <b>TRACKING EGG: " .. string.upper(sName) .. "!</b>\n🧭 Follow 3D Arrow to Stage " .. tostring(stageNum) .. "!", Color3.fromRGB(255, 215, 45))
+			else
+				pcall(function()
+					local chime = Instance.new("Sound")
+					chime.SoundId = "rbxassetid://9119713951"
+					chime.Volume = 0.85
+					chime.Parent = SoundService
+					chime:Play()
+					task.delay(1.5, function()
+						chime:Destroy()
+					end)
+				end)
+				showToast("🎯 <b>TRACKING SQUISHY: " .. string.upper(sName) .. "!</b>\n🧭 Follow 3D Arrow to Stage " .. tostring(stageNum) .. "!", Color3.fromRGB(115, 255, 140))
+			end
+		end)
 	end
 end
 
@@ -1766,11 +1971,11 @@ end)
 -- =========================================================================
 local guidanceTargetPart = Instance.new("Part")
 guidanceTargetPart.Name = "GuidanceTargetMarker3D"
-guidanceTargetPart.Size = Vector3.new(3.2, 3.2, 3.2)
+guidanceTargetPart.Size = Vector3.new(0.5, 0.5, 0.5)
 guidanceTargetPart.Shape = Enum.PartType.Ball
 guidanceTargetPart.Color = Color3.fromRGB(85, 255, 165)
 guidanceTargetPart.Material = Enum.Material.Neon
-guidanceTargetPart.Transparency = 0
+guidanceTargetPart.Transparency = 1
 guidanceTargetPart.Anchored = true
 guidanceTargetPart.CanCollide = false
 guidanceTargetPart.CanQuery = false
@@ -1782,14 +1987,14 @@ local targetAtt = Instance.new("Attachment")
 targetAtt.Name = "GuidanceTargetAtt"
 targetAtt.Parent = guidanceTargetPart
 
--- 35-Stud Vertical Neon Sky Beacon Pillar at Target so players can see their objective from across the entire map!
+-- Vertical Sky Beacon Pillar at Target
 local skyBeaconPillar = Instance.new("Part")
 skyBeaconPillar.Name = "GuidanceSkyBeacon3D"
 skyBeaconPillar.Shape = Enum.PartType.Cylinder
 skyBeaconPillar.Size = Vector3.new(35.0, 2.2, 2.2)
 skyBeaconPillar.Color = Color3.fromRGB(85, 255, 165)
 skyBeaconPillar.Material = Enum.Material.Neon
-skyBeaconPillar.Transparency = 0.22
+skyBeaconPillar.Transparency = 1
 skyBeaconPillar.Anchored = true
 skyBeaconPillar.CanCollide = false
 skyBeaconPillar.CanQuery = false
@@ -1797,13 +2002,13 @@ skyBeaconPillar.CanTouch = false
 skyBeaconPillar.CFrame = CFrame.new(-94, 18.5, 54) * CFrame.Angles(0, 0, math.rad(90))
 skyBeaconPillar.Parent = guidanceTargetPart
 
--- Bouncing 3D Downward Pointer Cone above the Target
+-- Downward Pointer Cone above the Target
 local pointerShaft = Instance.new("Part")
 pointerShaft.Name = "PointerArrow3D"
 pointerShaft.Size = Vector3.new(2.2, 4.8, 2.2)
 pointerShaft.Color = Color3.fromRGB(255, 235, 65)
 pointerShaft.Material = Enum.Material.Neon
-pointerShaft.Transparency = 0
+pointerShaft.Transparency = 1
 pointerShaft.Anchored = true
 pointerShaft.CanCollide = false
 pointerShaft.CanQuery = false
@@ -1839,14 +2044,17 @@ guidanceBeam.Texture = "rbxassetid://4887782888"
 guidanceBeam.TextureMode = Enum.TextureMode.Wrap
 guidanceBeam.TextureLength = 6.0
 guidanceBeam.TextureSpeed = 4.2
-guidanceBeam.Width0 = 4.5
-guidanceBeam.Width1 = 4.8
-guidanceBeam.Brightness = 4.5
-guidanceBeam.LightEmission = 1
+guidanceBeam.Width0 = 1.4
+guidanceBeam.Width1 = 1.4
+guidanceBeam.Brightness = 1.5
+guidanceBeam.LightEmission = 0.5
 guidanceBeam.LightInfluence = 0
 guidanceBeam.FaceCamera = true
--- 100% Solid Opaque Guiding Arrow Beam (Zero Transparency!)
-guidanceBeam.Transparency = NumberSequence.new(0)
+guidanceBeam.Transparency = NumberSequence.new({
+	NumberSequenceKeypoint.new(0, 0.55),
+	NumberSequenceKeypoint.new(0.5, 0.35),
+	NumberSequenceKeypoint.new(1, 0.65),
+})
 guidanceBeam.Color = ColorSequence.new({
 	ColorSequenceKeypoint.new(0, Color3.fromRGB(85, 245, 255)),
 	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(95, 255, 135)),
@@ -1855,12 +2063,11 @@ guidanceBeam.Color = ColorSequence.new({
 guidanceBeam.Attachment1 = targetAtt
 guidanceBeam.Parent = guidanceTargetPart
 
--- Live 10-Part Solid 3D Neon Ground Chevron Arrow Chain so players can follow unmistakable physical 3D arrows on the ground!
 local arrowChainFolder = Instance.new("Folder")
 arrowChainFolder.Name = "GuidanceArrowChainFolder"
 arrowChainFolder.Parent = Workspace
 
-local NUM_GROUND_ARROWS = 10
+local NUM_GROUND_ARROWS = 0
 local groundArrowParts: { { LeftWing: Part, RightWing: Part } } = {}
 for i = 1, NUM_GROUND_ARROWS do
 	local leftWing = Instance.new("Part")
@@ -1965,6 +2172,36 @@ local function computeCurrent6StepTarget(hrpPos: Vector3): (Vector3, string, str
 	local uncollectedCash = tonumber(latestState.UncollectedPlotCash) or 0
 	local unlockedMap = latestState.UnlockedLevels or { ["1"] = true }
 	local fenceLvl = tonumber(latestState.FenceLevel) or 1
+
+	-- [PINNED TARGET] If the player clicked or selected any Squishy/Egg in the Index:
+	if pinnedGuideSquishyId then
+		local sKey = tostring(pinnedGuideSquishyId)
+		local pData = SlimeData.ById[sKey]
+		if pData then
+			local isFound = foundMap[sKey] == true
+			if not isFound then
+				local sw = Workspace:FindFirstChild("SquishyWorld")
+				local worldEggsFolder = sw and sw:FindFirstChild("WorldEggs")
+				local itemPos = pData.SpawnOffset
+				if worldEggsFolder then
+					local m = findWorldEggModel(worldEggsFolder, sKey)
+					if m and m:IsA("Model") then
+						itemPos = m:GetPivot().Position
+					end
+				end
+				local numId = tonumber((pData :: any).UnlockOrder or (pData :: any).NumericId or pData.Id) or 1
+				local typeLabel = if numId <= 35 then "EGG" else "SQUISHY"
+				return itemPos,
+					string.format("🎯 PINNED %s: %s (STAGE %d)!", typeLabel, string.upper(pData.Name), pData.Level),
+					string.format("🧭 <b>TRACKING %s:</b> Follow 3D Arrow to <b>%s</b> in Stage %d!", typeLabel, pData.Name, pData.Level),
+					Color3.fromRGB(255, 215, 45)
+			else
+				pinnedGuideSquishyId = nil
+			end
+		else
+			pinnedGuideSquishyId = nil
+		end
+	end
 
 	-- [STEP 4] Carrying a stolen Boss Egg -> Go straight to your Plot's Fenced Hatchery Pen!
 	if carriedEggs > 0 then
@@ -2179,6 +2416,12 @@ RunService.RenderStepped:Connect(function()
 		if ui.ObjectiveText then
 			ui.ObjectiveText.Text = hudText
 		end
+
+		local onBelt = (char:GetAttribute("OnTreadmillBelt") == true)
+		local dist = (targetPos - hrp.Position).Magnitude
+		local showGuide = (not onBelt) and (dist > 14.0)
+		guidanceBeam.Enabled = showGuide
+		pointerBB.Enabled = showGuide
 
 		-- Animate the 10 Solid 3D Ground Chevron Arrows marching from the player to the target!
 		local startGround = hrp.Position + Vector3.new(0, -1.6, 0)

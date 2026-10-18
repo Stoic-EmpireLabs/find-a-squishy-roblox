@@ -701,6 +701,39 @@ function CreatorStoreGameplayKits.GetActiveMap(): Model?
 	return CreatorStoreGameplayKits.GetMapTemplate(CreatorStoreGameplayKits.ACTIVE_MAP_KEY)
 end
 
+local function neutralizeAndArchive(inst: Instance, parent: Instance): Instance
+	local archiveFolder = parent:FindFirstChild("CreatorStoreUIArchive")
+	if not archiveFolder then
+		local newArch = Instance.new("Folder")
+		newArch.Name = "CreatorStoreUIArchive"
+		newArch.Parent = parent
+		archiveFolder = newArch
+	end
+
+	local cloned = inst:Clone()
+	if cloned:IsA("ScreenGui") then
+		cloned.Enabled = false
+		cloned.ResetOnSpawn = false
+	elseif cloned:IsA("GuiObject") then
+		cloned.Visible = false
+		cloned.Active = false
+		cloned.Selectable = false
+	end
+
+	for _, d in ipairs(cloned:GetDescendants()) do
+		if d:IsA("ScreenGui") then
+			d.Enabled = false
+		elseif d:IsA("GuiObject") then
+			d.Visible = false
+			d.Active = false
+			d.Selectable = false
+		end
+	end
+
+	cloned.Parent = archiveFolder
+	return cloned
+end
+
 function CreatorStoreGameplayKits.MountSettingsPanelPro(playerGui: PlayerGui): Instance?
 	local modelsFolder = ReplicatedStorage:FindFirstChild("Models")
 	local kitsFolder = modelsFolder and modelsFolder:FindFirstChild("GameplayKits")
@@ -710,33 +743,14 @@ function CreatorStoreGameplayKits.MountSettingsPanelPro(playerGui: PlayerGui): I
 	end
 
 	for _, child in ipairs(kit:GetChildren()) do
-		if child:IsA("ScreenGui") then
-			local cloned = child:Clone()
-			cloned.ResetOnSpawn = false
-			cloned.Parent = playerGui
-			return cloned
-		elseif child:IsA("GuiObject") then
-			local sg = playerGui:FindFirstChild("SettingsProScreenGui")
-			if not sg then
-				local newSg = Instance.new("ScreenGui")
-				newSg.Name = "SettingsProScreenGui"
-				newSg.ResetOnSpawn = false
-				newSg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-				newSg.Parent = playerGui
-				sg = newSg
-			end
-			local cloned = child:Clone()
-			cloned.Parent = sg
-			return cloned
+		if child:IsA("ScreenGui") or child:IsA("GuiObject") then
+			return neutralizeAndArchive(child, playerGui)
 		end
 	end
 
 	for _, desc in ipairs(kit:GetDescendants()) do
-		if desc:IsA("ScreenGui") then
-			local cloned = desc:Clone()
-			cloned.ResetOnSpawn = false
-			cloned.Parent = playerGui
-			return cloned
+		if desc:IsA("ScreenGui") or desc:IsA("GuiObject") then
+			return neutralizeAndArchive(desc, playerGui)
 		end
 	end
 
@@ -752,33 +766,14 @@ function CreatorStoreGameplayKits.MountPremiumHealthBar(playerGui: PlayerGui): I
 	end
 
 	for _, child in ipairs(kit:GetChildren()) do
-		if child:IsA("ScreenGui") then
-			local cloned = child:Clone()
-			cloned.ResetOnSpawn = false
-			cloned.Parent = playerGui
-			return cloned
-		elseif child:IsA("GuiObject") then
-			local sg = playerGui:FindFirstChild("HealthBarScreenGui")
-			if not sg then
-				local newSg = Instance.new("ScreenGui")
-				newSg.Name = "HealthBarScreenGui"
-				newSg.ResetOnSpawn = false
-				newSg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-				newSg.Parent = playerGui
-				sg = newSg
-			end
-			local cloned = child:Clone()
-			cloned.Parent = sg
-			return cloned
+		if child:IsA("ScreenGui") or child:IsA("GuiObject") then
+			return neutralizeAndArchive(child, playerGui)
 		end
 	end
 
 	for _, desc in ipairs(kit:GetDescendants()) do
-		if desc:IsA("ScreenGui") then
-			local cloned = desc:Clone()
-			cloned.ResetOnSpawn = false
-			cloned.Parent = playerGui
-			return cloned
+		if desc:IsA("ScreenGui") or desc:IsA("GuiObject") then
+			return neutralizeAndArchive(desc, playerGui)
 		end
 	end
 
