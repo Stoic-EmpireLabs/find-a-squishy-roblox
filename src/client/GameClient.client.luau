@@ -1062,7 +1062,42 @@ local BRAINROT_VOICE_SOUND_IDS: { [string]: string } = {
 	["35"] = "rbxassetid://136631296291259", -- Cosmic Tralalero God
 }
 
+local activeBrainrotVoiceSound: Sound? = nil
+local activeBrainrotTTS: Instance? = nil
+local activeBrainrotTTSWire: Instance? = nil
+local activeBrainrotTTSOutput: Instance? = nil
+
+local function cleanupActiveBrainrotAudio()
+	if activeBrainrotVoiceSound then
+		pcall(function()
+			activeBrainrotVoiceSound:Stop()
+			activeBrainrotVoiceSound:Destroy()
+		end)
+		activeBrainrotVoiceSound = nil
+	end
+	if activeBrainrotTTSWire then
+		pcall(function()
+			activeBrainrotTTSWire:Destroy()
+		end)
+		activeBrainrotTTSWire = nil
+	end
+	if activeBrainrotTTSOutput then
+		pcall(function()
+			activeBrainrotTTSOutput:Destroy()
+		end)
+		activeBrainrotTTSOutput = nil
+	end
+	if activeBrainrotTTS then
+		pcall(function()
+			activeBrainrotTTS:Destroy()
+		end)
+		activeBrainrotTTS = nil
+	end
+end
+
 local function playBrainrotVoiceAnnouncement(slimeId: string, slimeName: string)
+	cleanupActiveBrainrotAudio()
+
 	local sIdStr = tostring(slimeId)
 	local soundAsset = BRAINROT_VOICE_SOUND_IDS[sIdStr] or "rbxassetid://107015186635337"
 
@@ -1073,9 +1108,13 @@ local function playBrainrotVoiceAnnouncement(slimeId: string, slimeName: string)
 	voiceSound.Volume = 2.4
 	voiceSound.Parent = SoundService
 	voiceSound:Play()
+	activeBrainrotVoiceSound = voiceSound
 
 	-- Cap playback duration to 4.5 seconds so longer songs play a crisp clip and never loop forever
 	task.delay(4.5, function()
+		if voiceSound == activeBrainrotVoiceSound then
+			activeBrainrotVoiceSound = nil
+		end
 		if voiceSound.Parent then
 			pcall(function()
 				voiceSound:Stop()
@@ -1084,34 +1123,47 @@ local function playBrainrotVoiceAnnouncement(slimeId: string, slimeName: string)
 		end
 	end)
 
-	-- 2. Triggers Roblox native AudioTextToSpeech wired to AudioDeviceOutput for localPlayer
-	pcall(function()
-		local tts = Instance.new("AudioTextToSpeech")
-		tts.Text = slimeName .. "!"
-		tts.Volume = 2.0
-
-		local output = Instance.new("AudioDeviceOutput")
-		output.Player = localPlayer
-
-		local wire = Instance.new("Wire")
-		wire.SourceInstance = tts
-		wire.TargetInstance = output
-
-		tts.Parent = SoundService
-		output.Parent = SoundService
-		wire.Parent = SoundService
-
-		if (tts :: any).Play then
-			(tts :: any):Play()
-		end
-
-		task.delay(4.5, function()
+	-- 2. Only trigger AudioTextToSpeech fallback if voiceSound fails to load
+	task.delay(0.35, function()
+		if voiceSound and voiceSound.Parent and not voiceSound.IsLoaded and voiceSound.TimeLength == 0 then
 			pcall(function()
-				wire:Destroy()
-				output:Destroy()
-				tts:Destroy()
+				local tts = Instance.new("AudioTextToSpeech")
+				tts.Text = slimeName .. "!"
+				tts.Volume = 2.0
+
+				local output = Instance.new("AudioDeviceOutput")
+				output.Player = localPlayer
+
+				local wire = Instance.new("Wire")
+				wire.SourceInstance = tts
+				wire.TargetInstance = output
+
+				tts.Parent = SoundService
+				output.Parent = SoundService
+				wire.Parent = SoundService
+
+				activeBrainrotTTS = tts
+				activeBrainrotTTSOutput = output
+				activeBrainrotTTSWire = wire
+
+				if (tts :: any).Play then
+					(tts :: any):Play()
+				end
+
+				task.delay(4.5, function()
+					if activeBrainrotTTS == tts then
+						activeBrainrotTTS = nil
+						activeBrainrotTTSOutput = nil
+						activeBrainrotTTSWire = nil
+					end
+					pcall(function()
+						wire:Destroy()
+						output:Destroy()
+						tts:Destroy()
+					end)
+				end)
 			end)
-		end)
+		end
 	end)
 end
 
@@ -1128,14 +1180,6 @@ if ui.IndexCards then
 					showToast("🗣️🔊 " .. string.upper(sName) .. "!!", Color3.fromRGB(255, 215, 45))
 				end
 			end)
-			if cardInfo.Viewport then
-				cardInfo.Viewport.InputBegan:Connect(function(input)
-					if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-						playBrainrotVoiceAnnouncement(tostring(sId), sName)
-						showToast("🗣️🔊 " .. string.upper(sName) .. "!!", Color3.fromRGB(255, 215, 45))
-					end
-				end)
-			end
 		end
 	end
 end
@@ -1423,7 +1467,7 @@ EggCapturedEvent.OnClientEvent:Connect(function(info: any)
 
 			local numId = tonumber((sData :: any).UnlockOrder or (sData :: any).NumericId or sData.Id or info.SquishyId) or 1
 			local isBrainrot = numId <= 35 or (sData :: any).IsBrainrot == true
-			if isBrainrot then
+			if isBrainrot and info.ActionType ~= "EggStolen" then
 				playBrainrotVoiceAnnouncement(tostring(info.SquishyId), sData.Name)
 				showToast("🗣️🔊 " .. string.upper(sData.Name) .. "!!", Color3.fromRGB(255, 215, 45))
 			end

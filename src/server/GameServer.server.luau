@@ -197,17 +197,6 @@ local function serializeSession(player: Player)
 	for _, lvl in ipairs(SlimeData.Levels) do
 		local lvlId = (lvl :: any).Id or lvl.Level
 		local reqSpd = (lvl :: any).RequiredSpeed or 0
-		if lvlId > 1 and not session.UnlockedGates[tostring(lvlId)] then
-			local status = SlimeData.GetStageGateStatus(session.FoundEggs, session.SpeedStat, session.FenceLevel or 1, session.UnlockedGates, lvlId)
-			if status.RequirementsMet and session.Coins >= status.GateCost then
-				session.Coins -= status.GateCost
-				session.UnlockedGates[tostring(lvlId)] = true
-				GuardianAlertEvent:FireClient(
-					player,
-					string.format("🔓 STAGE %d: %s UNLOCKED! (-$%s Gate Cost)", lvlId, string.upper(lvl.Name), SlimeData.FormatNumber(status.GateCost))
-				)
-			end
-		end
 		local isUnlocked = SlimeData.IsLevelUnlocked(session.FoundEggs, session.SpeedStat, lvlId, session.FenceLevel or 1, session.UnlockedGates)
 		unlockedLevels[tostring(lvlId)] = isUnlocked
 		if not isUnlocked and nextStageName == "MAX STAGE" then
@@ -906,9 +895,23 @@ local function updateSpeedUpgradePrompt(player: Player)
 			bbLbl.TextColor3 = tierData.AccentColor or tierData.Color
 		end
 		local cMesh = tmModel:FindFirstChild("CreatorStoreMesh", true) :: SpecialMesh?
-		if cMesh and tierData.MeshId and tierData.TextureId then
+		if cMesh and tierData.MeshId then
 			cMesh.MeshId = tierData.MeshId
-			cMesh.TextureId = tierData.TextureId
+			cMesh.TextureId = tierData.TextureId or ""
+		end
+		local screen = tmModel:FindFirstChild("TreadmillConsoleScreen", true) :: BasePart?
+		if screen then
+			local speedFormatted = SlimeData.FormatNumber(tierData.SpeedPerSec)
+			local consoleText = string.format("⚡ TIER %d TREADMILL\n[%s]\n+%s SPD / SEC", tierIdx, tierData.MultiplierText or tierData.MultiplierLabel, speedFormatted)
+			for _, sg in ipairs(screen:GetChildren()) do
+				if sg:IsA("SurfaceGui") then
+					local lbl = sg:FindFirstChild("SignLabel", true) :: TextLabel?
+					if lbl then
+						lbl.Text = consoleText
+						lbl.TextColor3 = tierData.AccentColor or tierData.Color
+					end
+				end
+			end
 		end
 	end
 
@@ -920,9 +923,8 @@ local function updateSpeedUpgradePrompt(player: Player)
 			else math.floor(650 * math.pow(3.5, math.max(0, session.SpeedLevel - 1)))
 		prompt.ActionText = string.format("Upgrade Treadmill -> [%s] (Tier %d)", nextTierData.MultiplierLabel, session.SpeedLevel + 1)
 		prompt.ObjectText = string.format(
-			"🏃 Cost: $%s | Needs Stage %d (Now: +%s/s)",
+			"🏃 Cost: $%s (Now: +%s/s)",
 			SlimeData.FormatNumber(cost),
-			nextTierIdx,
 			SlimeData.FormatNumber(tierData.SpeedPerSec)
 		)
 	end
@@ -941,11 +943,6 @@ local function upgradePlayerTreadmill(player: Player)
 	end
 	local nextTierIdx = session.SpeedLevel + 1
 	local nextTierData = SlimeData.TreadmillTiers[nextTierIdx] or SlimeData.TreadmillTiers[#SlimeData.TreadmillTiers]
-	local reqStage = (nextTierData :: any).RequiredStage or nextTierIdx
-	if reqStage > 1 and not SlimeData.IsLevelUnlocked(session.FoundEggs, session.SpeedStat, reqStage, session.FenceLevel or 1, session.UnlockedGates) then
-		tryUnlockStageGate(player, reqStage)
-		return
-	end
 	local cost = if nextTierData and nextTierData.UpgradeCost and nextTierData.UpgradeCost > 0
 		then nextTierData.UpgradeCost
 		else math.floor(650 * math.pow(3.5, math.max(0, session.SpeedLevel - 1)))
@@ -1235,10 +1232,20 @@ local function refreshPedestalVisual(player: Player, slotIdx: number)
 	local scaleMult = stageScale * (1 + math.min(0.95, pedState.Level * 0.14))
 	local prompt = model.PrimaryPart and model.PrimaryPart:FindFirstChild("PedestalUpgradePrompt", true) :: ProximityPrompt?
 	if prompt then
-		prompt.ActionText = string.format("🌱 Grow & Level Up -> Lv.%d ($%s)", pedState.Level + 1, SlimeData.FormatNumber(upgradeCost))
-		prompt.ObjectText = string.format("%s [Lv.%d • %.2fx Size] ($%s/s)", sData.Name, pedState.Level, scaleMult, SlimeData.FormatNumber(newCps))
+		if pedState.Level >= 15 then
+			prompt.Enabled = false
+			prompt.ActionText = "🌟 MAX LEVEL (Lv.15)"
+			prompt.ObjectText = string.format("%s [MAX Lv.15 • %.2fx Size]", sData.Name, scaleMult)
+		else
+			prompt.Enabled = true
+			prompt.ActionText = string.format("🌱 Grow & Level Up -> Lv.%d ($%s)", pedState.Level + 1, SlimeData.FormatNumber(upgradeCost))
+			prompt.ObjectText = string.format("%s [Lv.%d • %.2fx Size] ($%s/s)", sData.Name, pedState.Level, scaleMult, SlimeData.FormatNumber(newCps))
+		end
 		prompt.Triggered:Connect(function(triggerPlayer: Player)
 			if triggerPlayer ~= player then
+				return
+			end
+			if pedState.Level >= 15 then
 				return
 			end
 			if session.Coins < upgradeCost then
@@ -1423,7 +1430,55 @@ local function plantCarriedEggIntoHatcheryNest(player: Player, preferredIncIdx: 
 					tLbl.Text = "✨ HATCH!"
 					tLbl.TextColor3 = Color3.fromRGB(95, 255, 130)
 				end
-				task.wait(0.25)
+
+				-- Authentic Roblox Speed Simulator 3D Egg Crack & Pop-Out Hatch Sequence
+				if plantedVisual and plantedVisual.Parent then
+					for i = 1, 6 do
+						local tilt = math.rad(if i % 2 == 0 then 18 else -18)
+						plantedVisual:PivotTo(nestPivot * CFrame.Angles(0, math.rad(i * 30), tilt))
+						task.wait(0.06)
+					end
+
+					-- Spawn 2 cracking half-shells popping apart
+					local eggColor = eggData.Color or Color3.fromRGB(255, 215, 65)
+					local topShell = Instance.new("Part")
+					topShell.Name = "TopEggShell"
+					topShell.Shape = Enum.PartType.Ball
+					topShell.Size = Vector3.new(2.4, 1.4, 2.4)
+					topShell.Color = eggColor
+					topShell.Material = Enum.Material.SmoothPlastic
+					topShell.CFrame = nestPivot * CFrame.new(0, 1.2, 0)
+					topShell.CanCollide = false
+					topShell.Anchored = false
+					topShell.Velocity = Vector3.new(math.random(-8, 8), 18, math.random(-8, 8))
+					topShell.Parent = Workspace
+
+					local btmShell = Instance.new("Part")
+					btmShell.Name = "BottomEggShell"
+					btmShell.Shape = Enum.PartType.Ball
+					btmShell.Size = Vector3.new(2.4, 1.2, 2.4)
+					btmShell.Color = eggColor
+					btmShell.Material = Enum.Material.SmoothPlastic
+					btmShell.CFrame = nestPivot * CFrame.new(0, -0.4, 0)
+					btmShell.CanCollide = false
+					btmShell.Anchored = false
+					btmShell.Velocity = Vector3.new(math.random(-6, 6), 8, math.random(-6, 6))
+					btmShell.Parent = Workspace
+
+					local hatchBurst = Instance.new("ParticleEmitter")
+					hatchBurst.Name = "EggHatchBurst"
+					hatchBurst.Texture = "rbxassetid://9129151031"
+					hatchBurst.Color = ColorSequence.new(eggColor, Color3.fromRGB(255, 255, 255))
+					hatchBurst.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.5), NumberSequenceKeypoint.new(1, 0.2) })
+					hatchBurst.Speed = NumberRange.new(12, 24)
+					hatchBurst.Lifetime = NumberRange.new(0.4, 0.7)
+					hatchBurst.Rate = 0
+					hatchBurst.Parent = topShell
+					hatchBurst:Emit(28)
+
+					game:GetService("Debris"):AddItem(topShell, 0.8)
+					game:GetService("Debris"):AddItem(btmShell, 0.8)
+				end
 
 				if incState.VisualModel then
 					incState.VisualModel:Destroy()
@@ -1436,7 +1491,7 @@ local function plantCarriedEggIntoHatcheryNest(player: Player, preferredIncIdx: 
 				if prompt then
 					prompt.ActionText = "Drop Brainrot Egg in Nest"
 					prompt.ObjectText = "Hatchery Nest #" .. tostring(targetIncIdx)
-					prompt.Enabled = true
+					prompt.Enabled = false
 				end
 				if bbLabel then
 					bbLabel.Text = "🥚 HATCHERY NEST #" .. tostring(targetIncIdx) .. "\n[READY]"
@@ -1469,6 +1524,7 @@ local function plantCarriedEggIntoHatcheryNest(player: Player, preferredIncIdx: 
 					SquishyId = rolledBrainrotId,
 					IsFirstDiscovery = isFirst,
 					CoinsEarned = rewardCash,
+					ActionType = "Hatched",
 				})
 				local stageScale = (hatchedData :: any).StageHatchScale or 1.0
 				local firstTag = if isFirst then " ✨ NEW INDEX DISCOVERY BONUS!" else ""
@@ -1622,6 +1678,33 @@ for lvlId, gateBarrier in pairs(world.GateBarriers) do
 		if gatePrompt then
 			gatePrompt.Triggered:Connect(function(player: Player)
 				tryUnlockStageGate(player, lvlId)
+			end)
+		end
+		local skipGatePrompt = gateBarrier:FindFirstChild("SkipStageGatePaywallPrompt", true) :: ProximityPrompt?
+		if skipGatePrompt then
+			skipGatePrompt.Triggered:Connect(function(player: Player)
+				local session = sessions[player]
+				if not session then
+					return
+				end
+				if session.UnlockedGates and session.UnlockedGates[tostring(lvlId)] then
+					GuardianAlertEvent:FireClient(player, string.format("✅ Stage %d Gate is already unlocked!", lvlId))
+					return
+				end
+				if session.OwnedPasses and session.OwnedPasses["VIP"] then
+					session.UnlockedGates[tostring(lvlId)] = true
+					gateBarrier.Transparency = 1.0
+					gateBarrier.CanCollide = false
+					skipGatePrompt.Enabled = false
+					if gatePrompt then
+						gatePrompt.Enabled = false
+					end
+					GuardianAlertEvent:FireClient(player, string.format("👑 VIP PERK: Stage %d Gate instantly unlocked!", lvlId))
+					syncPlayer(player)
+				else
+					GuardianAlertEvent:FireClient(player, string.format("💎 VIP / PAYWALL: Instant Stage %d Gate Unlock requires VIP! Opening VIP Shop...", lvlId))
+					OpenModalEvent:FireClient(player, "RobuxShop")
+				end
 			end)
 		end
 		local gateTouchCooldowns: { [number]: number } = {}
@@ -2116,7 +2199,7 @@ local function bindBiomeObstacles()
 						btnBusy = false
 					end)
 				end)
-			elseif desc.Name == "BouncePad" then
+			elseif desc.Name == "BouncePad" or desc:GetAttribute("SuperBouncePad") == true then
 				desc.CanTouch = true
 				desc.Touched:Connect(function(hit: BasePart)
 					local char = hit.Parent
@@ -2125,7 +2208,7 @@ local function bindBiomeObstacles()
 					end
 					local hrp = char:FindFirstChild("HumanoidRootPart") :: BasePart?
 					if hrp then
-						local impulse = (desc:GetAttribute("BounceImpulse") :: number?) or 95
+						local impulse = (desc:GetAttribute("BounceVelocityY") :: number?) or (desc:GetAttribute("BounceImpulse") :: number?) or 95
 						hrp.AssemblyLinearVelocity = Vector3.new(hrp.AssemblyLinearVelocity.X, impulse, hrp.AssemblyLinearVelocity.Z)
 					end
 				end)
@@ -2202,6 +2285,61 @@ local function bindBiomeObstacles()
 			elseif desc.Name == "LikeFavoritePrompt" then
 				desc.Triggered:Connect(function(player: Player)
 					OpenModalEvent:FireClient(player, "LikeFavorite")
+				end)
+			elseif desc.Name == "SkipObbyPrompt" or desc.Name == "SkipObbyPaywallPrompt" then
+				desc.Triggered:Connect(function(player: Player)
+					local session = sessions[player]
+					if not session then
+						return
+					end
+					local char = player.Character
+					local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+					if not hrp then
+						return
+					end
+					local destPos = (desc:GetAttribute("SkipTargetPos") :: Vector3?) or (desc:GetAttribute("SummitPos") :: Vector3?)
+					local stageNum = (desc:GetAttribute("SkipObbyStage") :: number?) or (desc:GetAttribute("StageId") :: number?) or 1
+					if not destPos then
+						return
+					end
+
+					-- 1. If player owns VIP Gamepass -> Instant FREE VIP Teleport!
+					if session.OwnedPasses and session.OwnedPasses["VIP"] then
+						hrp.CFrame = CFrame.new(destPos + Vector3.new(0, 3, 0))
+						GuardianAlertEvent:FireClient(player, "👑 VIP PERK: Instant Obby Skip Teleported you to the Summit!")
+						return
+					end
+
+					-- 2. In-Game Cash Paywall Fallback: $1,500 * stageNum
+					local skipCost = 1500 * stageNum
+					if session.Coins >= skipCost then
+						session.Coins -= skipCost
+						hrp.CFrame = CFrame.new(destPos + Vector3.new(0, 3, 0))
+						GuardianAlertEvent:FireClient(
+							player,
+							string.format("💎 Paid $%s Paywall Skip! Teleported directly to Stage %d Obby Summit!", SlimeData.FormatNumber(skipCost), stageNum)
+						)
+						syncPlayer(player)
+					else
+						-- Prompt VIP Gamepass or show cash needed!
+						if GAMEPASS_IDS["VIP"] and GAMEPASS_IDS["VIP"] > 0 then
+							MarketplaceService:PromptGamePassPurchase(player, GAMEPASS_IDS["VIP"])
+						else
+							OpenModalEvent:FireClient(player, "RobuxShop")
+						end
+						GuardianAlertEvent:FireClient(
+							player,
+							string.format("💎 PAYWALL: Need VIP Gamepass OR $%s Cash to Skip Stage %d Obby! (You have $%s)",
+								SlimeData.FormatNumber(skipCost),
+								stageNum,
+								SlimeData.FormatNumber(session.Coins)
+							)
+						)
+					end
+				end)
+			elseif desc.Name == "DonationPrompt" or desc.Name == "ObbyGamepassPrompt" then
+				desc.Triggered:Connect(function(player: Player)
+					OpenModalEvent:FireClient(player, "RobuxShop")
 				end)
 			end
 		end
@@ -2474,7 +2612,7 @@ RunService.Heartbeat:Connect(function(rawDt: number)
 		if activeBelt then
 			char:SetAttribute("OnTreadmillBelt", true)
 			local beltTier = (activeBelt:GetAttribute("TreadmillTier") :: number?) or 1
-			local effectiveTier = math.clamp(math.min(beltTier, session.SpeedLevel or 1), 1, #SlimeData.TreadmillTiers)
+			local effectiveTier = math.clamp(math.max(beltTier, session.SpeedLevel or 1), 1, #SlimeData.TreadmillTiers)
 			char:SetAttribute("TreadmillAnimSpeed", 1.3 + (effectiveTier * 0.12))
 
 			-- Hybrid AFK Mode: If player is standing hands-free on the treadmill (not pressing movement keys), gently keep them centered on the belt!
@@ -2489,19 +2627,14 @@ RunService.Heartbeat:Connect(function(rawDt: number)
 			if now - session.LastTreadmillStep >= 0.50 then
 				session.LastTreadmillStep = now
 				if beltTier > (session.SpeedLevel or 1) then
-					if not stageLockAlertCooldowns[player.UserId] or (now - stageLockAlertCooldowns[player.UserId]) >= 3.5 then
+					if not stageLockAlertCooldowns[player.UserId] or (now - stageLockAlertCooldowns[player.UserId]) >= 5.0 then
 						stageLockAlertCooldowns[player.UserId] = now
-						local reqTierDef = SlimeData.TreadmillTiers[math.clamp((session.SpeedLevel or 1) + 1, 1, #SlimeData.TreadmillTiers)]
-						local reqCost = if reqTierDef and reqTierDef.UpgradeCost then reqTierDef.UpgradeCost else 650
 						GuardianAlertEvent:FireClient(
 							player,
 							string.format(
-								"🔒 Treadmill Tier %d Locked! Purchase Treadmill Tier %d ($%s) to unlock [%s] belt speed! (Training at Tier %d speed)",
+								"⚡ Training on Stage Treadmill Tier %d [%s]! Upgrade your Base Plot Treadmill to keep this speed permanently!",
 								beltTier,
-								(session.SpeedLevel or 1) + 1,
-								SlimeData.FormatNumber(reqCost),
-								if SlimeData.TreadmillTiers[beltTier] then SlimeData.TreadmillTiers[beltTier].MultiplierLabel else "MAX",
-								effectiveTier
+								if SlimeData.TreadmillTiers[beltTier] then SlimeData.TreadmillTiers[beltTier].MultiplierLabel else "MAX"
 							)
 						)
 					end
@@ -2514,6 +2647,26 @@ RunService.Heartbeat:Connect(function(rawDt: number)
 				-- Tick every 0.5s = 50% of per-second Speed gain
 				local gain = math.max(1, math.floor(basePerSec * 0.5 * rebirthMult * passMult * vipMult))
 				session.SpeedStat += gain
+
+				-- Automatic Speed Mastery Upgrade check: if SpeedStat reaches RequiredSpeed of higher tiers
+				while (session.SpeedLevel or 1) < #SlimeData.TreadmillTiers do
+					local nextTier = (session.SpeedLevel or 1) + 1
+					local nextTierDef = SlimeData.TreadmillTiers[nextTier]
+					if nextTierDef and nextTierDef.RequiredSpeed and session.SpeedStat >= nextTierDef.RequiredSpeed then
+						session.SpeedLevel = nextTier
+						GuardianAlertEvent:FireClient(
+							player,
+							string.format("⚡ SPEED MASTERY UNLOCKED! Reached %s Speed -> Upgraded to Treadmill Tier %d [%s]!",
+								SlimeData.FormatNumber(nextTierDef.RequiredSpeed),
+								nextTier,
+								nextTierDef.MultiplierLabel
+							)
+						)
+					else
+						break
+					end
+				end
+
 				applyPlayerSpeed(player, true)
 				updateSpeedUpgradePrompt(player)
 				syncPlayer(player)
@@ -2826,9 +2979,13 @@ ClaimDailyRewardEvent.OnServerEvent:Connect(function(player: Player)
 	if not session then
 		return
 	end
-	local now = os.clock()
-	if session.LastDailyClaim > 0 and (now - session.LastDailyClaim) < 15 then
-		GuardianAlertEvent:FireClient(player, "Daily Streak Chest claimed recently! Check your Playtime Milestones too!")
+	local now = os.time()
+	local DAILY_COOLDOWN = 72000 -- 20 hours
+	if session.LastDailyClaim > 0 and (now - session.LastDailyClaim) < DAILY_COOLDOWN then
+		local rem = DAILY_COOLDOWN - (now - session.LastDailyClaim)
+		local remH = math.floor(rem / 3600)
+		local remM = math.floor((rem % 3600) / 60)
+		GuardianAlertEvent:FireClient(player, string.format("⏳ Daily Streak Chest on cooldown! Next reward available in %dh %dm.", remH, remM))
 		return
 	end
 	session.LastDailyClaim = now
@@ -2996,7 +3153,6 @@ BuySpinCashEvent.OnServerEvent:Connect(function(player: Player)
 		return
 	end
 	session.Coins -= spinCost
-	session.BonusSpins = (session.BonusSpins or 0) + 1
 	executeWheelSpin(player)
 end)
 
@@ -3237,7 +3393,7 @@ MarketplaceService.ProcessReceipt = function(receiptInfo: { [string]: any }): En
 			end
 		end
 	end
-	return Enum.ProductPurchaseDecision.PurchaseGranted
+	return Enum.ProductPurchaseDecision.NotProcessedYet
 end
 
 BuyRobuxItemEvent.OnServerEvent:Connect(function(player: Player, itemKey: any)
@@ -3427,6 +3583,7 @@ function savePlayerData(player: Player)
 			FenceLevel = session.FenceLevel or 1,
 			Rebirths = session.Rebirths,
 			DailyStreak = session.DailyStreak,
+			LastDailyClaim = session.LastDailyClaim or 0,
 			ClaimedLikeReward = session.ClaimedLikeReward == true,
 			OwnedPasses = session.OwnedPasses,
 			UnlockedHints = session.UnlockedHints,
@@ -3604,7 +3761,7 @@ local function setupPlayer(player: Player)
 		SpeedThrottleRatio = 1.0,
 		Rebirths = if loadedData and type(loadedData.Rebirths) == "number" then loadedData.Rebirths else 0,
 		DailyStreak = if loadedData and type(loadedData.DailyStreak) == "number" then loadedData.DailyStreak else 0,
-		LastDailyClaim = 0,
+		LastDailyClaim = if loadedData and type(loadedData.LastDailyClaim) == "number" then loadedData.LastDailyClaim else 0,
 		LastWheelSpin = 0,
 		NextFreeSpinAt = 0,
 		BonusSpins = 1,

@@ -17,8 +17,10 @@
 local TweenService = game:GetService("TweenService")
 local SlimeData = require(script.Parent:WaitForChild("SlimeData"))
 local SquishyBuilder = require(script.Parent:WaitForChild("SquishyBuilder"))
+local PrebuiltLoader = require(script.Parent:WaitForChild("PrebuiltLoader"))
 
 local UIBuilder = {}
+
 
 export type RotatingViewportEntry = {
 	Model: Model,
@@ -133,13 +135,19 @@ local function build3DSquishyViewportModel(
 	shapeStyle: string?,
 	slimeDef: any?
 ): (Model, CFrame)
-	local basePivot = CFrame.new(0, -0.05, 0) * CFrame.Angles(0, math.rad(-18), 0)
+	local basePivot = CFrame.new(0, 0.05, 0) * CFrame.Angles(0, math.rad(-18), 0)
 
 	if slimeDef and (slimeDef.IsBrainrot or (tonumber(slimeDef.Id) and tonumber(slimeDef.Id) <= 35)) then
-		local hatched = SquishyBuilder.CreateHatchedSquishy(slimeDef, Vector3.zero, 0.55)
+		local hatched = SquishyBuilder.CreateHatchedSquishy(slimeDef, Vector3.zero, 1, 1)
 		hatched.Name = "Squishy3DPreview"
 		for _, desc in ipairs(hatched:GetDescendants()) do
-			if desc:IsA("BillboardGui") or desc:IsA("ProximityPrompt") or desc:IsA("Highlight") then
+			if
+				desc:IsA("BillboardGui")
+				or desc:IsA("ProximityPrompt")
+				or desc:IsA("Highlight")
+				or desc:IsA("Light")
+				or desc:IsA("ParticleEmitter")
+			then
 				desc:Destroy()
 			elseif desc:IsA("BasePart") then
 				desc.Anchored = true
@@ -149,7 +157,43 @@ local function build3DSquishyViewportModel(
 				desc.CastShadow = false
 			end
 		end
-		hatched:PivotTo(basePivot)
+
+		local okBB, bbCF, bbSize = pcall(function()
+			return hatched:GetBoundingBox()
+		end)
+		if okBB and bbSize.Magnitude > 0.05 then
+			local maxDim = math.max(bbSize.X, bbSize.Y, bbSize.Z)
+			local targetDim = 2.35
+			local scaleFactor = math.clamp(targetDim / math.max(maxDim, 0.1), 0.08, 2.5)
+			pcall(function()
+				hatched:ScaleTo(hatched:GetScale() * scaleFactor)
+			end)
+		end
+
+		local okBB2, bbCF2, bbSize2 = pcall(function()
+			return hatched:GetBoundingBox()
+		end)
+		if okBB2 then
+			local centerOffset = bbCF2.Position
+			for _, desc in ipairs(hatched:GetDescendants()) do
+				if desc:IsA("BasePart") then
+					local relCF = CFrame.new(-centerOffset) * desc.CFrame
+					desc.CFrame = basePivot * relCF
+				end
+			end
+		end
+		local root = Instance.new("Part")
+		root.Name = "ViewportCenterRoot"
+		root.Size = Vector3.new(0.05, 0.05, 0.05)
+		root.Transparency = 1
+		root.Anchored = true
+		root.CanCollide = false
+		root.CanTouch = false
+		root.CanQuery = false
+		root.CFrame = basePivot
+		root.Parent = hatched
+		hatched.PrimaryPart = root
+
 		hatched.Parent = parent
 		return hatched, basePivot
 	end
@@ -1049,6 +1093,16 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 
 		local squishy3DModel, basePivot = build3DSquishyViewportModel(cardVF, pColor, aColor, isBossEgg, rarity, nil, slime)
 
+		if not isBossEgg then
+			local slimeIcon = Instance.new("ImageLabel")
+			slimeIcon.Name = "CuteSlimePackIcon"
+			slimeIcon.Size = UDim2.fromScale(0.42, 0.42)
+			slimeIcon.Position = UDim2.fromScale(0.56, 0.56)
+			slimeIcon.BackgroundTransparency = 1
+			slimeIcon.Image = PrebuiltLoader.GetCuteSlimeIconId(idx)
+			slimeIcon.Parent = cardVF
+		end
+
 		local hintDesc = if isBossEgg
 			then string.format("Steal from Stage %d Sleeping Boss Nest & hatch in your Fenced Pen!", slime.Level)
 			elseif idx <= 55 then string.format("Climb Stacked Wooden Crates & Plank Bridge onto House Roofs in Stage %d!", slime.Level)
@@ -1137,7 +1191,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	local firstCard = indexCards[tostring(SlimeData.Slimes[1].Id)]
 	if firstCard then
 		activeHoveredCard = firstCard
-		firstCard.Camera.FieldOfView = 35
+		firstCard.Camera.FieldOfView = 50
 	end
 
 	-- =========================================================================

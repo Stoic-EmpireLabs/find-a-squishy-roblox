@@ -5,10 +5,11 @@ $bundleObj = @{
     SlimeData      = [System.IO.File]::ReadAllText("$root\src\shared\SlimeData.luau", [System.Text.Encoding]::UTF8)
     UIBuilder      = [System.IO.File]::ReadAllText("$root\src\shared\UIBuilder.luau", [System.Text.Encoding]::UTF8)
     SquishyBuilder = [System.IO.File]::ReadAllText("$root\src\shared\SquishyBuilder.luau", [System.Text.Encoding]::UTF8)
-    PrebuiltLoader = [System.IO.File]::ReadAllText("$root\src\shared\PrebuiltLoader.luau", [System.Text.Encoding]::UTF8)
-    WorldBuilder   = [System.IO.File]::ReadAllText("$root\src\server\WorldBuilder.luau", [System.Text.Encoding]::UTF8)
-    GameServer     = [System.IO.File]::ReadAllText("$root\src\server\GameServer.server.luau", [System.Text.Encoding]::UTF8)
-    GameClient     = [System.IO.File]::ReadAllText("$root\src\client\GameClient.client.luau", [System.Text.Encoding]::UTF8)
+    PrebuiltLoader           = [System.IO.File]::ReadAllText("$root\src\shared\PrebuiltLoader.luau", [System.Text.Encoding]::UTF8)
+    CreatorStoreGameplayKits = [System.IO.File]::ReadAllText("$root\src\shared\CreatorStoreGameplayKits.luau", [System.Text.Encoding]::UTF8)
+    WorldBuilder             = [System.IO.File]::ReadAllText("$root\src\server\WorldBuilder.luau", [System.Text.Encoding]::UTF8)
+    GameServer               = [System.IO.File]::ReadAllText("$root\src\server\GameServer.server.luau", [System.Text.Encoding]::UTF8)
+    GameClient               = [System.IO.File]::ReadAllText("$root\src\client\GameClient.client.luau", [System.Text.Encoding]::UTF8)
 }
 $bundleJson = $bundleObj | ConvertTo-Json -Depth 4 -Compress
 $bundleBytes = [System.Text.Encoding]::UTF8.GetBytes($bundleJson)
@@ -27,7 +28,7 @@ $studioProc = Start-Process -FilePath $studioExe -ArgumentList "-task EditPlace 
 Write-Output "Launched interactive Cloud EditPlace Studio PID: $($studioProc.Id)"
 
 $asyncTask = $listener.GetContextAsync()
-$deadline = (Get-Date).AddSeconds(28)
+$deadline = (Get-Date).AddSeconds(45)
 while ((Get-Date) -lt $deadline) {
     if ($asyncTask.IsCompleted) {
         $ctx = $asyncTask.Result
@@ -117,7 +118,7 @@ while ((Get-Date) -lt $winDeadline) {
 }
 
 # Wait until EditModeBuilder finishes SetWaypoint in the Studio log
-$logDeadline = (Get-Date).AddSeconds(20)
+$logDeadline = (Get-Date).AddSeconds(60)
 while ((Get-Date) -lt $logDeadline) {
     $l = Get-ChildItem "$env:LOCALAPPDATA\Roblox\logs\*.log" | Where-Object { $_.Name -like "*Studio*" } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
     if ($l) {

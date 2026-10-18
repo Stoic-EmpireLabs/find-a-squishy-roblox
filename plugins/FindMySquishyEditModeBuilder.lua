@@ -82,10 +82,11 @@ task.spawn(function()
 			setScriptSource(sharedF, "UIBuilder", "ModuleScript", bundle.UIBuilder)
 			setScriptSource(sharedF, "SquishyBuilder", "ModuleScript", bundle.SquishyBuilder)
 			setScriptSource(sharedF, "PrebuiltLoader", "ModuleScript", bundle.PrebuiltLoader)
+			setScriptSource(sharedF, "CreatorStoreGameplayKits", "ModuleScript", bundle.CreatorStoreGameplayKits)
 			setScriptSource(serverF, "WorldBuilder", "ModuleScript", bundle.WorldBuilder)
 			setScriptSource(serverF, "GameServer", "Script", bundle.GameServer)
 			setScriptSource(clientF, "GameClient", "LocalScript", bundle.GameClient)
-			print("[EditModeBuilder] CloudPlaceSynced=true (Updated all 7 Luau scripts from local workspace!)")
+			print("[EditModeBuilder] CloudPlaceSynced=true (Updated all 8 Luau scripts from local workspace!)")
 		end
 	end)
 
@@ -95,6 +96,18 @@ task.spawn(function()
 	end
 
 	local slimeData = require(sharedFolder:WaitForChild("SlimeData"))
+	local creatorStoreKitsMod = sharedFolder:FindFirstChild("CreatorStoreGameplayKits")
+	if creatorStoreKitsMod and creatorStoreKitsMod:IsA("ModuleScript") then
+		local okK, kitModule = pcall(require, creatorStoreKitsMod)
+		if okK and type(kitModule) == "table" and type(kitModule.EnsureGameplayKits) == "function" then
+			pcall(function()
+				kitModule.EnsureGameplayKits(function(assetId)
+					return game:GetObjects("rbxassetid://" .. tostring(assetId))
+				end)
+			end)
+		end
+	end
+
 	local prebuiltLoaderMod = sharedFolder:FindFirstChild("PrebuiltLoader")
 	if prebuiltLoaderMod and prebuiltLoaderMod:IsA("ModuleScript") then
 		local okP, pl = pcall(require, prebuiltLoaderMod)
@@ -279,6 +292,56 @@ task.spawn(function()
 						boothCount
 					)
 				)
+
+				-- Monetization and Creator Store Kits Audit Check
+				local userKitsFolder = hubFolder and hubFolder:FindFirstChild("UserCreatorStoreKits")
+				local donationBoard = userKitsFolder and userKitsFolder:FindFirstChild("RobuxDonationBoardFrame")
+				local gamepassKiosk = userKitsFolder and userKitsFolder:FindFirstChild("ObbyGamepassBoardFrame")
+				local timeLeaderboard = userKitsFolder and userKitsFolder:FindFirstChild("TimePlayedBoardFrame")
+				local skipObbyPads = 0
+				local skipGatePrompts = 0
+				local landmarkLadders = 0
+				for _, desc in ipairs(worldFolder:GetDescendants()) do
+					if desc:IsA("BasePart") and desc.Name == "SkipObbyPaywallPad" then
+						skipObbyPads += 1
+					elseif desc:IsA("ProximityPrompt") and desc.Name == "SkipStageGatePaywallPrompt" then
+						skipGatePrompts += 1
+					elseif desc:IsA("TrussPart") and string.find(desc.Name, "Ladder") then
+						landmarkLadders += 1
+					end
+				end
+				print(
+					string.format(
+						"[AUDIT MONETIZATION & KITS v29] PASS=%s | Gamepasses=%d/5 | DevProducts=%d/6 | DonationBoard=%s | ObbyGamepassKiosk=%s | TimeLeaderboard=%s | SkipObbyPads=%d/9 | SkipGatePrompts=%d/7 | LandmarkLadders=%d",
+						tostring(passCount == 5 and devProdCount == 6 and donationBoard ~= nil and gamepassKiosk ~= nil and timeLeaderboard ~= nil and skipObbyPads >= 9 and skipGatePrompts >= 7 and landmarkLadders >= 10),
+						passCount,
+						devProdCount,
+						tostring(donationBoard ~= nil),
+						tostring(gamepassKiosk ~= nil),
+						tostring(timeLeaderboard ~= nil),
+						skipObbyPads,
+						skipGatePrompts,
+						landmarkLadders
+					)
+				)
+
+				-- Ingested Maps and Inventory Kits Audit
+				local mapsFolder = ReplicatedStorage:FindFirstChild("Maps")
+				local mapCount = if mapsFolder then #mapsFolder:GetChildren() else 0
+				local prebuiltAssets = ReplicatedStorage:FindFirstChild("Models") and ReplicatedStorage.Models:FindFirstChild("PrebuiltAssets")
+				local cuteSlimeIcons = prebuiltAssets and prebuiltAssets:FindFirstChild("CuteSlimeIcons")
+				local cuteIconCount = if cuteSlimeIcons then #cuteSlimeIcons:GetChildren() else 0
+				local importedBaseMap = worldFolder:FindFirstChild("ImportedBaseMap")
+				print(
+					string.format(
+						"[AUDIT INVENTORY & MAPS v30] PASS=%s | IngestedMaps=%d/7 | CuteSlimeIcons=%d | ImportedBaseMap=%s",
+						tostring(importedBaseMap ~= nil),
+						mapCount,
+						cuteIconCount,
+						tostring(importedBaseMap ~= nil)
+					)
+				)
+
 
 				-- ============================================================================
 				-- AUDIT LIVE-PLAYER FEEDBACK ROLLOUT (PHASES 1 TO 7)

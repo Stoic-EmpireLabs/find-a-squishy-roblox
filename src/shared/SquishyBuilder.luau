@@ -2583,6 +2583,55 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 		addFaceToBody(shell, model, radius * 0.95, sScale, true)
 		addSpeciesFeatures(shell, model, slimeDef, radius, sScale, true)
 
+		local numId = tonumber(slimeDef.Id) or 36
+		local iconId = PrebuiltLoader.GetCuteSlimeIconId(numId)
+
+		-- Cute Slime Icon Billboard floating directly above the Shining Squishy
+		local iconBb = Instance.new("BillboardGui")
+		iconBb.Name = "CuteSlimeIconBillboard"
+		iconBb.Size = UDim2.new(2.8 * sScale, 0, 2.8 * sScale, 0)
+		iconBb.StudsOffset = Vector3.new(0, 3.8 * sScale, 0)
+		iconBb.AlwaysOnTop = false
+		iconBb.LightInfluence = 0
+		iconBb.MaxDistance = 32
+		iconBb.Parent = shell
+
+		local iconImg = Instance.new("ImageLabel")
+		iconImg.Name = "SlimeIconImage"
+		iconImg.Size = UDim2.fromScale(1, 1)
+		iconImg.BackgroundTransparency = 1
+		iconImg.Image = iconId
+		iconImg.Parent = iconBb
+
+		-- SurfaceGui Decals on Front & Back of EggShell for crisp 3D icon branding
+		for _, face in ipairs({ Enum.NormalId.Front, Enum.NormalId.Back }) do
+			local sg = Instance.new("SurfaceGui")
+			sg.Name = "CuteSlimeSurfaceGui_" .. face.Name
+			sg.Face = face
+			sg.LightInfluence = 0
+			sg.AlwaysOnTop = false
+			sg.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+			sg.PixelsPerStud = 40
+			sg.Parent = shell
+
+			local sImg = Instance.new("ImageLabel")
+			sImg.Name = "SlimeDecal"
+			sImg.Size = UDim2.fromScale(0.72, 0.72)
+			sImg.Position = UDim2.fromScale(0.14, 0.14)
+			sImg.BackgroundTransparency = 1
+			sImg.Image = iconId
+			sImg.Parent = sg
+		end
+
+		-- Prebuilt 3D Squishmallow Model support (from Asset 133057503426008 / 8539945428)
+		local prebuiltSquishy = PrebuiltLoader.CloneNormalizedTemplate("Squishmallows", tostring(slimeDef.Id), 3.2 * sScale, false)
+			or PrebuiltLoader.CloneNormalizedTemplate("Squishmallows", 1, 3.2 * sScale, false)
+		if prebuiltSquishy then
+			prebuiltSquishy.Name = "PrebuiltSquishyMesh"
+			prebuiltSquishy:PivotTo(shell.CFrame)
+			prebuiltSquishy.Parent = model
+		end
+
 		-- Concentric Glowing Neon Ring Pedestal underneath the Shining Squishy
 		makePart({
 			Name = "OuterNeonRing",
@@ -2637,6 +2686,7 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 		promptAtt.Name = "PromptAttachment"
 		promptAtt.Position = Vector3.new(0, 1.35 * sScale, 0)
 		promptAtt.Parent = shell
+
 
 		local prompt = Instance.new("ProximityPrompt")
 		prompt.Name = "CapturePrompt"
@@ -2789,34 +2839,52 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 	model:SetAttribute("Behavior", slimeDef.Behavior)
 	model:SetAttribute("BounceCount", 0)
 
+	-- Prebuilt 3D Brainrot Egg Model (from Steal An Egg Asset 106206596734864 / 139663370542966)
+	local prebuiltEgg = PrebuiltLoader.CloneNormalizedTemplate("BrainrotEggs", 3, 4.4 * scale, false)
+		or PrebuiltLoader.CloneNormalizedTemplate("BrainrotEggs", tostring(stageNum), 4.4 * scale, false)
+	if prebuiltEgg then
+		prebuiltEgg.Name = "PrebuiltEggMesh"
+		prebuiltEgg:PivotTo(shell.CFrame)
+		prebuiltEgg.Parent = model
+	end
+
 	if isAnchored then
-		makePart({
-			Name = "BirdNestOuter",
-			Shape = Enum.PartType.Cylinder,
-			Material = Enum.Material.Wood,
-			Color = Color3.fromRGB(148, 96, 48),
-			Size = Vector3.new(0.85, 4.6 * scale, 4.6 * scale),
-			CFrame = CFrame.new(origin + Vector3.new(0, 0.42, 0)) * CFrame.Angles(0, 0, math.rad(90)),
-			Anchored = true,
-			CanCollide = false,
-			Parent = model,
-		})
-		makePart({
-			Name = "BirdNestStraw",
-			Shape = Enum.PartType.Cylinder,
-			Material = Enum.Material.Grass,
-			Color = Color3.fromRGB(215, 182, 72),
-			Size = Vector3.new(0.98, 3.8 * scale, 3.8 * scale),
-			CFrame = CFrame.new(origin + Vector3.new(0, 0.49, 0)) * CFrame.Angles(0, 0, math.rad(90)),
-			Anchored = true,
-			CanCollide = false,
-			Parent = model,
-		})
+		local prebuiltNest = PrebuiltLoader.CloneNormalizedTemplate("Nests", 1, 5.2 * scale, false)
+			or PrebuiltLoader.CloneNormalizedTemplate("BirdNest", 1, 5.2 * scale, false)
+		if prebuiltNest then
+			prebuiltNest.Name = "PrebuiltBirdNest"
+			prebuiltNest:PivotTo(CFrame.new(origin + Vector3.new(0, 0.45, 0)))
+			prebuiltNest.Parent = model
+		else
+			makePart({
+				Name = "BirdNestOuter",
+				Shape = Enum.PartType.Cylinder,
+				Material = Enum.Material.Wood,
+				Color = Color3.fromRGB(148, 96, 48),
+				Size = Vector3.new(0.85, 4.6 * scale, 4.6 * scale),
+				CFrame = CFrame.new(origin + Vector3.new(0, 0.42, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+				Anchored = true,
+				CanCollide = false,
+				Parent = model,
+			})
+			makePart({
+				Name = "BirdNestStraw",
+				Shape = Enum.PartType.Cylinder,
+				Material = Enum.Material.Grass,
+				Color = Color3.fromRGB(215, 182, 72),
+				Size = Vector3.new(0.98, 3.8 * scale, 3.8 * scale),
+				CFrame = CFrame.new(origin + Vector3.new(0, 0.49, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+				Anchored = true,
+				CanCollide = false,
+				Parent = model,
+			})
+		end
 
 		local eggPromptAtt = Instance.new("Attachment")
 		eggPromptAtt.Name = "PromptAttachment"
 		eggPromptAtt.Position = Vector3.new(0, 1.45 * scale, 0)
 		eggPromptAtt.Parent = shell
+
 
 		local prompt = Instance.new("ProximityPrompt")
 		prompt.Name = "CapturePrompt"
@@ -3439,7 +3507,8 @@ function SquishyBuilder.ApplyCharacterMorph(character: Model, slimeDef: SlimeDat
 	local radius = 2.0 * morphScale
 	local costume = Instance.new("Model")
 	costume.Name = "SquishyMorphCostume"
-	local isBrainrot = (tonumber(slimeDef.Id) or 1) <= 35 or (slimeDef :: any).IsBrainrot == true
+	local numId = tonumber(slimeDef.Id) or 1
+	local isBrainrot = numId <= 35 or (slimeDef :: any).IsBrainrot == true
 	local body = makePart({
 		Name = "MorphBody",
 		Shape = if isBrainrot then Enum.PartType.Block else Enum.PartType.Ball,
@@ -3453,10 +3522,39 @@ function SquishyBuilder.ApplyCharacterMorph(character: Model, slimeDef: SlimeDat
 		Parent = costume,
 	})
 	weldTo(hrp, body)
-	if not isBrainrot then
-		addFaceToBody(body, costume, radius * 0.96, morphScale, false)
+
+	local prebuiltBrainrot: Model? = nil
+	if isBrainrot then
+		prebuiltBrainrot = PrebuiltLoader.CloneNormalizedTemplate("Brainrots", slimeDef.Name or numId, 3.6 * morphScale, false)
+			or PrebuiltLoader.CloneNormalizedTemplate("Brainrots", numId, 3.6 * morphScale, false)
 	end
-	addSpeciesFeatures(body, costume, slimeDef, radius, morphScale, false)
+
+	if prebuiltBrainrot then
+		prebuiltBrainrot:PivotTo(hrp.CFrame)
+		for _, child in ipairs(prebuiltBrainrot:GetChildren()) do
+			child.Parent = costume
+		end
+		prebuiltBrainrot:Destroy()
+	else
+		if not isBrainrot then
+			addFaceToBody(body, costume, radius * 0.96, morphScale, false)
+		end
+		addSpeciesFeatures(body, costume, slimeDef, radius, morphScale, false)
+	end
+
+	for _, desc in ipairs(costume:GetDescendants()) do
+		if desc:IsA("BasePart") then
+			desc.Anchored = false
+			desc.CanCollide = false
+			desc.CanTouch = false
+			desc.CanQuery = false
+			desc.Massless = true
+			if desc ~= body then
+				weldTo(body, desc)
+			end
+		end
+	end
+
 	costume.Parent = character
 end
 

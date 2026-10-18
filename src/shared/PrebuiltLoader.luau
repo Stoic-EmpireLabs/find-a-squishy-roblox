@@ -50,25 +50,32 @@ PrebuiltLoader.CREATOR_STORE_ASSETS = {
 		Skibidi = 14819601003, -- Skibidi Cyber Titan
 		CosmicTralalero = 111854862176457, -- Cosmic Tralalero God
 	},
-	BrainrotEggs = { 139663370542966, 154752063, 97487252360689 },
+	BrainrotEggs = { 139663370542966, 154752063, 106206596734864 },
 	GoldCoins = { 25638529, 25718369, 1564608051, 9418153507 },
+	CuteSlimeIcons = {
+		Pack = 85631681185830, -- Cute Slime Icons Pack - 65+ UI Icons (truststoic17)
+	},
 	ObbyPieces = {
-		14288014072, 76697739621349, 73062373189329, 14667164618, -- Obby Stage Courses
-		12120501468, 79641631925549, 12120527511, 95225104831884, -- Obby Obstacles & Parkour
-		10202936, 4514115489, 1172079000, 4644268803, -- Obby Spinners / Sweeper Beams
-		14796107102, 8517401506, 134019342626406, -- Jump Pads & Moving Platforms
-		76838144711090, 82837302167177, -- Trampoline Bounce Pads
-		13804790028, 12317896672, -- Ladders & Climb Walls
+		[1] = 18822017935, -- Obby Maze (truststoic17)
+		[2] = 13811206538, -- Obby Trusses (truststoic17)
+		[3] = 18839533016, -- Easy Obby Part (truststoic17)
+		[4] = 8550093744, -- Swings (OBBY) (truststoic17)
+		[5] = 13903889013, -- Obby Stairs (truststoic17)
+		[6] = 6740491328, -- Truss ladder (truststoic17)
+		[7] = 17253530672, -- rainbow obby (truststoic17)
+		[8] = 100762364640472, -- Keycap/Keyboard (truststoic17)
+		[9] = 74456202552253, -- KIT 1+ ESCAPE DEL TECLADO (truststoic17)
+		[10] = 140630477631657, -- Obby Kit By JakeDev (truststoic17)
 	},
 	StageLandmarks = {
-		114591511925320, 7860328354, 9839019518, 18771840070, -- Stage 1: Windmill, Treehouses, Mushroom Cottage
-		4400478930, 137470241818443, 131526002682377, -- Stage 2: Gingerbread Mansion, Candy Canes, Carousel
-		7137210839, 5706899551, 18852029806, 95052703843351, -- Stage 3: Pirate Ship, Water Slide, Sand Castle, Lighthouse
-		123493048047404, 101559450428915, -- Stage 4: Dragon Statue, Bamboo Pagoda Tower
-		3858204539, 116874485094995, 73198167966628, -- Stage 5: Crystal Cave, Cyberpunk Skyscraper, Arcade
-		85537579537253, 2135149422, 154465953, -- Stage 6: Ferris Wheel, Rainbow Bridge, Cloud/Ice Palace
-		256969126, 16437023855, -- Stage 7: Erupting Volcano, Obsidian Skull Fortress
-		50089105, 171327489, 4790754477, -- Stage 8: UFO Mothership, Void Portal, Golden Throne
+		WildWest = 128960889355821, -- Wild West (truststoic17)
+		DarkseedTempest = 106334655417321, -- Darkseed Tempest (truststoic17)
+		Revenant = 79500758678401, -- Revenant (truststoic17)
+		HalloweenLeftovers = 120609134807240, -- Halloween Leftovers (truststoic17)
+		HalloweenPack = 113280926555931, -- Halloween Pack (truststoic17)
+		SpaceTycoonPlanets = 8588705960, -- Planets for space tycoon (truststoic17)
+		ForSpaceTycoon = 8645565937, -- For Space Tycoon (truststoic17)
+		SpaceTycoonFixed = 16070143698, -- *Fixed!* Space Tycoon (truststoic17)
 	},
 	Trees = { 4893246329 },
 	PalmTrees = { 10562894034, 4586726395 },
@@ -76,6 +83,20 @@ PrebuiltLoader.CREATOR_STORE_ASSETS = {
 	Bridges = { 18262413487, 2135149422 },
 	Bats = { 4494586033, 13233709250 },
 	BearTraps = { 9615431080, 470975521 },
+	Treadmills = {
+		[1] = 135041830463035, -- Treadmills by System (Multi-tier 3D gym treadmill models)
+		[2] = 85105314510723, -- Treadmill by fasszk Xgibean
+		[3] = 916218035, -- Treadmill (Eppobot)
+		[4] = 90082960989487, -- +1 Speed V1 Kit
+		[5] = 2892634734, -- Speed Simulator Kit
+	},
+	Gamepasses = {
+		FusionCoil = 12124152417,
+		SpeedCoil = 11963709166,
+		GravityCoil = 11987698523,
+		RainbowCarpet = 17656533013,
+		ObbyGamepass = 75354400953490,
+	},
 }
 
 PrebuiltLoader.BRAINROT_ID_TO_KEY = {
@@ -215,21 +236,29 @@ local function sanitizeCreatorStoreModel(rawInst: Instance, category: string, in
 		return nil
 	end
 
-	-- Remove scripts, GUI, sounds, decals/textures (unless Brainrots), constraints, joints, and oversized invisible hitboxes
+	-- Remove scripts, GUI, sounds, decals/textures (unless Brainrots, Treadmills, CuteSlimeIcons, Obby, Landmarks), constraints, joints, and oversized invisible hitboxes
 	local isBrainrot = (category == "Brainrots")
+	local isTreadmill = (category == "Treadmills")
+	local preserveDecals = (isBrainrot or category == "CuteSlimeIcons" or category == "ObbyPieces" or category == "StageLandmarks" or category == "GameplayKits" or isTreadmill)
+
 	for _, desc in ipairs(container:GetDescendants()) do
-		if
+		if isTreadmill and (desc:IsA("LuaSourceContainer") or desc:IsA("ProximityPrompt") or desc:IsA("GuiBase") or desc:IsA("Beam") or desc:IsA("ParticleEmitter") or desc:IsA("SurfaceGui") or desc:IsA("BillboardGui")) then
+			-- KEEP treadmill gameplay elements intact!
+			if desc:IsA("LuaSourceContainer") then
+				print(string.format("[TREADMILL SCRIPT INSPECTION] Preserved %s '%s' in Treadmill", desc.ClassName, desc.Name))
+			end
+		elseif
 			desc:IsA("LuaSourceContainer")
 			or desc:IsA("Sound")
-			or (not isBrainrot and desc:IsA("Decal"))
-			or (not isBrainrot and desc:IsA("Texture"))
-			or (not isBrainrot and desc:IsA("SurfaceAppearance"))
-			or desc:IsA("ParticleEmitter")
+			or (not preserveDecals and desc:IsA("Decal"))
+			or (not preserveDecals and desc:IsA("Texture"))
+			or (not preserveDecals and desc:IsA("SurfaceAppearance"))
+			or (not isTreadmill and desc:IsA("ParticleEmitter"))
 			or desc:IsA("Trail")
-			or desc:IsA("Beam")
+			or (not isTreadmill and desc:IsA("Beam"))
 			or desc:IsA("Light")
-			or desc:IsA("GuiBase")
-			or desc:IsA("ProximityPrompt")
+			or (not isTreadmill and desc:IsA("GuiBase"))
+			or (not isTreadmill and desc:IsA("ProximityPrompt"))
 			or desc:IsA("ClickDetector")
 			or desc:IsA("Constraint")
 			or desc:IsA("JointInstance")
@@ -240,26 +269,31 @@ local function sanitizeCreatorStoreModel(rawInst: Instance, category: string, in
 		then
 			desc:Destroy()
 		elseif desc:IsA("MeshPart") then
-			if not isBrainrot then
+			if string.find(desc.TextureID, "203785492") then
 				desc.TextureID = ""
-			else
+			end
+			if preserveDecals then
 				desc:SetAttribute("PreserveCreatorStoreMesh", true)
+			else
+				desc.TextureID = ""
 			end
 		elseif desc:IsA("SpecialMesh") then
-			if not isBrainrot then
+			if string.find(desc.TextureId, "203785492") then
+				desc.TextureId = ""
+			end
+			if preserveDecals then
+				desc:SetAttribute("PreserveCreatorStoreMesh", true)
+				if desc.Parent and desc.Parent:IsA("BasePart") then
+					desc.Parent:SetAttribute("PreserveCreatorStoreMesh", true)
+				end
+			else
 				desc.TextureId = ""
 				if desc.MeshType == Enum.MeshType.FileMesh then
-					-- If the parent Part is a tiny 1x1x1 placeholder for a FileMesh, remove the part so it never turns into a giant block
 					local parentPart = desc.Parent
 					desc:Destroy()
 					if parentPart and parentPart:IsA("BasePart") and parentPart.Size.Magnitude < 2.2 then
 						parentPart:Destroy()
 					end
-				end
-			else
-				desc:SetAttribute("PreserveCreatorStoreMesh", true)
-				if desc.Parent and desc.Parent:IsA("BasePart") then
-					desc.Parent:SetAttribute("PreserveCreatorStoreMesh", true)
 				end
 			end
 		end
@@ -269,35 +303,48 @@ local function sanitizeCreatorStoreModel(rawInst: Instance, category: string, in
 	for _, desc in ipairs(container:GetDescendants()) do
 		if desc:IsA("BasePart") then
 			local nm = string.lower(desc.Name)
-			if
-				desc.Transparency >= 0.95
-				or desc.Size.X > 48
-				or desc.Size.Y > 48
-				or desc.Size.Z > 48
-				or desc.Size.Magnitude < 0.05
-				or string.find(nm, "baseplate")
-				or string.find(nm, "spawn")
-				or string.find(nm, "background")
-			then
-				desc:Destroy()
-			else
-				desc.Anchored = true
-				desc.CanCollide = false
-				desc.CanTouch = false
-				desc.CanQuery = false
-				desc.Massless = true
-				desc.CastShadow = false
-				-- Zero Map Glow Rule: environment & landmark models never use Neon; only collectibles (Brainrots, Eggs, Coins, Squishies) may glow!
+			if isBrainrot then
 				if
-					desc.Material == Enum.Material.Neon
-					and category ~= "Brainrots"
-					and category ~= "BrainrotEggs"
-					and category ~= "GoldCoins"
-					and category ~= "Squishmallows"
+					string.find(nm, "baseplate")
+					or string.find(nm, "spawn")
+					or string.find(nm, "background")
+					or (desc.Size.X > 120 and desc.Size.Z > 120 and desc.Size.Y < 4)
 				then
-					desc.Material = Enum.Material.SmoothPlastic
+					desc:Destroy()
+				else
+					if desc.Transparency >= 0.95 then
+						desc.Transparency = 1
+					end
+					desc.Anchored = true
+					desc.CanCollide = false
+					desc.CanTouch = false
+					desc.CanQuery = false
+					desc.Massless = true
+					desc.CastShadow = false
+					table.insert(validParts, desc)
 				end
-				table.insert(validParts, desc)
+			else
+				local isLargeCategory = (category == "ObbyPieces" or category == "StageLandmarks" or category == "GameplayKits" or isTreadmill)
+				local maxDim = if isLargeCategory then 250 else 48
+				if
+					desc.Transparency >= 0.98
+					or desc.Size.X > maxDim
+					or desc.Size.Y > maxDim
+					or desc.Size.Z > maxDim
+					or desc.Size.Magnitude < 0.05
+					or string.find(nm, "baseplate")
+					or string.find(nm, "spawnlocation")
+				then
+					desc:Destroy()
+				else
+					desc.Anchored = true
+					desc.CanCollide = if isTreadmill or desc:IsA("TrussPart") or category == "ObbyPieces" then true else false
+					desc.CanTouch = if isTreadmill then true else false
+					desc.CanQuery = true
+					desc.Massless = true
+					desc.CastShadow = false
+					table.insert(validParts, desc)
+				end
 			end
 		end
 	end
@@ -983,8 +1030,11 @@ function PrebuiltLoader.EnsurePrebuiltAssets(customObjectFetcher: ((number) -> {
 	end
 
 	local existing = modelsFolder:FindFirstChild("PrebuiltAssets")
-	if existing and existing:GetAttribute("LoadedCount") then
-		return existing :: Folder
+	if customObjectFetcher == nil and existing and existing:GetAttribute("LoadedCount") then
+		local brainrotsFolder = existing:FindFirstChild("Brainrots")
+		if brainrotsFolder and #brainrotsFolder:GetChildren() >= 35 then
+			return existing :: Folder
+		end
 	end
 
 	local prebuiltRoot: Folder
@@ -1022,8 +1072,9 @@ function PrebuiltLoader.EnsurePrebuiltAssets(customObjectFetcher: ((number) -> {
 			desc.CanQuery = false
 			desc.Massless = true
 			desc.CastShadow = false
-		elseif desc:IsA("MeshPart") and string.find(desc.TextureID, "203785492") then
-			desc.TextureID = ""
+			if desc:IsA("MeshPart") and string.find(desc.TextureID, "203785492") then
+				desc.TextureID = ""
+			end
 		elseif desc:IsA("SpecialMesh") and string.find(desc.TextureId, "203785492") then
 			desc.TextureId = ""
 		elseif
@@ -1048,6 +1099,178 @@ function PrebuiltLoader.EnsurePrebuiltAssets(customObjectFetcher: ((number) -> {
 
 	-- 2. Call customObjectFetcher when provided in Studio to download & bake Creator Store Brainrots, Eggs, Coins, ObbyPieces & StageLandmarks
 	if customObjectFetcher then
+		local brainrotsFolder = ensureCategory("Brainrots")
+
+		-- User's Creator Inventory Brainrot Pack [150+] (AssetId 137461628889541)
+		local okPack, packObjs = pcall(customObjectFetcher, 137461628889541)
+		if okPack and packObjs and #packObjs > 0 then
+			print(string.format("[BRAINROT PACK 150+] Downloaded AssetId 137461628889541 with %d root object(s)", #packObjs))
+			local unpackedCount = 0
+			local function processPackItem(item: Instance)
+				if item:IsA("Model") then
+					local hasPart = false
+					for _, d in ipairs(item:GetDescendants()) do
+						if d:IsA("BasePart") then
+							hasPart = true
+							break
+						end
+					end
+					if hasPart then
+						local mName = item.Name
+						print("[BRAINROT PACK 150+] Unpacked model: " .. mName)
+						local sanitized = sanitizeCreatorStoreModel(item, "Brainrots", mName)
+						if sanitized then
+							sanitized.Name = mName
+							sanitized:SetAttribute("SourceAssetId", 137461628889541)
+							sanitized:SetAttribute("FromBrainrotPack", true)
+							sanitized.Parent = brainrotsFolder
+							unpackedCount += 1
+							totalLoaded += 1
+							storeLoadedCount += 1
+
+							-- Map against our 35 Brainrot keys
+							local lowerName = string.lower(mName)
+							for id, key in pairs(PrebuiltLoader.BRAINROT_ID_TO_KEY) do
+								local lowerKey = string.lower(key)
+								if string.find(lowerName, lowerKey, 1, true) or string.find(lowerKey, lowerName, 1, true) then
+									if not brainrotsFolder:FindFirstChild(key) then
+										local alias = sanitized:Clone()
+										alias.Name = key
+										alias:SetAttribute("BrainrotKey", key)
+										alias:SetAttribute("MatchedFromPack", mName)
+										alias.Parent = brainrotsFolder
+										print(string.format("[BRAINROT PACK 150+] Auto-mapped model '%s' to Brainrot key '%s' (#%d)", mName, key, id))
+									end
+								end
+							end
+						end
+					end
+				elseif item:IsA("Folder") then
+					for _, ch in ipairs(item:GetChildren()) do
+						processPackItem(ch)
+					end
+				end
+			end
+
+			for _, rootObj in ipairs(packObjs) do
+				if rootObj:IsA("Folder") or (rootObj:IsA("Model") and #rootObj:GetChildren() > 3 and not rootObj.PrimaryPart) then
+					for _, ch in ipairs(rootObj:GetChildren()) do
+						processPackItem(ch)
+						if unpackedCount % 20 == 0 then
+							task.wait()
+						end
+					end
+				else
+					processPackItem(rootObj)
+					if unpackedCount % 20 == 0 then
+						task.wait()
+					end
+				end
+			end
+			print(string.format("[BRAINROT PACK 150+] Successfully unpacked %d models into Brainrots folder!", unpackedCount))
+		end
+
+		-- A) User's Creator Store Cute Slime Icons Pack - 65+ UI Icons (AssetId 85631681185830)
+		local cuteIconsFolder = ensureCategory("CuteSlimeIcons")
+		local okSlimes, slimeObjs = pcall(customObjectFetcher, 85631681185830)
+		if okSlimes and slimeObjs and #slimeObjs > 0 then
+			print(string.format("[CUTE SLIME ICONS 85631681185830] Downloaded with %d root object(s)", #slimeObjs))
+			local iconCount = 0
+			local seenImages: { [string]: boolean } = {}
+			local function extractImage(inst: Instance)
+				local imgId = ""
+				if inst:IsA("ImageLabel") or inst:IsA("ImageButton") then
+					imgId = inst.Image
+				elseif inst:IsA("Decal") or inst:IsA("Texture") then
+					imgId = inst.Texture
+				elseif inst:IsA("StringValue") and string.find(inst.Value, "rbxasset") then
+					imgId = inst.Value
+				end
+
+				if imgId ~= "" and not seenImages[imgId] then
+					seenImages[imgId] = true
+					iconCount += 1
+					local valObj = Instance.new("StringValue")
+					valObj.Name = "SlimeIcon_" .. tostring(iconCount)
+					valObj.Value = imgId
+					valObj.Parent = cuteIconsFolder
+					print(string.format("[CUTE SLIME ICONS 85631681185830] Extracted icon #%d = %s", iconCount, imgId))
+				end
+			end
+
+			for _, root in ipairs(slimeObjs) do
+				extractImage(root)
+				for _, d in ipairs(root:GetDescendants()) do
+					extractImage(d)
+				end
+			end
+			print(string.format("[CUTE SLIME ICONS 85631681185830] Successfully extracted %d icons into CuteSlimeIcons folder!", iconCount))
+		end
+
+		-- B) User's Creator Store 3D Squishies Model Pack (AssetId 133057503426008)
+		local squishmallowsFolder = ensureCategory("Squishmallows")
+		local okSquish, squishObjs = pcall(customObjectFetcher, 133057503426008)
+		if okSquish and squishObjs and #squishObjs > 0 then
+			print(string.format("[SQUISHIES PACK 133057503426008] Downloaded with %d root object(s)", #squishObjs))
+			local sCount = 0
+			for _, root in ipairs(squishObjs) do
+				for _, ch in ipairs(root:GetDescendants()) do
+					if ch:IsA("Model") and #ch:GetChildren() >= 1 then
+						local sanitized = sanitizeCreatorStoreModel(ch, "Squishmallows", sCount + 1)
+						if sanitized then
+							sCount += 1
+							sanitized.Name = "Squishy3D_" .. tostring(sCount)
+							sanitized:SetAttribute("SourceAssetId", 133057503426008)
+							sanitized.Parent = squishmallowsFolder
+						end
+					end
+				end
+			end
+			print(string.format("[SQUISHIES PACK 133057503426008] Unpacked %d 3D squishy models!", sCount))
+		end
+
+		-- C) User's Creator Store Steal An Egg Kit (AssetId 106206596734864)
+		local okEggKit, eggKitObjs = pcall(customObjectFetcher, 106206596734864)
+		if okEggKit and eggKitObjs and #eggKitObjs > 0 then
+			print(string.format("[STEAL AN EGG 106206596734864] Downloaded with %d root object(s)", #eggKitObjs))
+			for _, root in ipairs(eggKitObjs) do
+				for _, ch in ipairs(root:GetChildren()) do
+					print(string.format("[STEAL AN EGG 106206596734864] Child: %s (%s)", ch.Name, ch.ClassName))
+					local lowerName = string.lower(ch.Name)
+					if string.find(lowerName, "treadmill") or string.find(lowerName, "speed") then
+						local cloned = ch:Clone()
+						cloned.Parent = ensureCategory("Treadmills")
+					elseif string.find(lowerName, "egg") or string.find(lowerName, "incubator") or string.find(lowerName, "nest") then
+						local cloned = ch:Clone()
+						cloned.Parent = ensureCategory("BrainrotEggs")
+					end
+				end
+			end
+		end
+
+		-- D) User's Creator Store Obby Kit By JakeDev (AssetId 140630477631657) - Extract individual modular obstacle pieces!
+		local obbyPiecesFolder = ensureCategory("ObbyPieces")
+		local okJake, jakeObjs = pcall(customObjectFetcher, 140630477631657)
+		if okJake and jakeObjs and #jakeObjs > 0 then
+			print(string.format("[OBBY KIT BY JAKEDEV 140630477631657] Downloaded with %d root object(s)", #jakeObjs))
+			local pieceCount = 0
+			for _, root in ipairs(jakeObjs) do
+				for _, ch in ipairs(root:GetDescendants()) do
+					if ch:IsA("Model") and not ch.PrimaryPart then
+						local okBB, _, bbSize = pcall(function() return ch:GetBoundingBox() end)
+						if okBB and bbSize.Magnitude >= 3 and bbSize.Magnitude <= 32 then
+							pieceCount += 1
+							local cloned = ch:Clone()
+							cloned.Name = "JakeObbyPiece_" .. tostring(pieceCount)
+							cloned.Parent = obbyPiecesFolder
+						end
+					end
+				end
+			end
+			print(string.format("[OBBY KIT BY JAKEDEV 140630477631657] Unpacked %d modular obstacle pieces!", pieceCount))
+		end
+
+		-- E) Download remaining Creator Store Asset Categories
 		for category, idList in pairs(PrebuiltLoader.CREATOR_STORE_ASSETS) do
 			local catFolder = ensureCategory(category)
 			for keyOrIdx, assetId in pairs(idList) do
@@ -1066,6 +1289,7 @@ function PrebuiltLoader.EnsurePrebuiltAssets(customObjectFetcher: ((number) -> {
 						end
 					end
 				end
+				task.wait(0.04)
 			end
 		end
 	end
@@ -1208,6 +1432,68 @@ function PrebuiltLoader.GetCategoryTemplates(categoryName: string): { Model }
 	return list
 end
 
+local FALLBACK_CUTE_SLIME_ICONS = {
+	"rbxassetid://10709782497",
+	"rbxassetid://10709782759",
+	"rbxassetid://10709783010",
+	"rbxassetid://10709783260",
+	"rbxassetid://10709783460",
+	"rbxassetid://10709783707",
+	"rbxassetid://10709783935",
+	"rbxassetid://10709784168",
+	"rbxassetid://10709784400",
+	"rbxassetid://10709784650",
+	"rbxassetid://10709784880",
+	"rbxassetid://10709785108",
+	"rbxassetid://10709785341",
+	"rbxassetid://10709785566",
+	"rbxassetid://10709785785",
+	"rbxassetid://10709786022",
+	"rbxassetid://10709786255",
+	"rbxassetid://10709786481",
+	"rbxassetid://10709786720",
+	"rbxassetid://10709786967",
+	"rbxassetid://10709787192",
+	"rbxassetid://10709787425",
+	"rbxassetid://10709787680",
+	"rbxassetid://10709787910",
+	"rbxassetid://10709788165",
+	"rbxassetid://10709788390",
+	"rbxassetid://10709788620",
+	"rbxassetid://10709788855",
+	"rbxassetid://10709789100",
+	"rbxassetid://10709789340",
+	"rbxassetid://10709789575",
+	"rbxassetid://10709789805",
+	"rbxassetid://10709790050",
+	"rbxassetid://10709790290",
+	"rbxassetid://10709790515",
+}
+
+function PrebuiltLoader.GetCuteSlimeIconId(squishyIndex: number): string
+	local modelsFolder = ReplicatedStorage:FindFirstChild("Models")
+	local prebuiltRoot = modelsFolder and modelsFolder:FindFirstChild("PrebuiltAssets")
+	local cuteFolder = prebuiltRoot and prebuiltRoot:FindFirstChild("CuteSlimeIcons")
+	if cuteFolder then
+		local stringVals: { StringValue } = {}
+		for _, child in ipairs(cuteFolder:GetChildren()) do
+			if child:IsA("StringValue") and string.find(child.Name, "^SlimeIcon_") and child.Value ~= "" then
+				table.insert(stringVals, child)
+			end
+		end
+		if #stringVals > 0 then
+			table.sort(stringVals, function(a, b)
+				local numA = tonumber(string.match(a.Name, "%d+")) or 0
+				local numB = tonumber(string.match(b.Name, "%d+")) or 0
+				return numA < numB
+			end)
+			local picked = stringVals[((squishyIndex - 1) % #stringVals) + 1]
+			return picked.Value
+		end
+	end
+	return FALLBACK_CUTE_SLIME_ICONS[((squishyIndex - 1) % #FALLBACK_CUTE_SLIME_ICONS) + 1]
+end
+
 function PrebuiltLoader.CloneNormalizedTemplate(
 	categoryName: string,
 	seedIndex: any,
@@ -1221,9 +1507,9 @@ function PrebuiltLoader.CloneNormalizedTemplate(
 
 	local chosen: Model? = nil
 
-	if catFolder and categoryName == "Brainrots" then
+	if catFolder then
 		if type(seedIndex) == "string" then
-			local direct = catFolder:FindFirstChild(seedIndex)
+			local direct = catFolder:FindFirstChild(seedIndex) or catFolder:FindFirstChild(categoryName .. "_Store_" .. seedIndex)
 			if direct and direct:IsA("Model") then
 				chosen = direct
 			else
@@ -1239,15 +1525,17 @@ function PrebuiltLoader.CloneNormalizedTemplate(
 				end
 			end
 		elseif type(seedIndex) == "number" then
-			local keyName = PrebuiltLoader.BRAINROT_ID_TO_KEY[seedIndex]
-			if keyName then
-				local direct = catFolder:FindFirstChild(keyName)
-				if direct and direct:IsA("Model") then
-					chosen = direct
+			if categoryName == "Brainrots" then
+				local keyName = PrebuiltLoader.BRAINROT_ID_TO_KEY[seedIndex]
+				if keyName then
+					local direct = catFolder:FindFirstChild(keyName)
+					if direct and direct:IsA("Model") then
+						chosen = direct
+					end
 				end
 			end
 			if not chosen then
-				local direct = catFolder:FindFirstChild("Brainrots_Store_" .. tostring(seedIndex))
+				local direct = catFolder:FindFirstChild(categoryName .. "_Store_" .. tostring(seedIndex)) or catFolder:FindFirstChild(tostring(seedIndex))
 				if direct and direct:IsA("Model") then
 					chosen = direct
 				end
