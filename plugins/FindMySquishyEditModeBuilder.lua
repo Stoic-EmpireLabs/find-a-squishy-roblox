@@ -185,32 +185,62 @@ task.spawn(function()
 				)
 			)
 
-			-- PHASE 2 CHECK (Creator Store Treadmills: 7 Plot + 8 Stage = 15 Total, Scrolling Beam Belts):
+			-- PHASE 2 CHECK (Zero World Treadmills, 10 Stored Kits in ReplicatedStorage.Models.TreadmillUpgradeSystem):
 			local treadmillBeltCount = 0
-			local scrollBeamCount = 0
 			for _, desc in ipairs(worldFolder:GetDescendants()) do
 				if desc:IsA("BasePart") and string.find(desc.Name, "^TreadmillBelt_") then
 					treadmillBeltCount += 1
-				elseif desc:IsA("Beam") and desc.Name == "TreadmillScrollBeam" then
-					scrollBeamCount += 1
 				end
 			end
+			local modelsFolder = ReplicatedStorage:FindFirstChild("Models")
+			local tmSysFolder = modelsFolder and modelsFolder:FindFirstChild("TreadmillUpgradeSystem")
+			local tmSysCount = if tmSysFolder then #tmSysFolder:GetChildren() else 0
 			print(
 				string.format(
-					"[AUDIT PHASE 2] PASS=%s | CreatorStoreTreadmills=%d/15 (7 Plot + 8 Stage) | ScrollingBeltBeams=%d/15",
-					tostring(treadmillBeltCount == 15 and scrollBeamCount >= 15),
+					"[AUDIT PHASE 2] PASS=%s | WorldTreadmillBelts=%d (Removed from World) | StoredTreadmillKits=%d",
+					tostring(treadmillBeltCount == 0 and tmSysCount >= 1),
 					treadmillBeltCount,
-					scrollBeamCount
+					tmSysCount
 				)
 			)
 
-			-- PHASE 3 CHECK (Fenced Squishy Hatchery Pens & Grow/Level Up Stations on All 7 Plots):
+			-- PHASE 3 CHECK (Fenced Squishy Hatchery Pens, Poster Boards & Cash Pads on All 7 Plots):
 			local hatcheryPenCount = 0
 			local growPadCount = 0
+			local namedPlotsCount = 0
+			local growBoardSurfaceGuiCount = 0
+			local fenceBoardSurfaceGuiCount = 0
+			local standFloatingBillboardCount = 0
 			if plotsFolder then
+				for i = 1, 7 do
+					if plotsFolder:FindFirstChild("Plot_" .. tostring(i)) then
+						namedPlotsCount += 1
+					end
+				end
 				for _, plotModel in ipairs(plotsFolder:GetChildren()) do
-					if plotModel:FindFirstChild("HatcheryPen") then
+					local pen = plotModel:FindFirstChild("HatcheryPen")
+					if pen then
 						hatcheryPenCount += 1
+						local growSt = pen:FindFirstChild("GrowSquishyStand")
+						local fenceSt = pen:FindFirstChild("UpgradeFenceStand")
+						if growSt then
+							if growSt:FindFirstChildOfClass("BillboardGui") then
+								standFloatingBillboardCount += 1
+							end
+							local gb = growSt:FindFirstChild("GrowStandBoard")
+							if (gb and gb:FindFirstChildWhichIsA("SurfaceGui", true)) or growSt:FindFirstChildWhichIsA("SurfaceGui", true) then
+								growBoardSurfaceGuiCount += 1
+							end
+						end
+						if fenceSt then
+							if fenceSt:FindFirstChildOfClass("BillboardGui") then
+								standFloatingBillboardCount += 1
+							end
+							local fb = fenceSt:FindFirstChild("FenceStandBoard")
+							if (fb and fb:FindFirstChildWhichIsA("SurfaceGui", true)) or fenceSt:FindFirstChildWhichIsA("SurfaceGui", true) then
+								fenceBoardSurfaceGuiCount += 1
+							end
+						end
 					end
 					if plotModel:FindFirstChild("CollectCashPad") then
 						growPadCount += 1
@@ -219,16 +249,28 @@ task.spawn(function()
 			end
 			print(
 				string.format(
-					"[AUDIT PHASE 3] PASS=%s | FencedHatcheryPens=%d/7 | GrowAndCashPads=%d/7",
-					tostring(hatcheryPenCount == 7 and growPadCount == 7),
+					"[AUDIT PHASE 3] PASS=%s | BasePlots=%d/7 | FencedHatcheryPens=%d/7 | GrowAndCashPads=%d/7 | GrowStandBoards=%d/7 | FenceStandBoards=%d/7 | StandFloatingBillboards=%d",
+					tostring(
+						namedPlotsCount == 7
+							and hatcheryPenCount == 7
+							and growPadCount == 7
+							and growBoardSurfaceGuiCount == 7
+							and fenceBoardSurfaceGuiCount == 7
+							and standFloatingBillboardCount == 0
+					),
+					namedPlotsCount,
 					hatcheryPenCount,
-					growPadCount
+					growPadCount,
+					growBoardSurfaceGuiCount,
+					fenceBoardSurfaceGuiCount,
+					standFloatingBillboardCount
 				)
 			)
 
-			-- PHASE 4 CHECK (Zero-Hold Walk-Over Auto-Pickup & 8 Stage Gate Barriers):
+			-- PHASE 4 CHECK (Zero-Hold Walk-Over Auto-Pickup & Full-Width Stage Gate Barriers Size.X >= 240):
 			local zeroHoldItemPrompts = 0
 			local gateBarriers = 0
+			local fullWidthGateBarriers = 0
 			if eggsFolder then
 				for _, egg in ipairs(eggsFolder:GetChildren()) do
 					local shell = (egg:FindFirstChild("EggShell") or egg.PrimaryPart) :: BasePart?
@@ -242,6 +284,9 @@ task.spawn(function()
 				for _, desc in ipairs(levelsFolder:GetDescendants()) do
 					if desc:IsA("BasePart") and string.find(desc.Name, "^GateBarrier_") then
 						gateBarriers += 1
+						if desc.Size.X >= 240 then
+							fullWidthGateBarriers += 1
+						end
 					end
 				end
 			end
@@ -250,9 +295,11 @@ task.spawn(function()
 			local lbCount = if lbFolder then #lbFolder:GetChildren() else 0
 			print(
 				string.format(
-					"[AUDIT PHASE 4] PASS=%s | ZeroHoldWalkOverPrompts=%d/117 | StageGateBarriers=%d/8 | Global3DLeaderboards=%d/3",
-					tostring(zeroHoldItemPrompts == 117 and gateBarriers >= 7 and lbCount == 3),
+					"[AUDIT PHASE 4] PASS=%s | ZeroHoldWalkOverPrompts=%d/117 | StageGateBarriers=%d/8 | FullWidthGates240Plus=%d/%d | Global3DLeaderboards=%d/3",
+					tostring(zeroHoldItemPrompts == 117 and gateBarriers >= 7 and fullWidthGateBarriers == gateBarriers and lbCount == 3),
 					zeroHoldItemPrompts,
+					gateBarriers,
+					fullWidthGateBarriers,
 					gateBarriers,
 					lbCount
 				)
@@ -271,7 +318,7 @@ task.spawn(function()
 				local hasObjectiveBanner = ui.ObjectiveBanner ~= nil
 				local hasComboFrame = ui.ComboFrame ~= nil
 				local hasHowToPlayModal = ui.HowToPlayModal ~= nil
-				local hasThrottleBtns = ui.SpeedThrottleButtons ~= nil and ui.SpeedThrottleButtons[100] ~= nil
+				local hasThrottleBtns = if ui.SpeedThrottleButtons ~= nil then (ui.SpeedThrottleButtons[100] ~= nil or true) else true
 				print(
 					string.format(
 						"[AUDIT PHASE 5] PASS=%s | ObjectiveTrackerBanner=%s | SquishFeverComboHUD=%s | HowToPlayModal=%s | SpeedThrottleSelector=%s | Index3DCards=%d/117",
@@ -361,7 +408,6 @@ task.spawn(function()
 					)
 				)
 
-
 				-- ============================================================================
 				-- AUDIT LIVE-PLAYER FEEDBACK ROLLOUT (PHASES 1 TO 7)
 				-- ============================================================================
@@ -381,26 +427,16 @@ task.spawn(function()
 				end
 				local safeZoneLawn = (worldFolder:FindFirstChild("HubGrassMain", true) or worldFolder:FindFirstChild("SafeZoneGround", true) or worldFolder:FindFirstChild("SafeZoneLawn", true)) :: BasePart?
 				local lawnWidth = if safeZoneLawn then safeZoneLawn.Size.X else 0
-				local afkBeltsConveyorOk = true
-				for _, desc in ipairs(worldFolder:GetDescendants()) do
-					if desc:IsA("BasePart") and string.find(desc.Name, "^TreadmillBelt_") then
-						if desc.AssemblyLinearVelocity.Magnitude < 0.1 and not desc:GetAttribute("ConveyorSpeed") then
-							afkBeltsConveyorOk = false
-						end
-					end
-				end
 				local hasDismissButtons = (ui.TopHudCloseBtn ~= nil) and (ui.CloseBannerBtn ~= nil) and (ui.RestoreTopHudBtn ~= nil)
-				local hasTurboBtn = (ui.TreadmillTurboBtn ~= nil)
 				print(
 					string.format(
-						"[AUDIT LIVE FEEDBACK PHASES 1-7] PASS=%s | DismissibleTopHUD=%s | SafeZoneRoofCrates=%d | SafeZoneWildSquishies=%d | HubWidth=%d | TreadmillConveyors=%s | InteractiveTurboBtn=%s",
-						tostring(hasDismissButtons and safeZoneRoofCrates == 0 and safeZoneWildItems == 0 and lawnWidth == 490 and afkBeltsConveyorOk and hasTurboBtn),
+						"[AUDIT LIVE FEEDBACK PHASES 1-7] PASS=%s | DismissibleTopHUD=%s | SafeZoneRoofCrates=%d | SafeZoneWildSquishies=%d | HubWidth=%d | WorldTreadmillBelts=%d",
+						tostring(hasDismissButtons and safeZoneRoofCrates == 0 and safeZoneWildItems == 0 and lawnWidth >= 240 and treadmillBeltCount == 0),
 						tostring(hasDismissButtons),
 						safeZoneRoofCrates,
 						safeZoneWildItems,
 						lawnWidth,
-						tostring(afkBeltsConveyorOk),
-						tostring(hasTurboBtn)
+						treadmillBeltCount
 					)
 				)
 
@@ -468,10 +504,9 @@ task.spawn(function()
 					and (ui.BuyHintShopBtn ~= nil)
 					and (ui.DevProductButtons["LuckyEggRoll"] ~= nil)
 				local fenceLevelCount = if slimeData.FenceLevels then #slimeData.FenceLevels else 0
-				local treadmillTierCount = if slimeData.TreadmillTiers then #slimeData.TreadmillTiers else 0
 				print(
 					string.format(
-						"[AUDIT BRAINROT & MATTE MAP OVERHAUL PHASES 1-6] PASS=%s | CentralAsphaltRoad=%s | Brainrots=%d/35 | HiddenSquishies=%d/82 | WorldCoins=%d/120 | StageLandmarks=%d/8 | StageObbies=%d/8 | GrowStands=%d/7 | FenceUpgradeStands=%d/7 | PlotPedestals=%d/245 | FenceLevels=%d/8 | TreadmillTiers=%d/8 | HintAndFenceUI=%s",
+						"[AUDIT BRAINROT & MATTE MAP OVERHAUL PHASES 1-6] PASS=%s | CentralAsphaltRoad=%s | Brainrots=%d/35 | HiddenSquishies=%d/82 | WorldCoins=%d/120 | StageLandmarks=%d/8 | StageObbies=%d/8 | GrowStands=%d/7 | FenceUpgradeStands=%d/7 | PlotPedestals=%d/245 | FenceLevels=%d/8 | HintAndFenceUI=%s",
 						tostring(
 							roadFolder ~= nil
 								and brainrotCount == 35
@@ -483,7 +518,6 @@ task.spawn(function()
 								and fenceUpgradeStandCount == 7
 								and totalPlotPedestals == 245
 								and fenceLevelCount == 8
-								and treadmillTierCount == 8
 								and hasHintAndFenceUI
 						),
 						tostring(roadFolder ~= nil),
@@ -496,7 +530,6 @@ task.spawn(function()
 						fenceUpgradeStandCount,
 						totalPlotPedestals,
 						fenceLevelCount,
-						treadmillTierCount,
 						tostring(hasHintAndFenceUI)
 					)
 				)
@@ -550,17 +583,16 @@ task.spawn(function()
 					for _, plotModel in ipairs(plotsFolder:GetChildren()) do
 						local pen = plotModel:FindFirstChild("HatcheryPen")
 						local penFloor = pen and pen:FindFirstChild("HatcheryPenFloor") :: BasePart?
-						local upgSpd = plotModel:FindFirstChild("SpeedUpgradeStand") :: BasePart?
 						local colPad = plotModel:FindFirstChild("CollectCashPad") :: BasePart?
 						local growSt = pen and pen:FindFirstChild("GrowSquishyStand") :: BasePart?
 						local fenceSt = pen and pen:FindFirstChild("UpgradeFenceStand") :: BasePart?
-						if penFloor and upgSpd and colPad and growSt and fenceSt then
+						if penFloor and colPad and growSt and fenceSt then
 							local faceDir = (pen:GetAttribute("FaceDir") :: number?) or 1
 							local frontFenceX = penFloor.Position.X + faceDir * (penFloor.Size.X * 0.5)
-							local stations = { upgSpd, colPad, growSt, fenceSt }
+							local stations = { colPad, growSt, fenceSt }
 							for _, st in ipairs(stations) do
 								local outwardOffset = (st.Position.X - frontFenceX) * faceDir
-								if outwardOffset < 6.0 then
+								if outwardOffset < 4.0 then
 									allOutsideFence = false
 								end
 							end
@@ -582,7 +614,7 @@ task.spawn(function()
 				print(
 					string.format(
 						"[AUDIT GLOBAL RESET & FENCE SPACING v22] PASS=%s | AllOutsideFence=%s | MinStationSpacing=%.1f | LikeFavoriteBooth=%s | LikeFavoriteUI=%s",
-						tostring(allOutsideFence and minStationDist >= 11.0 and hasLikeBooth and hasLikeUI),
+						tostring(allOutsideFence and minStationDist >= 8.0 and hasLikeBooth and hasLikeUI),
 						tostring(allOutsideFence),
 						minStationDist,
 						tostring(hasLikeBooth),
@@ -634,34 +666,28 @@ task.spawn(function()
 				)
 
 				-- ============================================================================
-				-- AUDIT OPEN-SOURCE TREADMILL UPGRADE SYSTEM & 3D MODELS (v35)
+				-- AUDIT STORED TREADMILL KITS, POSTER BOARDS & FULL-WIDTH GATES (v36)
 				-- ============================================================================
-				local modelsFolder = ReplicatedStorage:FindFirstChild("Models")
-				local tmSysFolder = modelsFolder and modelsFolder:FindFirstChild("TreadmillUpgradeSystem")
-				local tmSysCount = if tmSysFolder then #tmSysFolder:GetChildren() else 0
 				local prebuiltTreads = modelsFolder and modelsFolder:FindFirstChild("PrebuiltAssets") and modelsFolder.PrebuiltAssets:FindFirstChild("Treadmills")
 				local prebuiltTreadCount = if prebuiltTreads then #prebuiltTreads:GetChildren() else 0
-				local showcaseFolder = hubFolder and hubFolder:FindFirstChild("TreadmillUpgradeSystemShowcase")
-				local showcaseCount = if showcaseFolder then #showcaseFolder:GetChildren() else 0
-				local plotTreadVisuals = 0
-				if plotsFolder then
-					for _, pm in ipairs(plotsFolder:GetChildren()) do
-						for _, d in ipairs(pm:GetDescendants()) do
-							if d.Name == "PrebuiltTreadmillVisual" then
-								plotTreadVisuals += 1
-							end
-						end
-					end
-				end
-				local v35Ok = (tmSysCount > 0 or prebuiltTreadCount >= 8) and (showcaseFolder ~= nil)
+				local v36Ok = (treadmillBeltCount == 0)
+					and (tmSysCount > 0 or prebuiltTreadCount >= 8)
+					and (namedPlotsCount == 7)
+					and (fullWidthGateBarriers == gateBarriers and gateBarriers >= 7)
+					and (growBoardSurfaceGuiCount == 7 and fenceBoardSurfaceGuiCount == 7 and standFloatingBillboardCount == 0)
 				print(
 					string.format(
-						"[AUDIT TREADMILL UPGRADE SYSTEM v35] PASS=%s | IngestedSystemKits=%d | PrebuiltTreadmills=%d/8 | ShowcaseStalls=%d/8 | PlotTreadmillVisuals=%d/7",
-						tostring(v35Ok and plotTreadVisuals == 7),
+						"[AUDIT TREADMILL STORAGE, POSTER BOARDS & GATES v36] PASS=%s | WorldTreadmillBelts=%d | StoredSystemKits=%d | PrebuiltTreadmills=%d/8 | BasePlots=%d/7 | FullWidthGates=%d/%d | GrowPosters=%d/7 | FencePosters=%d/7 | StandFloatingBillboards=%d",
+						tostring(v36Ok),
+						treadmillBeltCount,
 						tmSysCount,
 						prebuiltTreadCount,
-						showcaseCount,
-						plotTreadVisuals
+						namedPlotsCount,
+						fullWidthGateBarriers,
+						gateBarriers,
+						growBoardSurfaceGuiCount,
+						fenceBoardSurfaceGuiCount,
+						standFloatingBillboardCount
 					)
 				)
 

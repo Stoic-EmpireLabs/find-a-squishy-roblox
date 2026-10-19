@@ -501,20 +501,21 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	addTextSizeConstraint(squishyBarText, 10, 16)
 	addTextStroke(squishyBarText, Color3.fromRGB(10, 14, 24), 2.0)
 
-	-- Progress Bar #2: Next Stage Speed Unlock Progress Bar
+	-- Progress Bar #2: Next Stage Speed Unlock Progress Bar (Hidden — Speed system removed)
 	local speedBarGroup = Instance.new("CanvasGroup")
 	speedBarGroup.Name = "SpeedGoalProgressBar"
 	speedBarGroup.Size = UDim2.fromScale(0.96, 0.26)
 	speedBarGroup.Position = UDim2.fromScale(0.02, 0.68)
 	speedBarGroup.BackgroundColor3 = Color3.fromRGB(10, 14, 26)
 	speedBarGroup.ClipsDescendants = true
+	speedBarGroup.Visible = false
 	speedBarGroup.Parent = topContainer
 	addCorner(speedBarGroup, 10)
 	addStroke(speedBarGroup, Color3.fromRGB(255, 175, 65), 2.0)
 
 	local speedBarFill = Instance.new("Frame")
 	speedBarFill.Name = "Fill"
-	speedBarFill.Size = UDim2.fromScale(math.clamp(18 / 32, 0, 1), 1)
+	speedBarFill.Size = UDim2.fromScale(0, 1)
 	speedBarFill.BackgroundColor3 = Color3.fromRGB(255, 185, 55)
 	speedBarFill.BorderSizePixel = 0
 	speedBarFill.Parent = speedBarGroup
@@ -535,12 +536,12 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	speedBarText.BackgroundTransparency = 1
 	speedBarText.Font = Enum.Font.FredokaOne
 	speedBarText.TextColor3 = Color3.fromRGB(255, 255, 255)
-	speedBarText.Text = "⚡ <b>NEXT STAGE SPEED UNLOCK (Stage 2: Candy Kingdom):</b> <font color='#FFE865'>18 / 32 SPEED (56%)</font>"
+	speedBarText.Text = ""
 	speedBarText.Parent = speedBarGroup
 	addTextSizeConstraint(speedBarText, 9, 15)
 	addTextStroke(speedBarText, Color3.fromRGB(10, 14, 24), 2.0)
 
-	-- 1B. LIVE 6-STEP OBJECTIVE & GUIDING ARROW TRACKER BANNER + HOW-TO-PLAY BUTTON + CLOSE ('✕') BUTTON
+	-- 1B. LIVE OBJECTIVE & GUIDING ARROW TRACKER BANNER + HOW-TO-PLAY BUTTON + CLOSE ('✕') BUTTON
 	local objectiveBanner = Instance.new("Frame")
 	objectiveBanner.Name = "ObjectiveTrackerBanner"
 	objectiveBanner.Size = UDim2.fromScale(0.44, 0.038)
@@ -561,7 +562,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	objectiveText.Font = Enum.Font.FredokaOne
 	objectiveText.TextXAlignment = Enum.TextXAlignment.Left
 	objectiveText.TextColor3 = Color3.fromRGB(125, 255, 195)
-	objectiveText.Text = "🧭 <b>FOLLOW 3D ARROW:</b> [Step 1] ⚡ Run on Treadmill to Train Speed!"
+	objectiveText.Text = "🧭 <b>FOLLOW 3D ARROW:</b> Steal Stage Eggs & Find Squishies!"
 	objectiveText.Parent = objectiveBanner
 	addTextSizeConstraint(objectiveText, 10, 15)
 	addTextStroke(objectiveText, Color3.fromRGB(10, 14, 24), 1.8)
@@ -715,12 +716,11 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	htpBody.TextWrapped = true
 	htpBody.TextColor3 = Color3.fromRGB(235, 245, 255)
 	htpBody.Text = table.concat({
-		"⚡ <b>STEP 1 — TRAIN SPEED ON TREADMILL:</b> Run on your Plot or Stage Treadmill (x1 -> x50M Speed!). Use the <b>25% / 50% / 75% / 100%</b> Speed Bar to control high speed!",
-		"🧸 <b>STEP 2 — WALK OVER SQUISHIES:</b> Walk right over Collectible Squishies in Houses, Mazes, Castle Walls & Obbies (auto-pickup, zero button holding! Chain pickups for <b>x5.0 SQUISH FEVER CASH!</b>).",
-		"🥚 <b>STEP 3 — STEAL BOSS EGGS:</b> Sneak into Sector 3's Sleeping Boss Arena & walk over Boss Eggs to steal them!",
-		"🏡 <b>STEP 4 — HATCH IN FENCED PEN:</b> Walk into your Plot's <b>Fenced Hatchery Pen</b> — Eggs auto-drop, countdown (00:05), and hatch into live roaming Squishies!",
-		"⬆️ <b>STEP 5 — GROW & CLAIM $/SEC CASH:</b> Upgrade your roaming Squishies in the pen so they physically grow larger, wear Crowns, and multiply $/sec Cash!",
-		"🔓 <b>STEP 6 — 100% STAGE UNLOCK:</b> Complete <b>100% of all Stage Squishies + Boss Eggs + Speed Goal</b> to unlock the next Stage Gate (Stages 1 -> 8)!",
+		"🧸 <b>STEP 1 — WALK OVER SQUISHIES:</b> Walk right over Collectible Squishies in Houses, Mazes, Castle Walls & Obbies (auto-pickup, zero button holding! Chain pickups for <b>x5.0 SQUISH FEVER CASH!</b>).",
+		"🥚 <b>STEP 2 — STEAL BOSS EGGS:</b> Sneak into Sector 3's Sleeping Boss Arena & walk over Boss Eggs to steal them!",
+		"🏡 <b>STEP 3 — HATCH IN FENCED PEN:</b> Walk into your Plot's <b>Fenced Hatchery Pen</b> — Eggs auto-drop, countdown (00:05), and hatch into live roaming Squishies!",
+		"⬆️ <b>STEP 4 — GROW & CLAIM $/SEC CASH:</b> Upgrade your roaming Squishies in the pen so they physically grow larger, wear Crowns, and multiply $/sec Cash!",
+		"🔓 <b>STEP 5 — 100% STAGE UNLOCK:</b> Complete <b>100% of all Stage Squishies + Boss Eggs</b> to unlock the next Stage Gate (Stages 1 -> 8)!",
 	}, "\n\n")
 	htpBody.Parent = howToPlayModal
 	addTextSizeConstraint(htpBody, 10, 15)
@@ -743,208 +743,558 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	addTextSizeConstraint(alertToast, 11, 20)
 
 	-- =========================================================================
-	-- 2. LEFT 2x3 SIDEBAR MENU GRID & RIGHT DOCK (Smooth Hover 1.08x & Click 0.94x)
+	-- 2. LEFT HUD CLUSTER & RIGHT VERTICAL SQUARE DOCK (Custom Layered Vector Icons)
 	-- =========================================================================
 	local leftGrid = Instance.new("Frame")
 	leftGrid.Name = "LeftMenuGrid"
-	leftGrid.Size = UDim2.fromScale(0.115, 0.28)
-	leftGrid.Position = UDim2.new(0.012, 0, 0.5, 0)
+	leftGrid.Size = UDim2.fromScale(0.135, 0.24)
+	leftGrid.Position = UDim2.fromScale(0.012, 0.45)
 	leftGrid.AnchorPoint = Vector2.new(0, 0.5)
 	leftGrid.BackgroundTransparency = 1
 	leftGrid.Parent = screenGui
-	addAspectRatio(leftGrid, 0.67)
+	addAspectRatio(leftGrid, 0.85)
 
-	local function makeSquareBtn(
-		parent: Instance,
-		name: string,
-		iconText: string,
-		labelText: string,
-		bgColor: Color3,
-		centerPos: UDim2,
-		baseSize: UDim2
-	): TextButton
-		local btn = Instance.new("TextButton")
-		btn.Name = name
-		btn.Size = baseSize
-		btn.AnchorPoint = Vector2.new(0.5, 0.5)
-		btn.Position = centerPos
-		btn.BackgroundColor3 = bgColor
-		btn.AutoButtonColor = false
-		btn.Text = ""
-		btn.Parent = parent
-		addCorner(btn, 14)
-		addStroke(btn, Color3.fromRGB(255, 255, 255), 2.5)
-		addAspectRatio(btn, 1.0)
+	-- Row 1: Wide Golden-Yellow Shop Button (shopBtn)
+	local shopBtnSize = UDim2.fromScale(0.96, 0.31)
+	local shopBtn = Instance.new("TextButton")
+	shopBtn.Name = "ShopBtn"
+	shopBtn.Size = shopBtnSize
+	shopBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+	shopBtn.Position = UDim2.fromScale(0.48, 0.17)
+	shopBtn.BackgroundColor3 = Color3.fromRGB(255, 200, 45)
+	shopBtn.AutoButtonColor = false
+	shopBtn.Text = ""
+	shopBtn.Parent = leftGrid
+	addCorner(shopBtn, 8)
+	addStroke(shopBtn, Color3.fromRGB(24, 18, 10), 2.8)
 
-		local btnGrad = Instance.new("UIGradient")
-		btnGrad.Rotation = 90
-		btnGrad.Color = ColorSequence.new({
-			ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 255, 255)),
-			ColorSequenceKeypoint.new(1.0, Color3.fromRGB(215, 220, 235)),
-		})
-		btnGrad.Parent = btn
+	local shopGrad = Instance.new("UIGradient")
+	shopGrad.Rotation = 90
+	shopGrad.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 230, 75)),
+		ColorSequenceKeypoint.new(1.0, Color3.fromRGB(245, 165, 25)),
+	})
+	shopGrad.Parent = shopBtn
 
-		local icon = Instance.new("TextLabel")
-		icon.Name = "Icon"
-		icon.Size = UDim2.fromScale(0.9, 0.56)
-		icon.Position = UDim2.fromScale(0.05, 0.06)
-		icon.BackgroundTransparency = 1
-		icon.Font = Enum.Font.FredokaOne
-		icon.TextColor3 = Color3.fromRGB(255, 255, 255)
-		icon.Text = iconText
-		icon.Parent = btn
-		addTextSizeConstraint(icon, 14, 30)
+	-- Layered Red Shopping Basket Icon on the left
+	local shopIconHolder = Instance.new("Frame")
+	shopIconHolder.Name = "Icon"
+	shopIconHolder.Size = UDim2.fromScale(0.26, 0.72)
+	shopIconHolder.Position = UDim2.fromScale(0.06, 0.14)
+	shopIconHolder.BackgroundTransparency = 1
+	shopIconHolder.Parent = shopBtn
 
-		local cap = Instance.new("TextLabel")
-		cap.Name = "Caption"
-		cap.Size = UDim2.fromScale(0.92, 0.32)
-		cap.Position = UDim2.fromScale(0.04, 0.63)
-		cap.BackgroundTransparency = 1
-		cap.Font = Enum.Font.FredokaOne
-		cap.TextColor3 = Color3.fromRGB(255, 255, 255)
-		cap.Text = "<b>" .. labelText .. "</b>"
-		cap.Parent = btn
-		addTextSizeConstraint(cap, 9, 15)
-		addTextStroke(cap, Color3.fromRGB(15, 15, 25), 2.0)
+	local basketHandle = Instance.new("Frame")
+	basketHandle.Name = "Handle"
+	basketHandle.Size = UDim2.fromScale(0.52, 0.34)
+	basketHandle.Position = UDim2.fromScale(0.24, 0.04)
+	basketHandle.BackgroundTransparency = 1
+	basketHandle.Parent = shopIconHolder
+	addCorner(basketHandle, 4)
+	addStroke(basketHandle, Color3.fromRGB(22, 12, 12), 2.2)
 
-		bindHoverAndClickTween(btn, baseSize, bgColor)
-		return btn
+	local basketRim = Instance.new("Frame")
+	basketRim.Name = "BasketRim"
+	basketRim.Size = UDim2.fromScale(0.96, 0.18)
+	basketRim.Position = UDim2.fromScale(0.02, 0.28)
+	basketRim.BackgroundColor3 = Color3.fromRGB(248, 72, 72)
+	basketRim.Parent = shopIconHolder
+	addCorner(basketRim, 3)
+	addStroke(basketRim, Color3.fromRGB(22, 12, 12), 1.8)
+
+	local basketBody = Instance.new("Frame")
+	basketBody.Name = "BasketBody"
+	basketBody.Size = UDim2.fromScale(0.84, 0.52)
+	basketBody.Position = UDim2.fromScale(0.08, 0.44)
+	basketBody.BackgroundColor3 = Color3.fromRGB(235, 52, 52)
+	basketBody.Parent = shopIconHolder
+	addCorner(basketBody, 4)
+	addStroke(basketBody, Color3.fromRGB(22, 12, 12), 2.0)
+
+	for sIdx = 1, 2 do
+		local slot = Instance.new("Frame")
+		slot.Name = "Slot" .. tostring(sIdx)
+		slot.Size = UDim2.fromScale(0.12, 0.62)
+		slot.Position = UDim2.fromScale(if sIdx == 1 then 0.30 else 0.58, 0.19)
+		slot.BackgroundColor3 = Color3.fromRGB(22, 12, 12)
+		slot.BorderSizePixel = 0
+		slot.Parent = basketBody
+		addCorner(slot, 2)
 	end
 
-	local leftBtnSize = UDim2.fromScale(0.45, 0.295)
-	local shopBtn = makeSquareBtn(leftGrid, "ShopBtn", "🛒", "Shop", Color3.fromRGB(255, 175, 45), UDim2.fromScale(0.25, 0.16), leftBtnSize)
-	local indexBtn = makeSquareBtn(leftGrid, "IndexBtn", "📘", "Index", Color3.fromRGB(55, 185, 255), UDim2.fromScale(0.75, 0.16), leftBtnSize)
-	local dailyBtn = makeSquareBtn(leftGrid, "DailyBtn", "🎁", "Daily", Color3.fromRGB(245, 95, 185), UDim2.fromScale(0.25, 0.50), leftBtnSize)
-	local sloMoBtn = makeSquareBtn(leftGrid, "SloMoBtn", "🐢", "SloMo", Color3.fromRGB(95, 215, 125), UDim2.fromScale(0.75, 0.50), leftBtnSize)
-	local wheelBtn = makeSquareBtn(leftGrid, "WheelBtn", "🎡", "Spin", Color3.fromRGB(195, 95, 255), UDim2.fromScale(0.25, 0.84), leftBtnSize)
-	local vipBtn = makeSquareBtn(leftGrid, "VIPBtn", "👑", "VIP", Color3.fromRGB(255, 215, 55), UDim2.fromScale(0.75, 0.84), leftBtnSize)
+	local shopCap = Instance.new("TextLabel")
+	shopCap.Name = "Caption"
+	shopCap.Size = UDim2.fromScale(0.60, 0.80)
+	shopCap.Position = UDim2.fromScale(0.35, 0.10)
+	shopCap.BackgroundTransparency = 1
+	shopCap.Font = Enum.Font.FredokaOne
+	shopCap.TextColor3 = Color3.fromRGB(255, 255, 255)
+	shopCap.Text = "<b>Shop</b>"
+	shopCap.Parent = shopBtn
+	addTextSizeConstraint(shopCap, 12, 26)
+	addTextStroke(shopCap, Color3.fromRGB(12, 12, 16), 2.6)
+	bindHoverAndClickTween(shopBtn, shopBtnSize, Color3.fromRGB(255, 200, 45))
 
-	-- Right Vertical Dock (Eggs, +Speed, Rebirth)
+	-- Row 2 Left: Sky-Blue Index Button (indexBtn)
+	local indexBtnSize = UDim2.fromScale(0.62, 0.30)
+	local indexBtn = Instance.new("TextButton")
+	indexBtn.Name = "IndexBtn"
+	indexBtn.Size = indexBtnSize
+	indexBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+	indexBtn.Position = UDim2.fromScale(0.31, 0.53)
+	indexBtn.BackgroundColor3 = Color3.fromRGB(65, 175, 255)
+	indexBtn.AutoButtonColor = false
+	indexBtn.Text = ""
+	indexBtn.Parent = leftGrid
+	addCorner(indexBtn, 8)
+	addStroke(indexBtn, Color3.fromRGB(14, 28, 48), 2.8)
+
+	local indexGrad = Instance.new("UIGradient")
+	indexGrad.Rotation = 90
+	indexGrad.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0.0, Color3.fromRGB(105, 205, 255)),
+		ColorSequenceKeypoint.new(1.0, Color3.fromRGB(35, 128, 235)),
+	})
+	indexGrad.Parent = indexBtn
+
+	local bookIcon = Instance.new("Frame")
+	bookIcon.Name = "Icon"
+	bookIcon.Size = UDim2.fromScale(0.28, 0.72)
+	bookIcon.Position = UDim2.fromScale(0.07, 0.14)
+	bookIcon.BackgroundColor3 = Color3.fromRGB(28, 95, 210)
+	bookIcon.Parent = indexBtn
+	addCorner(bookIcon, 4)
+	addStroke(bookIcon, Color3.fromRGB(14, 24, 42), 2.0)
+
+	local bookSpine = Instance.new("Frame")
+	bookSpine.Name = "Spine"
+	bookSpine.Size = UDim2.fromScale(0.24, 1.0)
+	bookSpine.Position = UDim2.fromScale(0, 0)
+	bookSpine.BackgroundColor3 = Color3.fromRGB(85, 175, 255)
+	bookSpine.BorderSizePixel = 0
+	bookSpine.Parent = bookIcon
+	addCorner(bookSpine, 3)
+
+	local bookPages = Instance.new("Frame")
+	bookPages.Name = "Pages"
+	bookPages.Size = UDim2.fromScale(0.72, 0.22)
+	bookPages.Position = UDim2.fromScale(0.22, 0.72)
+	bookPages.BackgroundColor3 = Color3.fromRGB(245, 248, 255)
+	bookPages.BorderSizePixel = 0
+	bookPages.Parent = bookIcon
+	addCorner(bookPages, 2)
+
+	local indexCap = Instance.new("TextLabel")
+	indexCap.Name = "Caption"
+	indexCap.Size = UDim2.fromScale(0.58, 0.76)
+	indexCap.Position = UDim2.fromScale(0.37, 0.12)
+	indexCap.BackgroundTransparency = 1
+	indexCap.Font = Enum.Font.FredokaOne
+	indexCap.TextColor3 = Color3.fromRGB(255, 255, 255)
+	indexCap.Text = "<b>Index</b>"
+	indexCap.Parent = indexBtn
+	addTextSizeConstraint(indexCap, 11, 22)
+	addTextStroke(indexCap, Color3.fromRGB(12, 16, 26), 2.5)
+	bindHoverAndClickTween(indexBtn, indexBtnSize, Color3.fromRGB(65, 175, 255))
+
+	-- Row 2 Right: Dark-Charcoal Daily Calendar Button (dailyBtn)
+	local dailyBtnSize = UDim2.fromScale(0.30, 0.30)
+	local dailyBtn = Instance.new("TextButton")
+	dailyBtn.Name = "DailyBtn"
+	dailyBtn.Size = dailyBtnSize
+	dailyBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+	dailyBtn.Position = UDim2.fromScale(0.81, 0.53)
+	dailyBtn.BackgroundColor3 = Color3.fromRGB(58, 60, 68)
+	dailyBtn.AutoButtonColor = false
+	dailyBtn.Text = ""
+	dailyBtn.Parent = leftGrid
+	addCorner(dailyBtn, 8)
+	addStroke(dailyBtn, Color3.fromRGB(18, 18, 24), 2.8)
+
+	local calPage = Instance.new("Frame")
+	calPage.Name = "Icon"
+	calPage.Size = UDim2.fromScale(0.68, 0.54)
+	calPage.Position = UDim2.fromScale(0.16, 0.08)
+	calPage.BackgroundColor3 = Color3.fromRGB(238, 242, 248)
+	calPage.ClipsDescendants = true
+	calPage.Parent = dailyBtn
+	addCorner(calPage, 4)
+	addStroke(calPage, Color3.fromRGB(18, 18, 24), 1.8)
+
+	local calHeader = Instance.new("Frame")
+	calHeader.Name = "Header"
+	calHeader.Size = UDim2.fromScale(1.0, 0.30)
+	calHeader.Position = UDim2.fromScale(0, 0)
+	calHeader.BackgroundColor3 = Color3.fromRGB(225, 55, 65)
+	calHeader.BorderSizePixel = 0
+	calHeader.Parent = calPage
+
+	local calNum = Instance.new("TextLabel")
+	calNum.Name = "DayNum"
+	calNum.Size = UDim2.fromScale(1.0, 0.70)
+	calNum.Position = UDim2.fromScale(0, 0.30)
+	calNum.BackgroundTransparency = 1
+	calNum.Font = Enum.Font.FredokaOne
+	calNum.TextColor3 = Color3.fromRGB(24, 26, 34)
+	calNum.Text = "<b>31</b>"
+	calNum.Parent = calPage
+	addTextSizeConstraint(calNum, 8, 15)
+
+	local dailyCap = Instance.new("TextLabel")
+	dailyCap.Name = "Caption"
+	dailyCap.Size = UDim2.fromScale(0.92, 0.32)
+	dailyCap.Position = UDim2.fromScale(0.04, 0.64)
+	dailyCap.BackgroundTransparency = 1
+	dailyCap.Font = Enum.Font.FredokaOne
+	dailyCap.TextColor3 = Color3.fromRGB(255, 255, 255)
+	dailyCap.Text = "<b>Daily</b>"
+	dailyCap.Parent = dailyBtn
+	addTextSizeConstraint(dailyCap, 8, 14)
+	addTextStroke(dailyCap, Color3.fromRGB(12, 12, 18), 2.2)
+	bindHoverAndClickTween(dailyBtn, dailyBtnSize, Color3.fromRGB(58, 60, 68))
+
+	-- Row 3 under Daily: Compact Red SloMo: OFF Pill Button (sloMoBtn)
+	local sloMoBtnSize = UDim2.fromScale(0.30, 0.14)
+	local sloMoBtn = Instance.new("TextButton")
+	sloMoBtn.Name = "SloMoBtn"
+	sloMoBtn.Size = sloMoBtnSize
+	sloMoBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+	sloMoBtn.Position = UDim2.fromScale(0.81, 0.80)
+	sloMoBtn.BackgroundColor3 = Color3.fromRGB(185, 42, 42)
+	sloMoBtn.AutoButtonColor = false
+	sloMoBtn.Font = Enum.Font.FredokaOne
+	sloMoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	sloMoBtn.Text = "<b>SloMo: OFF</b>"
+	sloMoBtn.Parent = leftGrid
+	addCorner(sloMoBtn, 6)
+	addStroke(sloMoBtn, Color3.fromRGB(24, 12, 12), 2.2)
+	addTextSizeConstraint(sloMoBtn, 7, 12)
+	addTextStroke(sloMoBtn, Color3.fromRGB(12, 12, 16), 2.0)
+
+	local sloMoCap = Instance.new("TextLabel")
+	sloMoCap.Name = "Caption"
+	sloMoCap.Size = UDim2.fromScale(0.96, 0.90)
+	sloMoCap.Position = UDim2.fromScale(0.02, 0.05)
+	sloMoCap.BackgroundTransparency = 1
+	sloMoCap.Font = Enum.Font.FredokaOne
+	sloMoCap.TextColor3 = Color3.fromRGB(255, 255, 255)
+	sloMoCap.Text = "<b>SloMo: OFF</b>"
+	sloMoCap.Visible = false
+	sloMoCap.Parent = sloMoBtn
+	addTextSizeConstraint(sloMoCap, 7, 12)
+	addTextStroke(sloMoCap, Color3.fromRGB(12, 12, 16), 2.0)
+	sloMoCap:GetPropertyChangedSignal("Text"):Connect(function()
+		sloMoBtn.Text = sloMoCap.Text
+	end)
+	bindHoverAndClickTween(sloMoBtn, sloMoBtnSize, Color3.fromRGB(185, 42, 42))
+
+	-- Right Vertical Square Dock (Eggs, Pets, Rewards, Settings)
 	local rightDock = Instance.new("Frame")
 	rightDock.Name = "RightDock"
-	rightDock.Size = UDim2.fromScale(0.058, 0.28)
-	rightDock.Position = UDim2.new(0.988, 0, 0.5, 0)
+	rightDock.Size = UDim2.fromScale(0.056, 0.38)
+	rightDock.Position = UDim2.new(0.988, 0, 0.52, 0)
 	rightDock.AnchorPoint = Vector2.new(1, 0.5)
 	rightDock.BackgroundTransparency = 1
 	rightDock.Parent = screenGui
-	addAspectRatio(rightDock, 0.34)
+	addAspectRatio(rightDock, 0.24)
 
-	local rightBtnSize = UDim2.fromScale(0.90, 0.295)
-	local eggsDockBtn = makeSquareBtn(rightDock, "EggsBtn", "🥚", "Eggs", Color3.fromRGB(175, 95, 255), UDim2.fromScale(0.5, 0.16), rightBtnSize)
-	local speedDockBtn = makeSquareBtn(rightDock, "SpeedBtn", "🦖", "+Speed", Color3.fromRGB(55, 205, 255), UDim2.fromScale(0.5, 0.50), rightBtnSize)
-	local rebirthDockBtn = makeSquareBtn(rightDock, "RebirthDockBtn", "✨", "Rebirth", Color3.fromRGB(255, 125, 75), UDim2.fromScale(0.5, 0.84), rightBtnSize)
+	local rightBtnSize = UDim2.fromScale(0.92, 0.22)
+	local function makeRightDockSquareBtn(name: string, captionText: string, centerPos: UDim2): TextButton
+		local btn = Instance.new("TextButton")
+		btn.Name = name
+		btn.Size = rightBtnSize
+		btn.AnchorPoint = Vector2.new(0.5, 0.5)
+		btn.Position = centerPos
+		btn.BackgroundColor3 = Color3.fromRGB(54, 56, 62)
+		btn.AutoButtonColor = false
+		btn.Text = ""
+		btn.Parent = rightDock
+		addCorner(btn, 10)
+		addStroke(btn, Color3.fromRGB(18, 18, 22), 2.8)
+		addAspectRatio(btn, 1.0)
+
+		local innerFrame = Instance.new("Frame")
+		innerFrame.Name = "InnerBorder"
+		innerFrame.Size = UDim2.fromScale(0.90, 0.90)
+		innerFrame.Position = UDim2.fromScale(0.05, 0.05)
+		innerFrame.BackgroundTransparency = 1
+		innerFrame.Parent = btn
+		addCorner(innerFrame, 8)
+		addStroke(innerFrame, Color3.fromRGB(150, 155, 168), 1.2)
+
+		local cap = Instance.new("TextLabel")
+		cap.Name = "Caption"
+		cap.Size = UDim2.fromScale(0.94, 0.28)
+		cap.Position = UDim2.fromScale(0.03, 0.69)
+		cap.BackgroundTransparency = 1
+		cap.Font = Enum.Font.FredokaOne
+		cap.TextColor3 = Color3.fromRGB(255, 255, 255)
+		cap.Text = "<b>" .. captionText .. "</b>"
+		cap.ZIndex = 4
+		cap.Parent = btn
+		addTextSizeConstraint(cap, 8, 14)
+		addTextStroke(cap, Color3.fromRGB(14, 14, 18), 2.2)
+
+		bindHoverAndClickTween(btn, rightBtnSize, Color3.fromRGB(54, 56, 62))
+		return btn
+	end
+
+	-- 1. Eggs Button (Custom 3D-shaded Cream/Tan Oval Egg icon)
+	local eggsDockBtn = makeRightDockSquareBtn("EggsBtn", "Eggs", UDim2.fromScale(0.5, 0.12))
+	do
+		local eggShape = Instance.new("Frame")
+		eggShape.Name = "Icon"
+		eggShape.Size = UDim2.fromScale(0.46, 0.56)
+		eggShape.Position = UDim2.fromScale(0.27, 0.11)
+		eggShape.BackgroundColor3 = Color3.fromRGB(242, 222, 192)
+		eggShape.Parent = eggsDockBtn
+		local eggCorner = Instance.new("UICorner")
+		eggCorner.CornerRadius = UDim.new(0.5, 0)
+		eggCorner.Parent = eggShape
+		addStroke(eggShape, Color3.fromRGB(22, 18, 14), 2.0)
+
+		local eggGrad = Instance.new("UIGradient")
+		eggGrad.Rotation = 125
+		eggGrad.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 248, 235)),
+			ColorSequenceKeypoint.new(0.65, Color3.fromRGB(238, 214, 180)),
+			ColorSequenceKeypoint.new(1.0, Color3.fromRGB(198, 168, 132)),
+		})
+		eggGrad.Parent = eggShape
+
+		local spot1 = Instance.new("Frame")
+		spot1.Size = UDim2.fromScale(0.26, 0.22)
+		spot1.Position = UDim2.fromScale(0.22, 0.20)
+		spot1.BackgroundColor3 = Color3.fromRGB(255, 250, 242)
+		spot1.BackgroundTransparency = 0.2
+		spot1.BorderSizePixel = 0
+		spot1.Parent = eggShape
+		addCorner(spot1, 99)
+
+		local spot2 = Instance.new("Frame")
+		spot2.Size = UDim2.fromScale(0.16, 0.14)
+		spot2.Position = UDim2.fromScale(0.54, 0.42)
+		spot2.BackgroundColor3 = Color3.fromRGB(224, 195, 158)
+		spot2.BackgroundTransparency = 0.25
+		spot2.BorderSizePixel = 0
+		spot2.Parent = eggShape
+		addCorner(spot2, 99)
+	end
+
+	-- 2. Pets Button (vipBtn -> Name = "PetsBtn", Caption = "Pets", Custom Dark Paw Print icon)
+	local vipBtn = makeRightDockSquareBtn("PetsBtn", "Pets", UDim2.fromScale(0.5, 0.37))
+	do
+		local pawContainer = Instance.new("Frame")
+		pawContainer.Name = "Icon"
+		pawContainer.Size = UDim2.fromScale(0.62, 0.56)
+		pawContainer.Position = UDim2.fromScale(0.19, 0.11)
+		pawContainer.BackgroundTransparency = 1
+		pawContainer.Parent = vipBtn
+
+		local palmPad = Instance.new("Frame")
+		palmPad.Name = "PalmPad"
+		palmPad.Size = UDim2.fromScale(0.52, 0.46)
+		palmPad.Position = UDim2.fromScale(0.24, 0.46)
+		palmPad.BackgroundColor3 = Color3.fromRGB(28, 30, 34)
+		palmPad.Parent = pawContainer
+		addCorner(palmPad, 99)
+		addStroke(palmPad, Color3.fromRGB(185, 192, 205), 1.5)
+
+		local toeCoords = {
+			{ X = 0.06, Y = 0.24, Rot = -22 },
+			{ X = 0.28, Y = 0.06, Rot = -8 },
+			{ X = 0.52, Y = 0.06, Rot = 8 },
+			{ X = 0.74, Y = 0.24, Rot = 22 },
+		}
+		for tIdx, tc in ipairs(toeCoords) do
+			local toe = Instance.new("Frame")
+			toe.Name = "Toe" .. tostring(tIdx)
+			toe.Size = UDim2.fromScale(0.20, 0.28)
+			toe.Position = UDim2.fromScale(tc.X, tc.Y)
+			toe.Rotation = tc.Rot
+			toe.BackgroundColor3 = Color3.fromRGB(28, 30, 34)
+			toe.Parent = pawContainer
+			addCorner(toe, 99)
+			addStroke(toe, Color3.fromRGB(185, 192, 205), 1.3)
+		end
+	end
+
+	-- 3. Rewards Button (wheelBtn -> Name = "RewardsBtn", Caption = "Rewards", Custom Purple & Gold Gift Box icon)
+	local wheelBtn = makeRightDockSquareBtn("RewardsBtn", "Rewards", UDim2.fromScale(0.5, 0.62))
+	do
+		local giftHolder = Instance.new("Frame")
+		giftHolder.Name = "Icon"
+		giftHolder.Size = UDim2.fromScale(0.58, 0.56)
+		giftHolder.Position = UDim2.fromScale(0.21, 0.11)
+		giftHolder.BackgroundTransparency = 1
+		giftHolder.Parent = wheelBtn
+
+		local bowLeft = Instance.new("Frame")
+		bowLeft.Size = UDim2.fromScale(0.28, 0.22)
+		bowLeft.Position = UDim2.fromScale(0.22, 0.04)
+		bowLeft.Rotation = -20
+		bowLeft.BackgroundColor3 = Color3.fromRGB(255, 195, 45)
+		bowLeft.Parent = giftHolder
+		addCorner(bowLeft, 99)
+		addStroke(bowLeft, Color3.fromRGB(22, 16, 12), 1.4)
+
+		local bowRight = Instance.new("Frame")
+		bowRight.Size = UDim2.fromScale(0.28, 0.22)
+		bowRight.Position = UDim2.fromScale(0.50, 0.04)
+		bowRight.Rotation = 20
+		bowRight.BackgroundColor3 = Color3.fromRGB(255, 195, 45)
+		bowRight.Parent = giftHolder
+		addCorner(bowRight, 99)
+		addStroke(bowRight, Color3.fromRGB(22, 16, 12), 1.4)
+
+		local giftBox = Instance.new("Frame")
+		giftBox.Name = "BoxBase"
+		giftBox.Size = UDim2.fromScale(0.76, 0.56)
+		giftBox.Position = UDim2.fromScale(0.12, 0.38)
+		giftBox.BackgroundColor3 = Color3.fromRGB(138, 65, 225)
+		giftBox.Parent = giftHolder
+		addCorner(giftBox, 4)
+		addStroke(giftBox, Color3.fromRGB(22, 14, 32), 1.8)
+
+		local hRibbon = Instance.new("Frame")
+		hRibbon.Size = UDim2.fromScale(1.0, 0.24)
+		hRibbon.Position = UDim2.fromScale(0, 0.38)
+		hRibbon.BackgroundColor3 = Color3.fromRGB(255, 195, 45)
+		hRibbon.BorderSizePixel = 0
+		hRibbon.Parent = giftBox
+
+		local giftLid = Instance.new("Frame")
+		giftLid.Name = "BoxLid"
+		giftLid.Size = UDim2.fromScale(0.86, 0.22)
+		giftLid.Position = UDim2.fromScale(0.07, 0.22)
+		giftLid.BackgroundColor3 = Color3.fromRGB(155, 82, 242)
+		giftLid.Parent = giftHolder
+		addCorner(giftLid, 3)
+		addStroke(giftLid, Color3.fromRGB(22, 14, 32), 1.8)
+
+		local vRibbon = Instance.new("Frame")
+		vRibbon.Size = UDim2.fromScale(0.20, 0.72)
+		vRibbon.Position = UDim2.fromScale(0.40, 0.22)
+		vRibbon.BackgroundColor3 = Color3.fromRGB(255, 195, 45)
+		vRibbon.BorderSizePixel = 0
+		vRibbon.ZIndex = 3
+		vRibbon.Parent = giftHolder
+	end
+
+	-- 4. Settings Button (settingsProBtn -> Name = "SettingsProBtn", Caption = "Settings", Custom Silver-Grey Gear Cog icon)
+	local settingsProBtn = makeRightDockSquareBtn("SettingsProBtn", "Settings", UDim2.fromScale(0.5, 0.87))
+	do
+		local gearHolder = Instance.new("Frame")
+		gearHolder.Name = "Icon"
+		gearHolder.Size = UDim2.fromScale(0.56, 0.56)
+		gearHolder.Position = UDim2.fromScale(0.22, 0.11)
+		gearHolder.BackgroundTransparency = 1
+		gearHolder.Parent = settingsProBtn
+
+		for _, deg in ipairs({ 0, 45, 90, 135 }) do
+			local tooth = Instance.new("Frame")
+			tooth.Name = "Tooth_" .. tostring(deg)
+			tooth.Size = UDim2.fromScale(0.28, 0.96)
+			tooth.AnchorPoint = Vector2.new(0.5, 0.5)
+			tooth.Position = UDim2.fromScale(0.5, 0.5)
+			tooth.Rotation = deg
+			tooth.BackgroundColor3 = Color3.fromRGB(185, 192, 205)
+			tooth.Parent = gearHolder
+			addCorner(tooth, 3)
+			addStroke(tooth, Color3.fromRGB(20, 22, 28), 1.5)
+		end
+
+		local gearDisk = Instance.new("Frame")
+		gearDisk.Name = "GearDisk"
+		gearDisk.Size = UDim2.fromScale(0.72, 0.72)
+		gearDisk.AnchorPoint = Vector2.new(0.5, 0.5)
+		gearDisk.Position = UDim2.fromScale(0.5, 0.5)
+		gearDisk.BackgroundColor3 = Color3.fromRGB(185, 192, 205)
+		gearDisk.ZIndex = 2
+		gearDisk.Parent = gearHolder
+		addCorner(gearDisk, 99)
+		addStroke(gearDisk, Color3.fromRGB(20, 22, 28), 1.6)
+
+		local gearHole = Instance.new("Frame")
+		gearHole.Name = "CenterHole"
+		gearHole.Size = UDim2.fromScale(0.34, 0.34)
+		gearHole.AnchorPoint = Vector2.new(0.5, 0.5)
+		gearHole.Position = UDim2.fromScale(0.5, 0.5)
+		gearHole.BackgroundColor3 = Color3.fromRGB(54, 56, 62)
+		gearHole.ZIndex = 3
+		gearHole.Parent = gearHolder
+		addCorner(gearHole, 99)
+		addStroke(gearHole, Color3.fromRGB(20, 22, 28), 1.6)
+	end
+
+	-- Hidden dummy buttons for removed speedDockBtn and rebirthDockBtn
+	local speedDockBtn = Instance.new("TextButton")
+	speedDockBtn.Name = "SpeedBtn"
+	speedDockBtn.Visible = false
+	speedDockBtn.Selectable = false
+
+	local rebirthDockBtn = Instance.new("TextButton")
+	rebirthDockBtn.Name = "RebirthDockBtn"
+	rebirthDockBtn.Visible = false
+	rebirthDockBtn.Selectable = false
 
 	-- =========================================================================
-	-- 3. BOTTOM-LEFT STACKED SPEED & CASH COUNTERS (with RichText & UITextSizeConstraint)
+	-- 3. BOTTOM-LEFT CURRENCY DISPLAY (+ ON LEFT, BRIGHT GREEN $CASH ON RIGHT)
 	-- =========================================================================
 	local bottomLeftFrame = Instance.new("Frame")
 	bottomLeftFrame.Name = "BottomLeftStats"
-	bottomLeftFrame.Size = UDim2.fromScale(0.165, 0.105)
-	bottomLeftFrame.Position = UDim2.new(0.012, 0, 0.982, 0)
+	bottomLeftFrame.Size = UDim2.fromScale(0.22, 0.065)
+	bottomLeftFrame.Position = UDim2.new(0.012, 0, 0.985, 0)
 	bottomLeftFrame.AnchorPoint = Vector2.new(0, 1)
 	bottomLeftFrame.BackgroundTransparency = 1
 	bottomLeftFrame.Parent = screenGui
-	addAspectRatio(bottomLeftFrame, 2.55)
 
 	local speedCounterLbl = Instance.new("TextLabel")
 	speedCounterLbl.Name = "SpeedCounter"
-	speedCounterLbl.Size = UDim2.fromScale(0.74, 0.45)
-	speedCounterLbl.Position = UDim2.fromScale(0, 0)
-	speedCounterLbl.BackgroundTransparency = 1
-	speedCounterLbl.Font = Enum.Font.FredokaOne
-	speedCounterLbl.TextXAlignment = Enum.TextXAlignment.Left
-	speedCounterLbl.TextColor3 = Color3.fromRGB(65, 220, 255)
-	speedCounterLbl.Text = "⚡ <b>16</b>"
-	speedCounterLbl.Parent = bottomLeftFrame
-	addTextSizeConstraint(speedCounterLbl, 14, 34)
-	addTextStroke(speedCounterLbl, Color3.fromRGB(12, 18, 30), 3.0)
+	speedCounterLbl.Visible = false
 
-	local plusBtnSize = UDim2.fromScale(0.16, 0.38)
 	local speedPlusBtn = Instance.new("TextButton")
 	speedPlusBtn.Name = "SpeedPlusBtn"
-	speedPlusBtn.Size = plusBtnSize
-	speedPlusBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-	speedPlusBtn.Position = UDim2.fromScale(0.86, 0.23)
-	speedPlusBtn.BackgroundColor3 = Color3.fromRGB(65, 225, 85)
-	speedPlusBtn.AutoButtonColor = false
-	speedPlusBtn.Font = Enum.Font.FredokaOne
-	speedPlusBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-	speedPlusBtn.Text = "<b>+</b>"
-	speedPlusBtn.Parent = bottomLeftFrame
-	addCorner(speedPlusBtn, 8)
-	addStroke(speedPlusBtn, Color3.fromRGB(15, 40, 18), 2.5)
-	addAspectRatio(speedPlusBtn, 1.0)
-	addTextSizeConstraint(speedPlusBtn, 12, 24)
-	bindHoverAndClickTween(speedPlusBtn, plusBtnSize, Color3.fromRGB(65, 225, 85))
+	speedPlusBtn.Visible = false
+	speedPlusBtn.Selectable = false
 
-	local cashCounterLbl = Instance.new("TextLabel")
-	cashCounterLbl.Name = "CashCounter"
-	cashCounterLbl.Size = UDim2.fromScale(0.74, 0.45)
-	cashCounterLbl.Position = UDim2.fromScale(0, 0.52)
-	cashCounterLbl.BackgroundTransparency = 1
-	cashCounterLbl.Font = Enum.Font.FredokaOne
-	cashCounterLbl.TextXAlignment = Enum.TextXAlignment.Left
-	cashCounterLbl.TextColor3 = Color3.fromRGB(75, 245, 95)
-	cashCounterLbl.Text = "💰 <b>$100</b>"
-	cashCounterLbl.Parent = bottomLeftFrame
-	addTextSizeConstraint(cashCounterLbl, 14, 34)
-	addTextStroke(cashCounterLbl, Color3.fromRGB(12, 28, 14), 3.0)
-
+	local plusBtnSize = UDim2.fromScale(0.18, 0.72)
 	local cashPlusBtn = Instance.new("TextButton")
 	cashPlusBtn.Name = "CashPlusBtn"
 	cashPlusBtn.Size = plusBtnSize
 	cashPlusBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-	cashPlusBtn.Position = UDim2.fromScale(0.86, 0.75)
-	cashPlusBtn.BackgroundColor3 = Color3.fromRGB(65, 225, 85)
+	cashPlusBtn.Position = UDim2.fromScale(0.09, 0.50)
+	cashPlusBtn.BackgroundColor3 = Color3.fromRGB(115, 215, 68)
 	cashPlusBtn.AutoButtonColor = false
 	cashPlusBtn.Font = Enum.Font.FredokaOne
 	cashPlusBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 	cashPlusBtn.Text = "<b>+</b>"
 	cashPlusBtn.Parent = bottomLeftFrame
-	addCorner(cashPlusBtn, 8)
-	addStroke(cashPlusBtn, Color3.fromRGB(15, 40, 18), 2.5)
+	addCorner(cashPlusBtn, 6)
+	addStroke(cashPlusBtn, Color3.fromRGB(18, 38, 14), 2.6)
 	addAspectRatio(cashPlusBtn, 1.0)
-	addTextSizeConstraint(cashPlusBtn, 12, 24)
-	bindHoverAndClickTween(cashPlusBtn, plusBtnSize, Color3.fromRGB(65, 225, 85))
+	addTextSizeConstraint(cashPlusBtn, 14, 28)
+	addTextStroke(cashPlusBtn, Color3.fromRGB(12, 24, 12), 2.0)
+	bindHoverAndClickTween(cashPlusBtn, plusBtnSize, Color3.fromRGB(115, 215, 68))
 
-	-- =========================================================================
-	-- 3B. HUD WALKSPEED CONTROL SELECTOR (25% / 50% / 75% / 100% — Controllable Speed at 250M+!)
-	-- =========================================================================
+	local cashCounterLbl = Instance.new("TextLabel")
+	cashCounterLbl.Name = "CashCounter"
+	cashCounterLbl.Size = UDim2.fromScale(0.77, 0.90)
+	cashCounterLbl.Position = UDim2.fromScale(0.21, 0.05)
+	cashCounterLbl.BackgroundTransparency = 1
+	cashCounterLbl.Font = Enum.Font.FredokaOne
+	cashCounterLbl.TextXAlignment = Enum.TextXAlignment.Left
+	cashCounterLbl.TextColor3 = Color3.fromRGB(115, 238, 75)
+	cashCounterLbl.Text = "<b>$100</b>"
+	cashCounterLbl.Parent = bottomLeftFrame
+	addTextSizeConstraint(cashCounterLbl, 18, 42)
+	addTextStroke(cashCounterLbl, Color3.fromRGB(12, 24, 12), 3.2)
+
+	-- Hidden WalkSpeed Control Selector
 	local speedThrottleBar = Instance.new("Frame")
 	speedThrottleBar.Name = "SpeedThrottleBar"
-	speedThrottleBar.Size = UDim2.fromScale(0.165, 0.042)
-	speedThrottleBar.Position = UDim2.new(0.012, 0, 0.868, 0)
-	speedThrottleBar.AnchorPoint = Vector2.new(0, 1)
-	speedThrottleBar.BackgroundColor3 = Color3.fromRGB(16, 20, 36)
-	speedThrottleBar.BackgroundTransparency = 0.08
-	speedThrottleBar.Parent = screenGui
-	addCorner(speedThrottleBar, 10)
-	addStroke(speedThrottleBar, Color3.fromRGB(75, 215, 255), 1.8)
-	addAspectRatio(speedThrottleBar, 6.2)
-
+	speedThrottleBar.Visible = false
 	local speedThrottleButtons: { [number]: TextButton } = {}
-	local throttleRatios = { 0.25, 0.50, 0.75, 1.00 }
-	for idx, ratio in ipairs(throttleRatios) do
-		local pct = math.round(ratio * 100)
-		local btn = Instance.new("TextButton")
-		btn.Name = string.format("Throttle_%d", pct)
-		local btnSize = UDim2.fromScale(0.225, 0.78)
-		btn.Size = btnSize
-		btn.AnchorPoint = Vector2.new(0.5, 0.5)
-		btn.Position = UDim2.fromScale(0.13 + (idx - 1) * 0.246, 0.5)
-		local isDefault = (pct == 100)
-		local bgCol = if isDefault then Color3.fromRGB(55, 215, 115) else Color3.fromRGB(34, 42, 68)
-		btn.BackgroundColor3 = bgCol
-		btn.AutoButtonColor = false
-		btn.Font = Enum.Font.FredokaOne
-		btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-		btn.Text = string.format("<b>%d%%</b>", pct)
-		btn.Parent = speedThrottleBar
-		addCorner(btn, 7)
-		addStroke(btn, Color3.fromRGB(255, 255, 255), 1.2)
-		addTextSizeConstraint(btn, 9, 14)
-		speedThrottleButtons[pct] = btn
-	end
 
 	-- =========================================================================
 	-- 4. MODAL #1: 📘 117 SQUISHY & EGG INDEX MODAL WITH 3D VIEWPORTFRAME ROTATING PREVIEWS ON EVERY CARD!
@@ -1464,7 +1814,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	passButtonsByKey["VIP"] = vipBuyBtn
 
 	-- =========================================================================
-	-- TIER 2: 4 FOREVER GAMEPASS POWER CARDS IN A 2x2 RESPONSIVE GRID (Y = 0.338 .. 0.642)
+	-- TIER 2: 3 FOREVER GAMEPASS POWER CARDS IN A RESPONSIVE GRID (Y = 0.338 .. 0.642)
 	-- =========================================================================
 	local gridGamepasses = {
 		{
@@ -1481,21 +1831,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 			AccCol = Color3.fromRGB(95, 255, 135),
 			IsEgg = false,
 			Pos = UDim2.fromScale(0.015, 0.338),
-		},
-		{
-			Key = "2xSpeed",
-			Ribbon = "⚡ HYPER SPEED!",
-			EmojiBadge = "⚡x2",
-			Title = "⚡ 2x TREADMILL SPEED",
-			Desc = "Doubles ALL Treadmill Speed Gains (x1 to x50M) Forever!",
-			Price = "$5K / 149 R$",
-			ColorTop = Color3.fromRGB(25, 165, 245),
-			ColorBot = Color3.fromRGB(22, 85, 175),
-			StrokeColor = Color3.fromRGB(125, 242, 255),
-			BodyCol = Color3.fromRGB(65, 225, 255),
-			AccCol = Color3.fromRGB(255, 235, 75),
-			IsEgg = false,
-			Pos = UDim2.fromScale(0.506, 0.338),
+			Size = UDim2.fromScale(0.479, 0.144),
 		},
 		{
 			Key = "AutoHatch",
@@ -1510,7 +1846,8 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 			BodyCol = Color3.fromRGB(205, 105, 255),
 			AccCol = Color3.fromRGB(255, 235, 95),
 			IsEgg = true,
-			Pos = UDim2.fromScale(0.015, 0.494),
+			Pos = UDim2.fromScale(0.506, 0.338),
+			Size = UDim2.fromScale(0.479, 0.144),
 		},
 		{
 			Key = "Carry2Eggs",
@@ -1525,14 +1862,15 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 			BodyCol = Color3.fromRGB(85, 245, 145),
 			AccCol = Color3.fromRGB(255, 225, 75),
 			IsEgg = true,
-			Pos = UDim2.fromScale(0.506, 0.494),
+			Pos = UDim2.fromScale(0.015, 0.494),
+			Size = UDim2.fromScale(0.970, 0.144),
 		},
 	}
 
 	for _, gp in ipairs(gridGamepasses) do
 		local card = Instance.new("Frame")
 		card.Name = "GamepassCard_" .. gp.Key
-		card.Size = UDim2.fromScale(0.479, 0.144)
+		card.Size = gp.Size or UDim2.fromScale(0.479, 0.144)
 		card.Position = gp.Pos
 		card.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 		card.Parent = shopModal
@@ -1786,32 +2124,20 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	end
 
 	-- =========================================================================
-	-- TIER 4: BOTTOM 4-BUTTON CASH SINK & UPGRADE BAR (TREADMILL + FENCE + HINT + REBIRTH, Y = 0.870 .. 0.982)
+	-- TIER 4: BOTTOM 3-BUTTON CASH SINK & UPGRADE BAR (FENCE + HINT + REBIRTH, Y = 0.870 .. 0.982)
 	-- =========================================================================
-	local powerBtnSize = UDim2.fromScale(0.236, 0.110)
+	local powerBtnSize = UDim2.fromScale(0.31, 0.110)
 
 	local buySpeedBtn = Instance.new("TextButton")
 	buySpeedBtn.Name = "BuySpeedBtn"
-	buySpeedBtn.Size = powerBtnSize
-	buySpeedBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-	buySpeedBtn.Position = UDim2.fromScale(0.133, 0.926)
-	buySpeedBtn.BackgroundColor3 = Color3.fromRGB(45, 195, 255)
-	buySpeedBtn.AutoButtonColor = false
-	buySpeedBtn.Font = Enum.Font.FredokaOne
-	buySpeedBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-	buySpeedBtn.Text = "🦖 <b>Treadmill [Lv.2] - $650</b>"
-	buySpeedBtn.Parent = shopModal
-	addCorner(buySpeedBtn, 14)
-	addStroke(buySpeedBtn, Color3.fromRGB(255, 255, 255), 2.4)
-	addTextSizeConstraint(buySpeedBtn, 10, 20)
-	addTextStroke(buySpeedBtn, Color3.fromRGB(12, 24, 48), 2.0)
-	bindHoverAndClickTween(buySpeedBtn, powerBtnSize, Color3.fromRGB(45, 195, 255))
+	buySpeedBtn.Visible = false
+	buySpeedBtn.Selectable = false
 
 	local buyFenceBtn = Instance.new("TextButton")
 	buyFenceBtn.Name = "BuyFenceBtn"
 	buyFenceBtn.Size = powerBtnSize
 	buyFenceBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-	buyFenceBtn.Position = UDim2.fromScale(0.378, 0.926)
+	buyFenceBtn.Position = UDim2.fromScale(0.175, 0.926)
 	buyFenceBtn.BackgroundColor3 = Color3.fromRGB(235, 155, 45)
 	buyFenceBtn.AutoButtonColor = false
 	buyFenceBtn.Font = Enum.Font.FredokaOne
@@ -1828,7 +2154,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	buyHintShopBtn.Name = "BuyHintShopBtn"
 	buyHintShopBtn.Size = powerBtnSize
 	buyHintShopBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-	buyHintShopBtn.Position = UDim2.fromScale(0.622, 0.926)
+	buyHintShopBtn.Position = UDim2.fromScale(0.500, 0.926)
 	buyHintShopBtn.BackgroundColor3 = Color3.fromRGB(55, 215, 135)
 	buyHintShopBtn.AutoButtonColor = false
 	buyHintShopBtn.Font = Enum.Font.FredokaOne
@@ -1845,7 +2171,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	rebirthBtn.Name = "RebirthBtn"
 	rebirthBtn.Size = powerBtnSize
 	rebirthBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-	rebirthBtn.Position = UDim2.fromScale(0.867, 0.926)
+	rebirthBtn.Position = UDim2.fromScale(0.825, 0.926)
 	rebirthBtn.BackgroundColor3 = Color3.fromRGB(255, 95, 195)
 	rebirthBtn.AutoButtonColor = false
 	rebirthBtn.Font = Enum.Font.FredokaOne
@@ -1863,22 +2189,17 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	vipBuyBtn.NextSelectionUp = shopClose
 	vipBuyBtn.NextSelectionDown = passButtonsByKey["2xCash"]
 
-	if passButtonsByKey["2xCash"] and passButtonsByKey["2xSpeed"] and passButtonsByKey["AutoHatch"] and passButtonsByKey["Carry2Eggs"] then
+	if passButtonsByKey["2xCash"] and passButtonsByKey["AutoHatch"] and passButtonsByKey["Carry2Eggs"] then
 		passButtonsByKey["2xCash"].NextSelectionUp = vipBuyBtn
-		passButtonsByKey["2xCash"].NextSelectionRight = passButtonsByKey["2xSpeed"]
-		passButtonsByKey["2xCash"].NextSelectionDown = passButtonsByKey["AutoHatch"]
+		passButtonsByKey["2xCash"].NextSelectionRight = passButtonsByKey["AutoHatch"]
+		passButtonsByKey["2xCash"].NextSelectionDown = passButtonsByKey["Carry2Eggs"]
 
-		passButtonsByKey["2xSpeed"].NextSelectionUp = vipBuyBtn
-		passButtonsByKey["2xSpeed"].NextSelectionLeft = passButtonsByKey["2xCash"]
-		passButtonsByKey["2xSpeed"].NextSelectionDown = passButtonsByKey["Carry2Eggs"]
+		passButtonsByKey["AutoHatch"].NextSelectionUp = vipBuyBtn
+		passButtonsByKey["AutoHatch"].NextSelectionLeft = passButtonsByKey["2xCash"]
+		passButtonsByKey["AutoHatch"].NextSelectionDown = passButtonsByKey["Carry2Eggs"]
 
-		passButtonsByKey["AutoHatch"].NextSelectionUp = passButtonsByKey["2xCash"]
-		passButtonsByKey["AutoHatch"].NextSelectionRight = passButtonsByKey["Carry2Eggs"]
-		passButtonsByKey["AutoHatch"].NextSelectionDown = devProductButtons["InstantHatchAll"] or buySpeedBtn
-
-		passButtonsByKey["Carry2Eggs"].NextSelectionUp = passButtonsByKey["2xSpeed"]
-		passButtonsByKey["Carry2Eggs"].NextSelectionLeft = passButtonsByKey["AutoHatch"]
-		passButtonsByKey["Carry2Eggs"].NextSelectionDown = devProductButtons["CashPack25K"] or buyHintShopBtn
+		passButtonsByKey["Carry2Eggs"].NextSelectionUp = passButtonsByKey["2xCash"]
+		passButtonsByKey["Carry2Eggs"].NextSelectionDown = devProductButtons["InstantHatchAll"] or buyFenceBtn
 	end
 
 	local dpKeys = { "InstantHatchAll", "BossShield60s", "LuckyEggRoll", "CashPack5K", "CashPack25K", "CashPack100K" }
@@ -1886,26 +2207,23 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		local dpB = devProductButtons[dKey]
 		if dpB then
 			dpB.Selectable = true
-			dpB.NextSelectionUp = if dIdx <= 3 then passButtonsByKey["AutoHatch"] else passButtonsByKey["Carry2Eggs"]
+			dpB.NextSelectionUp = passButtonsByKey["Carry2Eggs"]
 			if dIdx > 1 and devProductButtons[dpKeys[dIdx - 1]] then
 				dpB.NextSelectionLeft = devProductButtons[dpKeys[dIdx - 1]]
 			end
 			if dIdx < #dpKeys and devProductButtons[dpKeys[dIdx + 1]] then
 				dpB.NextSelectionRight = devProductButtons[dpKeys[dIdx + 1]]
 			end
-			dpB.NextSelectionDown = if dIdx <= 2 then buySpeedBtn elseif dIdx <= 4 then buyFenceBtn elseif dIdx == 5 then buyHintShopBtn else rebirthBtn
+			dpB.NextSelectionDown = if dIdx <= 2 then buyFenceBtn elseif dIdx <= 4 then buyHintShopBtn else rebirthBtn
 		end
 	end
 
-	buySpeedBtn.NextSelectionRight = buyFenceBtn
-	buyFenceBtn.NextSelectionLeft = buySpeedBtn
 	buyFenceBtn.NextSelectionRight = buyHintShopBtn
 	buyHintShopBtn.NextSelectionLeft = buyFenceBtn
 	buyHintShopBtn.NextSelectionRight = rebirthBtn
 	rebirthBtn.NextSelectionLeft = buyHintShopBtn
 
-	buySpeedBtn.NextSelectionUp = devProductButtons["InstantHatchAll"] or passButtonsByKey["AutoHatch"]
-	buyFenceBtn.NextSelectionUp = devProductButtons["BossShield60s"] or passButtonsByKey["AutoHatch"]
+	buyFenceBtn.NextSelectionUp = devProductButtons["BossShield60s"] or passButtonsByKey["Carry2Eggs"]
 	buyHintShopBtn.NextSelectionUp = devProductButtons["LuckyEggRoll"] or passButtonsByKey["Carry2Eggs"]
 	rebirthBtn.NextSelectionUp = devProductButtons["CashPack100K"] or passButtonsByKey["Carry2Eggs"]
 
@@ -1962,7 +2280,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 
 	local wheelPrizesInfo = {
 		"💰 <b>+$2,500 Cash</b> (25%)",
-		"⚡ <b>+8 Speed Boost</b> (22%)",
+		"💵 <b>+$5,000 Cash</b> (22%)",
 		"👑 <b>2x Mythic Cash Mult</b> (18%)",
 		"🛡️ <b>60s Boss Shield</b> (15%)",
 		"💎 <b>+$15,000 Jackpot</b> (12%)",
@@ -2047,14 +2365,14 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	playtimeHeader.Font = Enum.Font.FredokaOne
 	playtimeHeader.TextXAlignment = Enum.TextXAlignment.Left
 	playtimeHeader.TextColor3 = Color3.fromRGB(115, 245, 255)
-	playtimeHeader.Text = "⏱️ <b>PLAYTIME REWARDS CHEST (2m • 5m • 10m • 15m • 30m)</b> — Stay in-game for free Cash, Speed & Mythics!"
+	playtimeHeader.Text = "⏱️ <b>PLAYTIME REWARDS CHEST (2m • 5m • 10m • 15m • 30m)</b> — Stay in-game for free Cash, Spins & Mythics!"
 	playtimeHeader.Parent = spinModal
 	addTextSizeConstraint(playtimeHeader, 11, 20)
 	addTextStroke(playtimeHeader, Color3.fromRGB(12, 16, 32), 1.8)
 
 	local playtimeMilestones = {
-		{ Index = 1, TimeLabel = "2m", RewardText = "+$1.5K\n+3 Spd", Color = Color3.fromRGB(75, 215, 255) },
-		{ Index = 2, TimeLabel = "5m", RewardText = "+$4K\n+6 Spd", Color = Color3.fromRGB(95, 235, 135) },
+		{ Index = 1, TimeLabel = "2m", RewardText = "+$1.5K\nCash", Color = Color3.fromRGB(75, 215, 255) },
+		{ Index = 2, TimeLabel = "5m", RewardText = "+$4K\nCash", Color = Color3.fromRGB(95, 235, 135) },
 		{ Index = 3, TimeLabel = "10m", RewardText = "+$10K\n+1 Spin", Color = Color3.fromRGB(255, 205, 65) },
 		{ Index = 4, TimeLabel = "15m", RewardText = "+$25K\n+Shield", Color = Color3.fromRGB(205, 110, 255) },
 		{ Index = 5, TimeLabel = "30m", RewardText = "+$75K\n+Mythic!", Color = Color3.fromRGB(255, 95, 195) },
@@ -2118,7 +2436,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	claimDailyModalBtn.AutoButtonColor = false
 	claimDailyModalBtn.Font = Enum.Font.FredokaOne
 	claimDailyModalBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-	claimDailyModalBtn.Text = "🎁 <b>CLAIM DAILY LOGIN STREAK CHEST (+Cash, +Speed & +Bear Trap)</b>"
+	claimDailyModalBtn.Text = "🎁 <b>CLAIM DAILY LOGIN STREAK CHEST (+Cash, +Spins & +Bear Trap)</b>"
 	claimDailyModalBtn.Parent = spinModal
 	addCorner(claimDailyModalBtn, 14)
 	addStroke(claimDailyModalBtn, Color3.fromRGB(255, 255, 255), 2.4)
@@ -2225,24 +2543,11 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	yfNameLbl.Text = "<b>Squishy Name</b>"
 	yfNameLbl.Parent = youFoundPopup
 	addTextSizeConstraint(yfNameLbl, 14, 25)
-	-- 8. INTERACTIVE TREADMILL TURBO SPRINT BUTTON (Appears when standing on any Treadmill Belt — Tap/Click for 2x Speed Burst!)
-	local turboBtnSize = UDim2.fromScale(0.32, 0.068)
+	-- 8. HIDDEN TREADMILL TURBO BUTTON (Legacy compatibility stub)
 	local treadmillTurboBtn = Instance.new("TextButton")
 	treadmillTurboBtn.Name = "TreadmillTurboBtn"
-	treadmillTurboBtn.Size = turboBtnSize
-	treadmillTurboBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-	treadmillTurboBtn.Position = UDim2.fromScale(0.5, 0.82)
-	treadmillTurboBtn.BackgroundColor3 = Color3.fromRGB(255, 185, 35)
-	treadmillTurboBtn.AutoButtonColor = false
-	treadmillTurboBtn.Font = Enum.Font.FredokaOne
-	treadmillTurboBtn.TextColor3 = Color3.fromRGB(16, 20, 32)
-	treadmillTurboBtn.Text = "⚡ <b>TAP / CLICK FOR 2x TURBO SPRINT! (+SPEED BURST)</b> ⚡"
 	treadmillTurboBtn.Visible = false
-	treadmillTurboBtn.Parent = screenGui
-	addCorner(treadmillTurboBtn, 16)
-	addStroke(treadmillTurboBtn, Color3.fromRGB(255, 255, 255), 3.0)
-	addTextSizeConstraint(treadmillTurboBtn, 12, 22)
-	bindHoverAndClickTween(treadmillTurboBtn, turboBtnSize, Color3.fromRGB(255, 185, 35))
+	treadmillTurboBtn.Selectable = false
 
 	-- 9. 💖 LIKE & ⭐ FAVORITE HUD BUTTON + REWARD MODAL
 	local likeFavHudSize = UDim2.fromScale(0.115, 0.048)
@@ -2256,6 +2561,8 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	likeFavHudBtn.Font = Enum.Font.FredokaOne
 	likeFavHudBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 	likeFavHudBtn.Text = "💖 <b>LIKE & FAV (+$5K!)</b>"
+	likeFavHudBtn.Visible = false
+	likeFavHudBtn.Selectable = false
 	likeFavHudBtn.Parent = screenGui
 	addCorner(likeFavHudBtn, 12)
 	addStroke(likeFavHudBtn, Color3.fromRGB(255, 235, 85), 2.5)
@@ -2305,7 +2612,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	lfDesc.BackgroundColor3 = Color3.fromRGB(38, 28, 62)
 	lfDesc.Font = Enum.Font.FredokaOne
 	lfDesc.TextColor3 = Color3.fromRGB(245, 248, 255)
-	lfDesc.Text = "🌟 <b>Support Find my Squishy and steal my egg (brainrot) & Unlock Exclusive VIP Perks:</b>\n💰 <font color='#65FF8F'>+$5,000 Bonus Cash</font>  •  🎡 <font color='#FFE865'>+2 Free Wheel Spins</font>\n⚡ <font color='#75E8FF'>+15 Speed Power</font>  •  💖 <font color='#FF95E8'>'VIP SUPPORTER' Overhead Tag</font>  •  🛡️ <font color='#FFE865'>60s Boss Shield!</font>"
+	lfDesc.Text = "🌟 <b>Support Find my Squishy and steal my egg (brainrot) & Unlock Exclusive VIP Perks:</b>\n💰 <font color='#65FF8F'>+$5,000 Bonus Cash</font>  •  🎡 <font color='#FFE865'>+2 Free Wheel Spins</font>\n💖 <font color='#FF95E8'>'VIP SUPPORTER' Overhead Tag</font>  •  🛡️ <font color='#FFE865'>60s Boss Shield!</font>"
 	lfDesc.Parent = likeFavoriteModal
 	addCorner(lfDesc, 12)
 	addStroke(lfDesc, Color3.fromRGB(255, 215, 75), 2.0)
@@ -2354,7 +2661,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	likeFavClose.NextSelectionUp = claimLikeFavRewardBtn
 
 	-- =========================================================================
-	-- 10. ❤️ PREMIUM HEALTH BAR (Creator Store Asset 96150583459141 Inspired Widget)
+	-- 10. ❤️ PREMIUM HEALTH BAR (Hidden per clean HUD layout)
 	-- =========================================================================
 	local healthBarSize = UDim2.fromScale(0.128, 0.044)
 	local healthBarFrame = Instance.new("Frame")
@@ -2364,6 +2671,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	healthBarFrame.Position = UDim2.fromScale(0.895, 0.082)
 	healthBarFrame.BackgroundColor3 = Color3.fromRGB(20, 24, 36)
 	healthBarFrame.BackgroundTransparency = 0.08
+	healthBarFrame.Visible = false
 	healthBarFrame.Parent = screenGui
 	addCorner(healthBarFrame, 10)
 	addStroke(healthBarFrame, Color3.fromRGB(80, 240, 130), 2.4)
@@ -2409,25 +2717,8 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	addTextSizeConstraint(healthLabel, 10, 16)
 
 	-- =========================================================================
-	-- 11. ⚙️ SETTINGS PRO BUTTON & ADVANCED PANEL (Creator Store Asset 93583640955196 / 94517727460767 Inspired)
+	-- 11. ⚙️ SETTINGS PRO ADVANCED PANEL (Triggered via RightDock SettingsProBtn)
 	-- =========================================================================
-	local settingsProBtnSize = UDim2.fromScale(0.115, 0.048)
-	local settingsProBtn = Instance.new("TextButton")
-	settingsProBtn.Name = "SettingsProBtn"
-	settingsProBtn.Size = settingsProBtnSize
-	settingsProBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-	settingsProBtn.Position = UDim2.fromScale(0.895, 0.208)
-	settingsProBtn.BackgroundColor3 = Color3.fromRGB(48, 58, 82)
-	settingsProBtn.AutoButtonColor = false
-	settingsProBtn.Font = Enum.Font.FredokaOne
-	settingsProBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-	settingsProBtn.Text = "⚙️ <b>SETTINGS PRO</b>"
-	settingsProBtn.Parent = screenGui
-	addCorner(settingsProBtn, 12)
-	addStroke(settingsProBtn, Color3.fromRGB(120, 175, 255), 2.4)
-	addTextSizeConstraint(settingsProBtn, 10, 18)
-	bindHoverAndClickTween(settingsProBtn, settingsProBtnSize, Color3.fromRGB(48, 58, 82))
-
 	local settingsProModal = Instance.new("Frame")
 	settingsProModal.Name = "SettingsProModal"
 	settingsProModal.Size = UDim2.fromScale(0.48, 0.58)

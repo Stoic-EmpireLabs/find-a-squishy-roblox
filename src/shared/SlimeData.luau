@@ -243,7 +243,7 @@ SlimeData.Levels = {
 	{
 		Level = 1,
 		Name = "Squishy Meadow",
-		Subtitle = "Complete 100% of Stage 1 Squishies & Eggs + 25 Speed to Unlock Stage 2!",
+		Subtitle = "Complete 100% of Stage 1 Squishies & Eggs + Fence Lv.2 to Unlock Stage 2!",
 		ZStart = 0,
 		ZEnd = -160,
 		GateZ = -160,
@@ -257,7 +257,7 @@ SlimeData.Levels = {
 	{
 		Level = 2,
 		Name = "Chocolate Candy Kingdom",
-		Subtitle = "Complete 100% of Stage 2 Squishies & Eggs + 80 Speed to Unlock Stage 3!",
+		Subtitle = "Complete 100% of Stage 2 Squishies & Eggs + Fence Lv.3 to Unlock Stage 3!",
 		ZStart = -160,
 		ZEnd = -320,
 		GateZ = -320,
@@ -265,13 +265,13 @@ SlimeData.Levels = {
 		FloorColor = Color3.fromRGB(162, 108, 96),
 		RequiredPlantedCount = 4,
 		EggCount = 4,
-		RequiredSpeed = 25,
+		RequiredSpeed = 0,
 		GateUnlockCost = 150,
 	},
 	{
 		Level = 3,
 		Name = "Tropical Beach Lagoon",
-		Subtitle = "Complete 100% of Stage 3 Squishies & Eggs + 220 Speed to Unlock Stage 4!",
+		Subtitle = "Complete 100% of Stage 3 Squishies & Eggs + Fence Lv.4 to Unlock Stage 4!",
 		ZStart = -320,
 		ZEnd = -480,
 		GateZ = -480,
@@ -279,13 +279,13 @@ SlimeData.Levels = {
 		FloorColor = Color3.fromRGB(238, 210, 145),
 		RequiredPlantedCount = 8,
 		EggCount = 4,
-		RequiredSpeed = 80,
+		RequiredSpeed = 0,
 		GateUnlockCost = 600,
 	},
 	{
 		Level = 4,
 		Name = "Whispering Bamboo Forest",
-		Subtitle = "Complete 100% of Stage 4 Squishies & Eggs + 600 Speed to Unlock Stage 5!",
+		Subtitle = "Complete 100% of Stage 4 Squishies & Eggs + Fence Lv.5 to Unlock Stage 5!",
 		ZStart = -480,
 		ZEnd = -640,
 		GateZ = -640,
@@ -293,13 +293,13 @@ SlimeData.Levels = {
 		FloorColor = Color3.fromRGB(68, 158, 92),
 		RequiredPlantedCount = 12,
 		EggCount = 4,
-		RequiredSpeed = 220,
+		RequiredSpeed = 0,
 		GateUnlockCost = 2500,
 	},
 	{
 		Level = 5,
 		Name = "Crystal Cyber Cavern",
-		Subtitle = "Complete 100% of Stage 5 Squishies & Eggs + 1.6k Speed to Unlock Stage 6!",
+		Subtitle = "Complete 100% of Stage 5 Squishies & Eggs + Fence Lv.6 to Unlock Stage 6!",
 		ZStart = -640,
 		ZEnd = -800,
 		GateZ = -800,
@@ -307,13 +307,13 @@ SlimeData.Levels = {
 		FloorColor = Color3.fromRGB(72, 65, 118),
 		RequiredPlantedCount = 16,
 		EggCount = 4,
-		RequiredSpeed = 600,
+		RequiredSpeed = 0,
 		GateUnlockCost = 10000,
 	},
 	{
 		Level = 6,
 		Name = "Cloud Sky Sanctuary",
-		Subtitle = "Complete 100% of Stage 6 Squishies & Eggs + 4.5k Speed to Unlock Stage 7!",
+		Subtitle = "Complete 100% of Stage 6 Squishies & Eggs + Fence Lv.7 to Unlock Stage 7!",
 		ZStart = -800,
 		ZEnd = -960,
 		GateZ = -960,
@@ -321,13 +321,13 @@ SlimeData.Levels = {
 		FloorColor = Color3.fromRGB(215, 232, 250),
 		RequiredPlantedCount = 20,
 		EggCount = 5,
-		RequiredSpeed = 1600,
+		RequiredSpeed = 0,
 		GateUnlockCost = 45000,
 	},
 	{
 		Level = 7,
 		Name = "Magma Volcano Island",
-		Subtitle = "Complete 100% of Stage 7 Squishies & Eggs + 12k Speed to Unlock Stage 8!",
+		Subtitle = "Complete 100% of Stage 7 Squishies & Eggs + Fence Lv.8 to Unlock Stage 8!",
 		ZStart = -960,
 		ZEnd = -1120,
 		GateZ = -1120,
@@ -335,7 +335,7 @@ SlimeData.Levels = {
 		FloorColor = Color3.fromRGB(78, 42, 42),
 		RequiredPlantedCount = 25,
 		EggCount = 5,
-		RequiredSpeed = 4500,
+		RequiredSpeed = 0,
 		GateUnlockCost = 200000,
 	},
 	{
@@ -349,7 +349,7 @@ SlimeData.Levels = {
 		FloorColor = Color3.fromRGB(38, 28, 68),
 		RequiredPlantedCount = 30,
 		EggCount = 5,
-		RequiredSpeed = 12000,
+		RequiredSpeed = 0,
 		GateUnlockCost = 1000000,
 	},
 }
@@ -1673,7 +1673,8 @@ function SlimeData.GetStageGateStatus(
 	local prevStage = targetLevel - 1
 	local fBrainrots, tBrainrots, fSquishies, tSquishies = SlimeData.GetStageBreakdown(foundMap, prevStage)
 	local lvlDef = SlimeData.Levels[targetLevel] :: any
-	local reqSpd = if lvlDef then (lvlDef.RequiredSpeed or 16) else 16
+	local reqSpeed = 0
+	local reqSpd = 0
 	local reqFence = if lvlDef then (lvlDef.RequiredFenceLevel or targetLevel) else targetLevel
 	local gateCost = SlimeData.GetStageGateUnlockCost(targetLevel)
 	local curFence = if fenceLevel ~= nil then fenceLevel else targetLevel
@@ -1688,7 +1689,8 @@ function SlimeData.GetStageGateStatus(
 		end
 	end
 
-	local reqsMet = allPrevDone and (curFence >= reqFence) and (curSpd >= reqSpd)
+	local speedOk = true
+	local reqsMet = allPrevDone and (curFence >= reqFence) and speedOk
 	local gatePaid = if unlockedGates ~= nil then (unlockedGates[tostring(targetLevel)] == true) else true
 
 	return {
@@ -1701,7 +1703,7 @@ function SlimeData.GetStageGateStatus(
 		TotalSquishies = tSquishies,
 		RequiredFenceLevel = reqFence,
 		CurrentFenceLevel = curFence,
-		RequiredSpeed = reqSpd,
+		RequiredSpeed = reqSpeed,
 		CurrentSpeed = curSpd,
 		GateCost = gateCost,
 	}

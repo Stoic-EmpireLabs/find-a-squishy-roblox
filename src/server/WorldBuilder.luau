@@ -2377,125 +2377,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 		)
 	end
 
-	-- ========================================================================
-	-- 7. 🏃 OPEN-SOURCE TREADMILL UPGRADE SYSTEM SHOWCASE (West Safe Zone Boulevard at X = -188, Z = 56..168)
-	-- Displays all 8 downloaded upgrade treadmill tiers side-by-side with full 3D models & upgrade signs!
-	-- Positioned at X = -188 leaving a spacious 45+ stud gap from West Plots 1 & 3 (X = -94..-140)!
-	-- ========================================================================
-	local showcaseFolder = Instance.new("Folder")
-	showcaseFolder.Name = "TreadmillUpgradeSystemShowcase"
-	showcaseFolder.Parent = hubFolder
-
-	-- Grand Archway Header Sign spanning the showcase avenue
-	makePart({
-		Name = "ShowcaseArchPillarLeft",
-		Size = Vector3.new(2.4, 18.0, 2.4),
-		Position = Vector3.new(-188, 9.0, 48),
-		Color = Color3.fromRGB(36, 42, 60),
-		Material = Enum.Material.Metal,
-		Parent = showcaseFolder,
-	})
-	makePart({
-		Name = "ShowcaseArchPillarRight",
-		Size = Vector3.new(2.4, 18.0, 2.4),
-		Position = Vector3.new(-188, 9.0, 176),
-		Color = Color3.fromRGB(36, 42, 60),
-		Material = Enum.Material.Metal,
-		Parent = showcaseFolder,
-	})
-	local archSign = makePart({
-		Name = "ShowcaseMarqueeSign",
-		Size = Vector3.new(2.2, 4.6, 128),
-		Position = Vector3.new(-188, 19.5, 112),
-		Color = Color3.fromRGB(24, 28, 44),
-		Material = Enum.Material.SmoothPlastic,
-		Parent = showcaseFolder,
-	})
-	createSurfaceSign(
-		archSign,
-		"⚡ OPEN-SOURCE TREADMILL UPGRADE SYSTEM • ALL 8 TIERS ⚡\n🏃 Run on your Base Treadmill to Gain Speed • Step on Speed Upgrade Stand to Unlock Next Tier!",
-		Color3.fromRGB(255, 235, 75),
-		Color3.fromRGB(18, 22, 36),
-		{ Enum.NormalId.Left, Enum.NormalId.Right },
-		180
-	)
-
-	-- 8 Individual Treadmill Tier Showcase Stalls (Z = 56, 72, 88, 104, 120, 136, 152, 168)
-	local tierZPositions = { 56, 72, 88, 104, 120, 136, 152, 168 }
-	for tierIdx, zPos in ipairs(tierZPositions) do
-		local tierDef = SlimeData.TreadmillTiers[tierIdx] or SlimeData.TreadmillTiers[1]
-		local stallModel = Instance.new("Model")
-		stallModel.Name = string.format("ShowcaseTier_%d_%s", tierIdx, string.gsub(tierDef.Name, "%s+", ""))
-		stallModel.Parent = showcaseFolder
-
-		-- Stall Platform Base Deck
-		local stallDeck = makePart({
-			Name = "StallDeck",
-			Size = Vector3.new(15.0, 0.8, 14.0),
-			Position = Vector3.new(-188, 0.4, zPos),
-			Color = Color3.fromRGB(28, 32, 48),
-			Material = Enum.Material.SmoothPlastic,
-			Parent = stallModel,
-		})
-		stallModel.PrimaryPart = stallDeck
-
-		-- Neon Accent Ring around Stall
-		buildGlowingNeonCircle(
-			stallModel,
-			"StallNeonPad",
-			Vector3.new(-188, 0.45, zPos),
-			13.5,
-			tierDef.PrimaryColor or tierDef.Color,
-			tierDef.AccentColor or Color3.fromRGB(255, 255, 255)
-		)
-
-		-- Spawn the Downloaded Open-Source 3D Treadmill Visual Model
-		local tmVisual = PrebuiltLoader.CloneNormalizedTemplate("Treadmills", tierIdx, 12.0, false)
-		if tmVisual then
-			tmVisual.Name = "PrebuiltTreadmillVisual"
-			tmVisual:PivotTo(CFrame.new(-188, 0.85, zPos) * CFrame.Angles(0, math.pi * 0.5, 0))
-			for _, d in ipairs(tmVisual:GetDescendants()) do
-				if d:IsA("BasePart") then
-					d.CanCollide = false
-					d.CanTouch = false
-					d.CanQuery = false
-					d.Massless = true
-					d.Anchored = true
-				end
-			end
-			tmVisual.Parent = stallModel
-		end
-
-		-- Information Billboard Stand
-		local infoBoard = makePart({
-			Name = "TierInfoBoard",
-			Size = Vector3.new(0.8, 5.2, 11.5),
-			Position = Vector3.new(-181.5, 6.2, zPos),
-			Color = Color3.fromRGB(22, 26, 38),
-			Material = Enum.Material.SmoothPlastic,
-			Parent = stallModel,
-		})
-		local costStr = if tierDef.UpgradeCost and tierDef.UpgradeCost > 0 then ("$" .. SlimeData.FormatNumber(tierDef.UpgradeCost)) else "FREE"
-		local reqSpdStr = SlimeData.FormatNumber(tierDef.RequiredSpeed or 0)
-		local gainStr = SlimeData.FormatNumber(tierDef.SpeedPerSec)
-		local stallText = string.format(
-			"⚡ TIER %d: %s\n[%s] • +%s Speed/s\nReq Speed: %s • Cost: %s",
-			tierIdx,
-			string.upper(tierDef.Name),
-			tierDef.MultiplierText or tierDef.MultiplierLabel,
-			gainStr,
-			reqSpdStr,
-			costStr
-		)
-		createSurfaceSign(
-			infoBoard,
-			stallText,
-			tierDef.AccentColor or Color3.fromRGB(255, 235, 75),
-			Color3.fromRGB(16, 18, 30),
-			{ Enum.NormalId.Left, Enum.NormalId.Right },
-			120
-		)
-	end
+	-- (Treadmill Upgrade System Showcase removed from 3D world; models remain in ReplicatedStorage.Models)
 end
 
 -- Helper: Builds an authentic "Find The Squishies" Multi-Tiered Stepped Dirt-and-Grass Cliff Hill (`full_frame_09.png`, `full_frame_12.png`)
@@ -2842,76 +2724,10 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 		end
 	end
 	local nextLevelInfo = SlimeData.Levels[id + 1]
-	local nextReqSpeed = if nextLevelInfo then (nextLevelInfo.RequiredSpeed or 0) else 0
 	local nextReqText = if nextLevelInfo
-		then string.format("⚡ Next Gate (Stage %d): %s Speed + 100%% Stage %d", id + 1, SlimeData.FormatNumber(nextReqSpeed), id)
+		then string.format("🔓 Next Gate (Stage %d): 100%% Stage %d + Fence Lv.%d", id + 1, id, id + 1)
 		else "👑 Final Stage: Complete 100% for Cosmic Mastery!"
-
-
-	-- Dedicated Right-Side Sector 1 Creator Store 3D Treadmill at X = +48, Z = zStart - 16 (Tier 1..8: x1 SPEED -> x50M SPEED!)
-	local tmTier = SlimeData.TreadmillTiers[id] or SlimeData.TreadmillTiers[1]
-	local tmCenter = Vector3.new(48, 0.35, zStart - 16)
-	local tmPlazaPad = buildGlowingNeonCircle(
-		landmarksFolder,
-		"TreadmillPlazaPad_" .. tostring(id),
-		tmCenter,
-		16.5,
-		tmTier.PrimaryColor,
-		tmTier.AccentColor
-	)
-	tmPlazaPad:SetAttribute("TreadmillStageId", id)
-	buildDinoJawTreadmill(landmarksFolder, tmCenter, -1, 0, id)
-
-	-- 4-Sided VIP Barrier Wall Enclosure (Only VIP members can walk through!)
-	local vipEnclosure = Instance.new("Model")
-	vipEnclosure.Name = "VIPTreadmillEnclosure_" .. tostring(id)
-	vipEnclosure.Parent = landmarksFolder
-
-	local vipWalls = {
-		{ Name = "VIPTreadmillWall_West", Pos = tmCenter + Vector3.new(-10, 7.0, 0), Size = Vector3.new(1.0, 14.0, 20.0), SignFace = Enum.NormalId.Left },
-		{ Name = "VIPTreadmillWall_East", Pos = tmCenter + Vector3.new(10, 7.0, 0), Size = Vector3.new(1.0, 14.0, 20.0), SignFace = Enum.NormalId.Right },
-		{ Name = "VIPTreadmillWall_North", Pos = tmCenter + Vector3.new(0, 7.0, -10), Size = Vector3.new(20.0, 14.0, 1.0), SignFace = Enum.NormalId.Back },
-		{ Name = "VIPTreadmillWall_South", Pos = tmCenter + Vector3.new(0, 7.0, 10), Size = Vector3.new(20.0, 14.0, 1.0), SignFace = Enum.NormalId.Front },
-	}
-	for _, wDef in ipairs(vipWalls) do
-		local wall = makePart({
-			Name = wDef.Name,
-			Size = wDef.Size,
-			Position = wDef.Pos,
-			Color = Color3.fromRGB(255, 205, 45),
-			Material = Enum.Material.ForceField,
-			Transparency = 0.38,
-			CanCollide = true,
-			Parent = vipEnclosure,
-		})
-		wall:SetAttribute("VIPOnlyBarrier", true)
-		wall:SetAttribute("StageId", id)
-
-		if wDef.SignFace == Enum.NormalId.Left or wDef.SignFace == Enum.NormalId.Front then
-			createSurfaceSign(
-				wall,
-				string.format("👑 VIP ONLY TREADMILL [%s]\n🔒 VIP MEMBERS WALK THROUGH!\n⚡ +%s Speed / Sec!", tmTier.MultiplierLabel, SlimeData.FormatNumber(tmTier.SpeedPerSec)),
-				Color3.fromRGB(255, 235, 75),
-				Color3.fromRGB(36, 26, 12),
-				{ wDef.SignFace },
-				140
-			)
-		end
-	end
-
-	-- Roof cap so non-VIPs cannot jump over the walls
-	local vipRoof = makePart({
-		Name = "VIPTreadmillRoof",
-		Size = Vector3.new(21.0, 0.8, 21.0),
-		Position = tmCenter + Vector3.new(0, 14.2, 0),
-		Color = Color3.fromRGB(255, 205, 45),
-		Material = Enum.Material.ForceField,
-		Transparency = 0.45,
-		CanCollide = true,
-		Parent = vipEnclosure,
-	})
-	vipRoof:SetAttribute("VIPOnlyBarrier", true)
-	vipRoof:SetAttribute("StageId", id)
+	local _ = nextReqText
 
 	if id == 1 then
 		-- =========================================================================================
@@ -4039,16 +3855,16 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 		-- Chapter 2 Rule: Physical 3D Plot Signboard with SurfaceGui (No floating billboard clutter!)
 		makePart({
 			Name = "OwnerSignPole",
-			Size = Vector3.new(1.1, 5.2, 1.1),
-			Position = cfg.Center + Vector3.new(cfg.FaceDir * (plotW * 0.42), 2.8, -plotD * 0.44),
+			Size = Vector3.new(0.85, 4.4, 0.85),
+			Position = cfg.Center + Vector3.new(cfg.FaceDir * (plotW * 0.42), 2.2, -plotD * 0.44),
 			Color = fenceColor,
 			Material = Enum.Material.WoodPlanks,
 			Parent = plotModel,
 		})
 		local signPost = makePart({
 			Name = "OwnerSign",
-			Size = Vector3.new(11.0, 4.2, 1.2),
-			Position = cfg.Center + Vector3.new(cfg.FaceDir * (plotW * 0.42), 6.6, -plotD * 0.44),
+			Size = Vector3.new(11.5, 4.2, 1.3),
+			Position = cfg.Center + Vector3.new(cfg.FaceDir * (plotW * 0.42), 6.5, -plotD * 0.44),
 			Color = cfg.Color,
 			Material = Enum.Material.SmoothPlastic,
 			Parent = plotModel,
@@ -4074,25 +3890,10 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 			1
 		)
 
-		-- 1. Giant 18-Stud Green Dino-Jaw Speed Treadmill
-		local treadCenter = cfg.Center + Vector3.new(-cfg.FaceDir * 9, 0.5, -13.5)
-		buildDinoJawTreadmill(plotModel, treadCenter, cfg.FaceDir, cfg.Index)
-
 		-- Front Apron X-coordinate: 8.5 studs cleanly OUTSIDE the Hatchery Fence front wall (cfg.Center.X + FaceDir * 27.0)
 		local apronX = cfg.Center.X + cfg.FaceDir * 27.0
 
-		-- 2. Grounded Matte Speed Upgrade Circle (Outside Fence, North End beside Treadmill: Z = -20.0)
-		local upgStand = buildGlowingNeonCircle(
-			plotModel,
-			"SpeedUpgradeStand",
-			Vector3.new(apronX, 0.7, cfg.Center.Z - 20.0),
-			6.2,
-			Color3.fromRGB(65, 185, 225),
-			Color3.fromRGB(165, 105, 225)
-		)
-		createAttachmentPrompt(upgStand, "UpgradeSpeedPrompt", "Upgrade Treadmill (+Speed)", "🦖 Cost: $50", Vector3.new(0, 2.5, 0), 14)
-
-		-- 3. Grounded Matte Cash Collector Circle (Outside Fence, North-Center Apron: Z = -9.0, 11 studs from SpeedUpgradeStand)
+		-- 3. Grounded Matte Cash Collector Circle (Outside Fence, North-Center Apron: Z = -9.0)
 		local collectPad = buildGlowingNeonCircle(
 			plotModel,
 			"CollectCashPad",
@@ -4157,8 +3958,8 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 		for postIdx, gateZ in ipairs({ -4.2, 4.2 }) do
 			makePart({
 				Name = "HatcheryGatePost_" .. tostring(postIdx),
-				Size = Vector3.new(1.2, 8.8, 1.2),
-				Position = penCenter + Vector3.new(cfg.FaceDir * (penW * 0.5), 4.4, gateZ),
+				Size = Vector3.new(1.0, 8.0, 1.0),
+				Position = penCenter + Vector3.new(cfg.FaceDir * (penW * 0.5), 4.0, gateZ),
 				Color = Color3.fromRGB(168, 118, 58),
 				Material = Enum.Material.WoodPlanks,
 				Parent = hatcheryPen,
@@ -4166,8 +3967,8 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 		end
 		local gateHeader = makePart({
 			Name = "HatcheryGateArch",
-			Size = Vector3.new(1.4, 2.8, 10.6),
-			Position = penCenter + Vector3.new(cfg.FaceDir * (penW * 0.5), 9.4, 0),
+			Size = Vector3.new(1.5, 3.0, 10.8),
+			Position = penCenter + Vector3.new(cfg.FaceDir * (penW * 0.5), 9.5, 0),
 			Color = Color3.fromRGB(32, 38, 64),
 			Material = Enum.Material.SmoothPlastic,
 			Parent = hatcheryPen,
@@ -4191,18 +3992,18 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 			Color3.fromRGB(78, 178, 98),
 			Color3.fromRGB(215, 185, 68)
 		)
-		local growPost = makePart({
+		local _growPost = makePart({
 			Name = "GrowStandPost",
-			Size = Vector3.new(1.1, 4.6, 1.1),
-			Position = growStandPos + Vector3.new(0, 2.3, 0),
+			Size = Vector3.new(0.8, 3.6, 0.8),
+			Position = growStandPos + Vector3.new(0, 1.8, 0),
 			Color = Color3.fromRGB(122, 84, 48),
 			Material = Enum.Material.WoodPlanks,
 			Parent = growStand,
 		})
 		local growBoard = makePart({
 			Name = "GrowStandBoard",
-			Size = Vector3.new(1.0, 2.4, 5.8),
-			Position = growStandPos + Vector3.new(0, 5.2, 0),
+			Size = Vector3.new(1.3, 4.2, 8.8),
+			Position = growStandPos + Vector3.new(0, 5.7, 0),
 			Color = Color3.fromRGB(36, 78, 48),
 			Material = Enum.Material.SmoothPlastic,
 			Parent = growStand,
@@ -4213,17 +4014,8 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 			Color3.fromRGB(165, 255, 175),
 			Color3.fromRGB(22, 46, 28),
 			{ Enum.NormalId.Left, Enum.NormalId.Right },
-			95
+			115
 		)
-		local growBb = createBillboardText(
-			growStand,
-			"🌱 GROW / LEVEL UP BRAINROT (Lv.1 -> Lv.15)\nBoosts $/sec & Giant Size!",
-			Color3.fromRGB(125, 245, 145),
-			Vector3.new(0, 6.8, 0),
-			UDim2.new(6.8, 0, 1.6, 0),
-			38
-		)
-		growBb.Name = "GrowStandBillboard"
 		createAttachmentPrompt(
 			growStand,
 			"UpgradeSquishyPenPrompt",
@@ -4243,39 +4035,30 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 			Color3.fromRGB(205, 158, 58),
 			Color3.fromRGB(82, 168, 212)
 		)
-		local fencePost = makePart({
+		local _fencePost = makePart({
 			Name = "FenceStandPost",
-			Size = Vector3.new(1.1, 4.6, 1.1),
-			Position = fenceStandPos + Vector3.new(0, 2.3, 0),
+			Size = Vector3.new(0.8, 3.6, 0.8),
+			Position = fenceStandPos + Vector3.new(0, 1.8, 0),
 			Color = Color3.fromRGB(98, 104, 118),
 			Material = Enum.Material.Metal,
 			Parent = fenceStand,
 		})
 		local fenceBoard = makePart({
 			Name = "FenceStandBoard",
-			Size = Vector3.new(1.0, 2.4, 5.8),
-			Position = fenceStandPos + Vector3.new(0, 5.2, 0),
+			Size = Vector3.new(1.3, 4.2, 8.8),
+			Position = fenceStandPos + Vector3.new(0, 5.7, 0),
 			Color = Color3.fromRGB(44, 52, 78),
 			Material = Enum.Material.SmoothPlastic,
 			Parent = fenceStand,
 		})
 		createSurfaceSign(
 			fenceBoard,
-			"🧱 UPGRADE FENCE SIZE\nLv. 1 -> Lv. 8 (Up to 35 Brainrots!)",
+			"🧱 UPGRADE FENCE SIZE (Lv.1 -> Lv.2)\nFits 7 Brainrots (28x21) • $500",
 			Color3.fromRGB(255, 225, 115),
 			Color3.fromRGB(24, 30, 48),
 			{ Enum.NormalId.Left, Enum.NormalId.Right },
-			95
+			115
 		)
-		local fenceBb = createBillboardText(
-			fenceStand,
-			"🧱 UPGRADE FENCE SIZE (Lv.1 -> Lv.2)\nFits 7 Brainrots (28x21) • $500",
-			Color3.fromRGB(255, 225, 95),
-			Vector3.new(0, 6.8, 0),
-			UDim2.new(6.8, 0, 1.6, 0),
-			38
-		)
-		fenceBb.Name = "FenceStandBillboard"
 		createAttachmentPrompt(
 			fenceStand,
 			"UpgradeFencePrompt",
@@ -4434,13 +4217,16 @@ function WorldBuilder.ResizePlayerFencePen(plotModel: Model, fenceLevel: number)
 	local post2 = hatcheryPen:FindFirstChild("HatcheryGatePost_2") :: BasePart?
 	local gateArch = hatcheryPen:FindFirstChild("HatcheryGateArch") :: BasePart?
 	if post1 then
-		post1.Position = Vector3.new(frontX, penCenter.Y + 4.4, penCenter.Z - 4.2)
+		post1.Size = Vector3.new(1.0, 8.0, 1.0)
+		post1.Position = Vector3.new(frontX, penCenter.Y + 4.0, penCenter.Z - 4.2)
 	end
 	if post2 then
-		post2.Position = Vector3.new(frontX, penCenter.Y + 4.4, penCenter.Z + 4.2)
+		post2.Size = Vector3.new(1.0, 8.0, 1.0)
+		post2.Position = Vector3.new(frontX, penCenter.Y + 4.0, penCenter.Z + 4.2)
 	end
 	if gateArch then
-		gateArch.Position = Vector3.new(frontX, penCenter.Y + 9.4, penCenter.Z)
+		gateArch.Size = Vector3.new(1.5, 3.0, 10.8)
+		gateArch.Position = Vector3.new(frontX, penCenter.Y + 9.5, penCenter.Z)
 	end
 
 	local growStand = hatcheryPen:FindFirstChild("GrowSquishyStand") :: BasePart?
@@ -4450,7 +4236,15 @@ function WorldBuilder.ResizePlayerFencePen(plotModel: Model, fenceLevel: number)
 		growStand.Position = gPos
 		for _, child in ipairs(growStand:GetChildren()) do
 			if child:IsA("BasePart") then
-				child.Position += delta
+				if child.Name == "GrowStandPost" then
+					child.Size = Vector3.new(0.8, 3.6, 0.8)
+					child.Position = gPos + Vector3.new(0, 1.8, 0)
+				elseif child.Name == "GrowStandBoard" then
+					child.Size = Vector3.new(1.3, 4.2, 8.8)
+					child.Position = gPos + Vector3.new(0, 5.7, 0)
+				else
+					child.Position += delta
+				end
 			end
 		end
 	end
@@ -4462,7 +4256,15 @@ function WorldBuilder.ResizePlayerFencePen(plotModel: Model, fenceLevel: number)
 		fenceStand.Position = fPos
 		for _, child in ipairs(fenceStand:GetChildren()) do
 			if child:IsA("BasePart") then
-				child.Position += delta
+				if child.Name == "FenceStandPost" then
+					child.Size = Vector3.new(0.8, 3.6, 0.8)
+					child.Position = fPos + Vector3.new(0, 1.8, 0)
+				elseif child.Name == "FenceStandBoard" then
+					child.Size = Vector3.new(1.3, 4.2, 8.8)
+					child.Position = fPos + Vector3.new(0, 5.7, 0)
+				else
+					child.Position += delta
+				end
 			end
 		end
 	end
@@ -4684,87 +4486,28 @@ end
 local function buildLevelGate(parent: Instance, levelInfo: any, halfW: number): Part
 	local id = levelInfo.Id or levelInfo.Level or 1
 	local zPos = levelInfo.ZStart
-	local gateColor = levelInfo.GateColor or levelInfo.ThemeColor or Color3.fromRGB(95, 215, 110)
-	local secColor = levelInfo.SecondaryColor or levelInfo.ThemeColor or Color3.fromRGB(120, 230, 130)
+	local gateCost = levelInfo.GateUnlockCost or levelInfo.RequiredCoins or 0
 
 	local gateModel = Instance.new("Model")
 	gateModel.Name = "Gate_Level_" .. tostring(id)
 	gateModel.Parent = parent
 
-	local doorWidth = 48
-	local sideWallWidth = halfW - (doorWidth * 0.5)
-
-	for _, side in ipairs({ -1, 1 }) do
-		if id > 1 then
-			local xCenter = side * ((doorWidth * 0.5) + (sideWallWidth * 0.5))
-			makePart({
-				Name = "DividerFence",
-				Size = Vector3.new(sideWallWidth, 4.5, 2.5),
-				Position = Vector3.new(xCenter, 2.25, zPos),
-				Color = gateColor,
-				Material = Enum.Material.Cobblestone,
-				Parent = gateModel,
-			})
-		end
-
-		makePart({
-			Name = "GatePillar",
-			Size = Vector3.new(4.8, 20, 4.8),
-			Position = Vector3.new(side * (doorWidth * 0.5), 10, zPos),
-			Color = secColor,
-			Material = Enum.Material.Cobblestone,
-			Parent = gateModel,
-		})
-	end
-
-	local header = makePart({
-		Name = "GateHeader",
-		Size = Vector3.new(doorWidth + 10, 5.2, 4.5),
-		Position = Vector3.new(0, 21.8, zPos),
-		Color = gateColor,
-		Material = Enum.Material.SmoothPlastic,
-		Parent = gateModel,
-	})
-
-	local reqSpeed = levelInfo.RequiredSpeed or 0
-	local gateCost = levelInfo.GateUnlockCost or levelInfo.RequiredCoins or 0
-	local reqText = if id <= 1
-		then string.format("STAGE %d: %s (OPEN!)", id, string.upper(levelInfo.Name))
-		else string.format(
-			"STAGE %d: %s\n[100%% STAGE %d • 🧱 FENCE LV.%d • ⚡ %s SPD • 💰 $%s]",
-			id,
-			string.upper(levelInfo.Name),
-			id - 1,
-			id,
-			SlimeData.FormatNumber(reqSpeed),
-			SlimeData.FormatNumber(gateCost)
-		)
-
-	createSurfaceSign(
-		header,
-		reqText,
-		Color3.fromRGB(255, 255, 255),
-		Color3.fromRGB(20, 24, 42),
-		{ Enum.NormalId.Back, Enum.NormalId.Front },
-		260
-	)
-
-	-- Black Semi-Transparent Wall with picture cards and "how many left" checklist counters
-	local barrierWidth = 44
-	local barrierHeight = 18.5
+	-- Full-Width Black Stage Gate Wall spanning end-to-end with picture cards and "how many left" checklist counters
+	local barrierWidth = halfW * 2
+	local barrierHeight = 26.0
 	local barrier = makePart({
 		Name = "GateBarrier_" .. tostring(id),
 		Size = Vector3.new(barrierWidth, barrierHeight, 1.8),
-		Position = Vector3.new(0, 9.25, zPos),
+		Position = Vector3.new(0, barrierHeight * 0.5, zPos),
 		Color = Color3.fromRGB(10, 12, 18),
 		Material = Enum.Material.SmoothPlastic,
-		Transparency = if id <= 1 then 1.0 else 0.28,
+		Transparency = if id <= 1 then 1.0 else 0.14,
 		CanCollide = id > 1,
 		Parent = gateModel,
 	})
 	barrier:SetAttribute("LevelId", id)
 	barrier:SetAttribute("RequiredCoins", gateCost)
-	barrier:SetAttribute("RequiredSpeed", reqSpeed)
+	barrier:SetAttribute("RequiredSpeed", 0)
 	barrier:SetAttribute("RequiredFenceLevel", id)
 
 	if id > 1 then
@@ -4792,7 +4535,7 @@ local function buildLevelGate(parent: Instance, levelInfo: any, halfW: number): 
 			sg.Name = "StageGateWallChecklistGui_" .. face.Name
 			sg.Face = face
 			sg.SizingMode = Enum.SurfaceGuiSizingMode.FixedSize
-			sg.CanvasSize = Vector2.new(1280, 540)
+			sg.CanvasSize = Vector2.new(2400, 260)
 			sg.LightInfluence = 0
 			sg.AlwaysOnTop = false
 			sg.ResetOnSpawn = false
@@ -4801,8 +4544,8 @@ local function buildLevelGate(parent: Instance, levelInfo: any, halfW: number): 
 
 			local headerLbl = Instance.new("TextLabel")
 			headerLbl.Name = "WallHeaderLabel"
-			headerLbl.Size = UDim2.new(1, -40, 0, 48)
-			headerLbl.Position = UDim2.new(0, 20, 0, 12)
+			headerLbl.Size = UDim2.new(1, -60, 0, 42)
+			headerLbl.Position = UDim2.new(0, 30, 0, 6)
 			headerLbl.BackgroundTransparency = 1
 			headerLbl.Font = Enum.Font.FredokaOne
 			headerLbl.TextScaled = true
@@ -4812,25 +4555,26 @@ local function buildLevelGate(parent: Instance, levelInfo: any, halfW: number): 
 
 			local summaryLbl = Instance.new("TextLabel")
 			summaryLbl.Name = "WallReqSummaryLabel"
-			summaryLbl.Size = UDim2.new(1, -40, 0, 32)
-			summaryLbl.Position = UDim2.new(0, 20, 0, 64)
+			summaryLbl.Size = UDim2.new(1, -60, 0, 28)
+			summaryLbl.Position = UDim2.new(0, 30, 0, 50)
 			summaryLbl.BackgroundTransparency = 1
 			summaryLbl.Font = Enum.Font.GothamBold
 			summaryLbl.TextScaled = true
 			summaryLbl.TextColor3 = Color3.fromRGB(215, 235, 255)
-			summaryLbl.Text = string.format("🥚 Brainrot Eggs: 0/%d   •   🧸 Squishies: 0/%d   •   🧱 Fence Level: Lv.1/Lv.%d   •   ⚡ Speed: 16/%s   •   💰 Gate Cash: $0/$%s", eggsCount, squishiesCount, id, SlimeData.FormatNumber(reqSpeed), SlimeData.FormatNumber(gateCost))
+			summaryLbl.Text = string.format("🥚 Brainrot Eggs: 0/%d   •   🧸 Squishies: 0/%d   •   🧱 Fence Level: Lv.1/Lv.%d   •   💰 Gate Cash: $0/$%s", eggsCount, squishiesCount, id, SlimeData.FormatNumber(gateCost))
 			summaryLbl.Parent = sg
 
 			local grid = Instance.new("Frame")
 			grid.Name = "ItemsGridFrame"
-			grid.Size = UDim2.new(1, -40, 0, 415)
-			grid.Position = UDim2.new(0, 20, 0, 105)
+			grid.Size = UDim2.new(1, -40, 0, 172)
+			grid.Position = UDim2.new(0, 20, 0, 82)
 			grid.BackgroundTransparency = 1
 			grid.Parent = sg
 
 			local layout = Instance.new("UIGridLayout")
-			layout.CellSize = UDim2.new(0, 108, 0, 128)
-			layout.CellPadding = UDim2.new(0, 8, 0, 8)
+			local cellW = math.clamp(math.floor((2320 - (#stageItems * 12)) / math.max(1, #stageItems)), 136, 168)
+			layout.CellSize = UDim2.new(0, cellW, 0, 164)
+			layout.CellPadding = UDim2.new(0, 12, 0, 8)
 			layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 			layout.VerticalAlignment = Enum.VerticalAlignment.Top
 			layout.Parent = grid
@@ -4892,7 +4636,7 @@ local function buildLevelGate(parent: Instance, levelInfo: any, halfW: number): 
 			barrier,
 			"UnlockStageGatePrompt",
 			string.format("🔓 Unlock Stage %d Gate ($%s)", id, SlimeData.FormatNumber(gateCost)),
-			string.format("Req: 100%% Stage %d + Fence Lv.%d + %s Spd", id - 1, id, SlimeData.FormatNumber(reqSpeed)),
+			string.format("Req: 100%% Stage %d + Fence Lv.%d", id - 1, id),
 			Vector3.new(0, 4.5 - barrierHeight * 0.5, 0),
 			18
 		)
