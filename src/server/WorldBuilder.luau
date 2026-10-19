@@ -3498,7 +3498,7 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 		-- STAGE 7 (Z = -960 to -1120 — MAGMA VOLCANO ISLAND):
 		-- Landmarks:
 		--   * Giant Basalt Volcano Crater (256969126 / StageLandmarks #20) at (-86, 0, -1035)
-		--   * Obsidian Skull Fortress (16437023855 / StageLandmarks #21) at (86, 0, -1045)
+		--   * Obsidian Lava Fortress (16437023855 / StageLandmarks #21) at (86, 0, -1045)
 		--   * Basalt Highway Bridges over Lava Trenches at Z = -995, -1075
 		-- Obby & Hidden Spots:
 		--   * Sinking Basalt Pillars & Double Fire-Spinner Obby (4644268803, 79641631925549)
@@ -3524,7 +3524,7 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 			Parent = landmarksFolder,
 		})
 
-		-- Procedural Obsidian Skull Fortress Keep at (86, 0, -1045)
+		-- Procedural Obsidian Lava Fortress Keep at (86, 0, -1045)
 		makePart({
 			Name = "Stage7_ObsidianKeepBody",
 			Size = Vector3.new(20, 40.5, 20),
