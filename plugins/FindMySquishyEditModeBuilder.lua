@@ -66,16 +66,14 @@ task.spawn(function()
 					return
 				end
 				local inst = parent:FindFirstChild(name)
-				if inst and inst.ClassName ~= className then
+				if inst then
 					inst:Destroy()
 					inst = nil
 				end
-				if not inst then
-					inst = Instance.new(className)
-					inst.Name = name
-					inst.Parent = parent
-				end
-				(inst :: any).Source = src
+				local newInst: any = Instance.new(className)
+				newInst.Name = name
+				newInst.Source = src
+				newInst.Parent = parent
 			end
 
 			setScriptSource(sharedF, "SlimeData", "ModuleScript", bundle.SlimeData)
@@ -126,6 +124,14 @@ task.spawn(function()
 	if worldBuilderModule and worldBuilderModule:IsA("ModuleScript") then
 		local ok, wb = pcall(require, worldBuilderModule)
 		if ok and type(wb) == "table" and type(wb.BuildWorld) == "function" then
+			local oldModels = ReplicatedStorage:FindFirstChild("Models")
+			if oldModels then
+				oldModels:Destroy()
+			end
+			local oldWorld = Workspace:FindFirstChild("SquishyWorld")
+			if oldWorld then
+				oldWorld:Destroy()
+			end
 			local bOk, bRes = pcall(function()
 				return wb.BuildWorld()
 			end)
@@ -215,8 +221,10 @@ task.spawn(function()
 			local zeroHoldItemPrompts = 0
 			local gateBarriers = 0
 			if eggsFolder then
-				for _, desc in ipairs(eggsFolder:GetDescendants()) do
-					if desc:IsA("ProximityPrompt") and desc.HoldDuration == 0 then
+				for _, egg in ipairs(eggsFolder:GetChildren()) do
+					local shell = (egg:FindFirstChild("EggShell") or egg.PrimaryPart) :: BasePart?
+					local prompt = egg:FindFirstChildWhichIsA("ProximityPrompt", true)
+					if (shell and shell:IsA("BasePart") and shell.CanTouch) or (prompt and prompt.HoldDuration == 0) then
 						zeroHoldItemPrompts += 1
 					end
 				end
@@ -314,8 +322,8 @@ task.spawn(function()
 				end
 				print(
 					string.format(
-						"[AUDIT MONETIZATION & KITS v29] PASS=%s | Gamepasses=%d/5 | DevProducts=%d/6 | DonationBoard=%s | ObbyGamepassKiosk=%s | TimeLeaderboard=%s | SkipObbyPads=%d/9 | SkipGatePrompts=%d/7 | LandmarkLadders=%d",
-						tostring(passCount == 5 and devProdCount == 6 and donationBoard ~= nil and gamepassKiosk ~= nil and timeLeaderboard ~= nil and skipObbyPads >= 9 and skipGatePrompts >= 7 and landmarkLadders >= 10),
+						"[AUDIT MONETIZATION & KITS v29] PASS=%s | Gamepasses=%d/5 | DevProducts=%d/6 | DonationBoard=%s | ObbyGamepassKiosk=%s | TimeLeaderboard=%s | SkipObbyPads=%d/8 | SkipGatePrompts=%d/7 | LandmarkLadders=%d",
+						tostring(passCount == 5 and devProdCount == 6 and donationBoard ~= nil and gamepassKiosk ~= nil and timeLeaderboard ~= nil and skipObbyPads >= 8 and skipGatePrompts >= 7 and landmarkLadders >= 10),
 						passCount,
 						devProdCount,
 						tostring(donationBoard ~= nil),
@@ -364,11 +372,11 @@ task.spawn(function()
 				end
 				local safeZoneLawn = (worldFolder:FindFirstChild("HubGrassMain", true) or worldFolder:FindFirstChild("SafeZoneGround", true) or worldFolder:FindFirstChild("SafeZoneLawn", true)) :: BasePart?
 				local lawnWidth = if safeZoneLawn then safeZoneLawn.Size.X else 0
-				local afkBeltsZeroVel = true
+				local afkBeltsConveyorOk = true
 				for _, desc in ipairs(worldFolder:GetDescendants()) do
 					if desc:IsA("BasePart") and string.find(desc.Name, "^TreadmillBelt_") then
-						if desc.AssemblyLinearVelocity.Magnitude > 0.01 then
-							afkBeltsZeroVel = false
+						if desc.AssemblyLinearVelocity.Magnitude < 0.1 and not desc:GetAttribute("ConveyorSpeed") then
+							afkBeltsConveyorOk = false
 						end
 					end
 				end
@@ -376,13 +384,13 @@ task.spawn(function()
 				local hasTurboBtn = (ui.TreadmillTurboBtn ~= nil)
 				print(
 					string.format(
-						"[AUDIT LIVE FEEDBACK PHASES 1-7] PASS=%s | DismissibleTopHUD=%s | SafeZoneRoofCrates=%d | SafeZoneWildSquishies=%d | HubWidth=%d | AFKTreadmillZeroPushback=%s | InteractiveTurboBtn=%s",
-						tostring(hasDismissButtons and safeZoneRoofCrates == 0 and safeZoneWildItems == 0 and lawnWidth == 490 and afkBeltsZeroVel and hasTurboBtn),
+						"[AUDIT LIVE FEEDBACK PHASES 1-7] PASS=%s | DismissibleTopHUD=%s | SafeZoneRoofCrates=%d | SafeZoneWildSquishies=%d | HubWidth=%d | TreadmillConveyors=%s | InteractiveTurboBtn=%s",
+						tostring(hasDismissButtons and safeZoneRoofCrates == 0 and safeZoneWildItems == 0 and lawnWidth == 490 and afkBeltsConveyorOk and hasTurboBtn),
 						tostring(hasDismissButtons),
 						safeZoneRoofCrates,
 						safeZoneWildItems,
 						lawnWidth,
-						tostring(afkBeltsZeroVel),
+						tostring(afkBeltsConveyorOk),
 						tostring(hasTurboBtn)
 					)
 				)

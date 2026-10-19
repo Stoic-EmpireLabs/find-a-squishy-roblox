@@ -2556,8 +2556,8 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 
 	if isShining and isAnchored then
 		local sScale = if slimeDef.IsBoss then 1.32 else 1.12
-		local radius = 2.0 * sScale
 		local origin = Vector3.new(0, 0, 0)
+		local numId = tonumber(slimeDef.Id) or 36
 
 		local model = Instance.new("Model")
 		model.Name = "ShiningSquishy_" .. tostring(slimeDef.Id)
@@ -2565,74 +2565,64 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 		model:SetAttribute("Level", slimeDef.Level)
 		model:SetAttribute("IsShiningSquishy", true)
 
+		-- Invisible touch-pickup hitbox (walk right into it to collect!)
 		local shell = makePart({
 			Name = "EggShell",
 			Shape = Enum.PartType.Ball,
 			Material = Enum.Material.SmoothPlastic,
-			Reflectance = 0.28,
 			Color = slimeDef.Color,
-			Size = Vector3.new(radius * 2, radius * 1.84, radius * 2),
-			Position = origin + Vector3.new(0, radius * 0.92 + 0.65, 0),
+			Size = Vector3.new(7.5, 7.5, 7.5),
+			Position = origin + Vector3.new(0, 3.8, 0),
+			Transparency = 1,
 			Anchored = true,
 			CanCollide = false,
+			CanTouch = true,
 			Parent = model,
 		})
-		shell.PivotOffset = CFrame.new(0, -radius * 0.92 - 0.65, 0)
+		shell.PivotOffset = CFrame.new(0, -3.8, 0)
 		model.PrimaryPart = shell
 
-		addFaceToBody(shell, model, radius * 0.95, sScale, true)
-		addSpeciesFeatures(shell, model, slimeDef, radius, sScale, true)
-
-		local numId = tonumber(slimeDef.Id) or 36
+		-- ONE SINGLE LARGE GLOWING INTERACTIVE SQUISHY PICTURE
 		local iconId = PrebuiltLoader.GetCuteSlimeIconId(numId)
-
-		-- Cute Slime Icon Billboard floating directly above the Shining Squishy
 		local iconBb = Instance.new("BillboardGui")
 		iconBb.Name = "CuteSlimeIconBillboard"
-		iconBb.Size = UDim2.new(2.8 * sScale, 0, 2.8 * sScale, 0)
-		iconBb.StudsOffset = Vector3.new(0, 3.8 * sScale, 0)
+		iconBb.Size = UDim2.new(7.5 * sScale, 0, 7.5 * sScale, 0)
+		iconBb.StudsOffset = Vector3.new(0, 0.6, 0)
 		iconBb.AlwaysOnTop = false
 		iconBb.LightInfluence = 0
-		iconBb.MaxDistance = 32
+		iconBb.MaxDistance = 110
 		iconBb.Parent = shell
+
+		local glowAura = Instance.new("Frame")
+		glowAura.Name = "GlowAura"
+		glowAura.Size = UDim2.fromScale(0.88, 0.88)
+		glowAura.Position = UDim2.fromScale(0.5, 0.5)
+		glowAura.AnchorPoint = Vector2.new(0.5, 0.5)
+		glowAura.BackgroundColor3 = slimeDef.Color
+		glowAura.BackgroundTransparency = 0.45
+		glowAura.BorderSizePixel = 0
+		glowAura.Parent = iconBb
+
+		local auraCorner = Instance.new("UICorner")
+		auraCorner.CornerRadius = UDim.new(1, 0)
+		auraCorner.Parent = glowAura
+
+		local auraStroke = Instance.new("UIStroke")
+		auraStroke.Color = Color3.fromRGB(255, 245, 120)
+		auraStroke.Thickness = 4.0
+		auraStroke.Parent = glowAura
 
 		local iconImg = Instance.new("ImageLabel")
 		iconImg.Name = "SlimeIconImage"
-		iconImg.Size = UDim2.fromScale(1, 1)
+		iconImg.Size = UDim2.fromScale(0.95, 0.95)
+		iconImg.Position = UDim2.fromScale(0.5, 0.5)
+		iconImg.AnchorPoint = Vector2.new(0.5, 0.5)
 		iconImg.BackgroundTransparency = 1
 		iconImg.Image = iconId
+		iconImg.ZIndex = 2
 		iconImg.Parent = iconBb
 
-		-- SurfaceGui Decals on Front & Back of EggShell for crisp 3D icon branding
-		for _, face in ipairs({ Enum.NormalId.Front, Enum.NormalId.Back }) do
-			local sg = Instance.new("SurfaceGui")
-			sg.Name = "CuteSlimeSurfaceGui_" .. face.Name
-			sg.Face = face
-			sg.LightInfluence = 0
-			sg.AlwaysOnTop = false
-			sg.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-			sg.PixelsPerStud = 40
-			sg.Parent = shell
-
-			local sImg = Instance.new("ImageLabel")
-			sImg.Name = "SlimeDecal"
-			sImg.Size = UDim2.fromScale(0.72, 0.72)
-			sImg.Position = UDim2.fromScale(0.14, 0.14)
-			sImg.BackgroundTransparency = 1
-			sImg.Image = iconId
-			sImg.Parent = sg
-		end
-
-		-- Prebuilt 3D Squishmallow Model support (from Asset 133057503426008 / 8539945428)
-		local prebuiltSquishy = PrebuiltLoader.CloneNormalizedTemplate("Squishmallows", tostring(slimeDef.Id), 3.2 * sScale, false)
-			or PrebuiltLoader.CloneNormalizedTemplate("Squishmallows", 1, 3.2 * sScale, false)
-		if prebuiltSquishy then
-			prebuiltSquishy.Name = "PrebuiltSquishyMesh"
-			prebuiltSquishy:PivotTo(shell.CFrame)
-			prebuiltSquishy.Parent = model
-		end
-
-		-- Concentric Glowing Neon Ring Pedestal underneath the Shining Squishy
+		-- Concentric Glowing Neon Ring Pedestal underneath the Shining Squishy with solid CanCollide so players can stand on it!
 		makePart({
 			Name = "OuterNeonRing",
 			Shape = Enum.PartType.Cylinder,
@@ -2641,7 +2631,7 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 			Size = Vector3.new(0.45, 5.2 * sScale, 5.2 * sScale),
 			CFrame = CFrame.new(origin + Vector3.new(0, 0.25, 0)) * CFrame.Angles(0, 0, math.rad(90)),
 			Anchored = true,
-			CanCollide = false,
+			CanCollide = true,
 			Parent = model,
 		})
 		makePart({
@@ -2652,7 +2642,7 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 			Size = Vector3.new(0.52, 4.1 * sScale, 4.1 * sScale),
 			CFrame = CFrame.new(origin + Vector3.new(0, 0.28, 0)) * CFrame.Angles(0, 0, math.rad(90)),
 			Anchored = true,
-			CanCollide = false,
+			CanCollide = true,
 			Parent = model,
 		})
 		makePart({
@@ -2663,49 +2653,27 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 			Size = Vector3.new(0.58, 2.6 * sScale, 2.6 * sScale),
 			CFrame = CFrame.new(origin + Vector3.new(0, 0.32, 0)) * CFrame.Angles(0, 0, math.rad(90)),
 			Anchored = true,
-			CanCollide = false,
+			CanCollide = true,
 			Parent = model,
 		})
 
-		makePart({
-			Name = "ShiningHalo",
-			Shape = Enum.PartType.Cylinder,
-			Material = Enum.Material.Neon,
-			Color = slimeDef.SecondaryColor,
-			Size = Vector3.new(0.32, 2.2 * sScale, 2.2 * sScale),
-			CFrame = shell.CFrame * CFrame.new(0, radius + 0.55, 0) * CFrame.Angles(0, 0, math.rad(90)),
-			Anchored = true,
-			CanCollide = false,
-			Parent = model,
-		})
-
-		-- Make the Collectible Squishy pop & glow against the matte map!
+		-- Glowing Light & Pop Glow Particles
 		attachCollectiblePopGlow(model, shell, slimeDef.Color, slimeDef.SecondaryColor, 14, 1.55)
 
-		local promptAtt = Instance.new("Attachment")
-		promptAtt.Name = "PromptAttachment"
-		promptAtt.Position = Vector3.new(0, 1.35 * sScale, 0)
-		promptAtt.Parent = shell
+		local pl = Instance.new("PointLight")
+		pl.Brightness = 3.2
+		pl.Range = 20
+		pl.Color = slimeDef.Color
+		pl.Parent = shell
 
-
-		local prompt = Instance.new("ProximityPrompt")
-		prompt.Name = "CapturePrompt"
-		prompt.ActionText = "✨ Grab Hidden Squishy!"
-		prompt.ObjectText = string.format("%s [%s] (+$%s/s)", slimeDef.Name, slimeDef.Rarity, formatNumber(slimeDef.CoinsPerSec))
-		prompt.HoldDuration = 0
-		prompt.MaxActivationDistance = 15
-		prompt.RequiresLineOfSight = false
-		prompt.Exclusivity = Enum.ProximityPromptExclusivity.OnePerButton
-		prompt.Parent = promptAtt
-
+		-- EggTag cleanly above the single big picture
 		local bb = Instance.new("BillboardGui")
 		bb.Name = "EggTag"
 		bb.Size = UDim2.new(5.2, 0, 1.35, 0)
-		bb.StudsOffset = Vector3.new(0, 2.7 * sScale, 0)
+		bb.StudsOffset = Vector3.new(0, 5.2 * sScale, 0)
 		bb.AlwaysOnTop = false
 		bb.LightInfluence = 0
-		-- Close-range discovery distance (18 studs) so players explore landmarks/obbies or use Squishy Radar!
-		bb.MaxDistance = 18
+		bb.MaxDistance = 45
 		bb.Parent = shell
 
 		local title = Instance.new("TextLabel")
@@ -2758,6 +2726,7 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 		Position = origin + Vector3.new(0, eggSize.Y * 0.5 + 0.95, 0),
 		Anchored = isAnchored,
 		CanCollide = false,
+		CanTouch = true,
 		Parent = model,
 	})
 	shell.PivotOffset = CFrame.new(0, -eggSize.Y * 0.5 - 0.95, 0)
@@ -2839,62 +2808,30 @@ function SquishyBuilder.CreateWorldEgg(slimeDef: SlimeData.SlimeDef, anchored: b
 	model:SetAttribute("Behavior", slimeDef.Behavior)
 	model:SetAttribute("BounceCount", 0)
 
-	-- Prebuilt 3D Brainrot Egg Model (from Steal An Egg Asset 106206596734864 / 139663370542966)
-	local prebuiltEgg = PrebuiltLoader.CloneNormalizedTemplate("BrainrotEggs", 3, 4.4 * scale, false)
-		or PrebuiltLoader.CloneNormalizedTemplate("BrainrotEggs", tostring(stageNum), 4.4 * scale, false)
-	if prebuiltEgg then
-		prebuiltEgg.Name = "PrebuiltEggMesh"
-		prebuiltEgg:PivotTo(shell.CFrame)
-		prebuiltEgg.Parent = model
-	end
-
 	if isAnchored then
-		local prebuiltNest = PrebuiltLoader.CloneNormalizedTemplate("Nests", 1, 5.2 * scale, false)
-			or PrebuiltLoader.CloneNormalizedTemplate("BirdNest", 1, 5.2 * scale, false)
-		if prebuiltNest then
-			prebuiltNest.Name = "PrebuiltBirdNest"
-			prebuiltNest:PivotTo(CFrame.new(origin + Vector3.new(0, 0.45, 0)))
-			prebuiltNest.Parent = model
-		else
-			makePart({
-				Name = "BirdNestOuter",
-				Shape = Enum.PartType.Cylinder,
-				Material = Enum.Material.Wood,
-				Color = Color3.fromRGB(148, 96, 48),
-				Size = Vector3.new(0.85, 4.6 * scale, 4.6 * scale),
-				CFrame = CFrame.new(origin + Vector3.new(0, 0.42, 0)) * CFrame.Angles(0, 0, math.rad(90)),
-				Anchored = true,
-				CanCollide = false,
-				Parent = model,
-			})
-			makePart({
-				Name = "BirdNestStraw",
-				Shape = Enum.PartType.Cylinder,
-				Material = Enum.Material.Grass,
-				Color = Color3.fromRGB(215, 182, 72),
-				Size = Vector3.new(0.98, 3.8 * scale, 3.8 * scale),
-				CFrame = CFrame.new(origin + Vector3.new(0, 0.49, 0)) * CFrame.Angles(0, 0, math.rad(90)),
-				Anchored = true,
-				CanCollide = false,
-				Parent = model,
-			})
-		end
+		makePart({
+			Name = "BirdNestOuter",
+			Shape = Enum.PartType.Cylinder,
+			Material = Enum.Material.Wood,
+			Color = Color3.fromRGB(148, 96, 48),
+			Size = Vector3.new(0.85, 4.6 * scale, 4.6 * scale),
+			CFrame = CFrame.new(origin + Vector3.new(0, 0.42, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+			Anchored = true,
+			CanCollide = false,
+			Parent = model,
+		})
+		makePart({
+			Name = "BirdNestStraw",
+			Shape = Enum.PartType.Cylinder,
+			Material = Enum.Material.Grass,
+			Color = Color3.fromRGB(215, 182, 72),
+			Size = Vector3.new(0.98, 3.8 * scale, 3.8 * scale),
+			CFrame = CFrame.new(origin + Vector3.new(0, 0.49, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+			Anchored = true,
+			CanCollide = false,
+			Parent = model,
+		})
 
-		local eggPromptAtt = Instance.new("Attachment")
-		eggPromptAtt.Name = "PromptAttachment"
-		eggPromptAtt.Position = Vector3.new(0, 1.45 * scale, 0)
-		eggPromptAtt.Parent = shell
-
-
-		local prompt = Instance.new("ProximityPrompt")
-		prompt.Name = "CapturePrompt"
-		prompt.ActionText = string.format("🥚 Grab Stage %d Brainrot Egg!", stageNum)
-		prompt.ObjectText = string.format("Mystery Brainrot Egg [Stage %d] ($%s/s+)", stageNum, formatNumber(slimeDef.CoinsPerSec))
-		prompt.HoldDuration = 0
-		prompt.MaxActivationDistance = 15
-		prompt.RequiresLineOfSight = false
-		prompt.Exclusivity = Enum.ProximityPromptExclusivity.OnePerButton
-		prompt.Parent = eggPromptAtt
 	end
 
 	addRarityParticles(shell, slimeDef.Color, slimeDef.SecondaryColor, if slimeDef.IsBoss then 18 else 10)
@@ -3021,56 +2958,23 @@ function SquishyBuilder.CreateSquishyBackpackTool(slimeDef: SlimeData.SlimeDef, 
 	local scale = 0.72
 	local radius = 1.65 * scale
 
-	local prebuiltBrainrot: Model? = nil
-	if isBrainrot then
-		local modelIdx = (slimeDef :: any).BrainrotModelIndex or numId
-		prebuiltBrainrot = PrebuiltLoader.CloneNormalizedTemplate("Brainrots", slimeDef.Name or modelIdx, 2.4 * scale, false)
-			or PrebuiltLoader.CloneNormalizedTemplate("Brainrots", modelIdx, 2.4 * scale, false)
-	end
+	local handle = makePart({
+		Name = "Handle",
+		Shape = if isBrainrot then Enum.PartType.Block else Enum.PartType.Ball,
+		Material = Enum.Material.SmoothPlastic,
+		Reflectance = 0.15,
+		Color = slimeDef.Color,
+		Size = if isBrainrot then Vector3.new(2.2 * scale, 2.6 * scale, 2.2 * scale) else Vector3.new(radius * 2, radius * 1.85, radius * 2),
+		Transparency = if isBrainrot then 1 else 0,
+		Anchored = false,
+		CanCollide = false,
+		Parent = tool,
+	})
 
-	local handle: BasePart
-	if prebuiltBrainrot then
-		handle = prebuiltBrainrot.PrimaryPart or makePart({
-			Name = "Handle",
-			Shape = Enum.PartType.Block,
-			Material = Enum.Material.SmoothPlastic,
-			Color = slimeDef.Color,
-			Size = Vector3.new(2.2 * scale, 2.6 * scale, 2.2 * scale),
-			Transparency = 1,
-			Anchored = false,
-			CanCollide = false,
-		})
-		handle.Name = "Handle"
-		handle.Anchored = false
-		handle.CanCollide = false
-		handle.Parent = tool
-		for _, desc in ipairs(prebuiltBrainrot:GetDescendants()) do
-			if desc:IsA("BasePart") and desc ~= handle then
-				desc.Anchored = false
-				desc.CanCollide = false
-				weldTo(handle, desc)
-			end
-		end
-		prebuiltBrainrot.Parent = tool
-	else
-		handle = makePart({
-			Name = "Handle",
-			Shape = if isBrainrot then Enum.PartType.Block else Enum.PartType.Ball,
-			Material = Enum.Material.SmoothPlastic,
-			Reflectance = 0.15,
-			Color = slimeDef.Color,
-			Size = if isBrainrot then Vector3.new(2.2 * scale, 2.6 * scale, 2.2 * scale) else Vector3.new(radius * 2, radius * 1.85, radius * 2),
-			Transparency = if isBrainrot then 1 else 0,
-			Anchored = false,
-			CanCollide = false,
-			Parent = tool,
-		})
-
-		if not isBrainrot then
-			addFaceToBody(handle, tool, radius * 0.95, scale, false)
-		end
-		addSpeciesFeatures(handle, tool, slimeDef, radius, scale, false)
+	if not isBrainrot then
+		addFaceToBody(handle, tool, radius * 0.95, scale, false)
 	end
+	addSpeciesFeatures(handle, tool, slimeDef, radius, scale, false)
 
 	addRarityParticles(handle, slimeDef.Color, slimeDef.SecondaryColor, 6)
 
@@ -3113,55 +3017,33 @@ function SquishyBuilder.CreateHatchedSquishy(
 		else slimeDef.Color
 
 	local isBrainrot = numId <= 35 or (slimeDef :: any).IsBrainrot == true
-	local model: Model
-	local body: BasePart
-	local prebuiltBrainrot: Model? = nil
+	local model = Instance.new("Model")
+	model.Name = "Squishy_" .. tostring(slimeDef.Id)
 
-	if isBrainrot then
-		local modelIdx = (slimeDef :: any).BrainrotModelIndex or numId
-		prebuiltBrainrot = PrebuiltLoader.CloneNormalizedTemplate("Brainrots", slimeDef.Name or modelIdx, 4.2 * levelScaleBoost, false)
-			or PrebuiltLoader.CloneNormalizedTemplate("Brainrots", modelIdx, 4.2 * levelScaleBoost, false)
+	local body = makePart({
+		Name = "JellyBody",
+		Shape = if isBrainrot then Enum.PartType.Block else Enum.PartType.Ball,
+		Material = Enum.Material.SmoothPlastic,
+		Reflectance = if tier >= 2 or lvl >= 3 then 0.28 else 0.14,
+		Color = outerColor,
+		Transparency = if isBrainrot then 1 else 0.04,
+		Size = if isBrainrot then Vector3.new(2.2 * scale, 2.6 * scale, 2.2 * scale) else Vector3.new(radius * 2, radius * 1.82, radius * 2),
+		Position = position + Vector3.new(0, if isBrainrot then 1.3 * scale else radius * 0.9, 0),
+		Parent = model,
+	})
+	body.PivotOffset = CFrame.new(0, if isBrainrot then -1.3 * scale else -radius * 0.9, 0)
+	model.PrimaryPart = body
+	if not isBrainrot then
+		addFaceToBody(body, model, radius * 0.96, scale, true)
 	end
+	addSpeciesFeatures(body, model, slimeDef, radius, scale, true)
+	attachCollectiblePopGlow(model, body, outerColor, slimeDef.SecondaryColor, 12, 1.35)
 
-	if prebuiltBrainrot then
-		model = prebuiltBrainrot
-		model.Name = "Squishy_" .. tostring(slimeDef.Id)
-		body = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart") or Instance.new("Part")
-		body.Name = "JellyBody"
-		body.Anchored = true
-		body.CanCollide = false
-		model.PrimaryPart = body
-		model:PivotTo(CFrame.new(position + Vector3.new(0, 1.3 * scale * levelScaleBoost, 0)))
-		attachCollectiblePopGlow(model, body, outerColor, slimeDef.SecondaryColor, 12, 1.35)
-	else
-		model = Instance.new("Model")
-		model.Name = "Squishy_" .. tostring(slimeDef.Id)
-
-		body = makePart({
-			Name = "JellyBody",
-			Shape = if isBrainrot then Enum.PartType.Block else Enum.PartType.Ball,
-			Material = Enum.Material.SmoothPlastic,
-			Reflectance = if tier >= 2 or lvl >= 3 then 0.28 else 0.14,
-			Color = outerColor,
-			Transparency = if isBrainrot then 1 else 0.04,
-			Size = if isBrainrot then Vector3.new(2.2 * scale, 2.6 * scale, 2.2 * scale) else Vector3.new(radius * 2, radius * 1.82, radius * 2),
-			Position = position + Vector3.new(0, if isBrainrot then 1.3 * scale else radius * 0.9, 0),
-			Parent = model,
-		})
-		body.PivotOffset = CFrame.new(0, if isBrainrot then -1.3 * scale else -radius * 0.9, 0)
-		model.PrimaryPart = body
-		if not isBrainrot then
-			addFaceToBody(body, model, radius * 0.96, scale, true)
-		end
-		addSpeciesFeatures(body, model, slimeDef, radius, scale, true)
-		attachCollectiblePopGlow(model, body, outerColor, slimeDef.SecondaryColor, 12, 1.35)
-
-		-- Physically scale the procedural 3D model by StageHatchScale * LevelScaleBoost!
-		if levelScaleBoost > 1.01 then
-			pcall(function()
-				model:ScaleTo(levelScaleBoost)
-			end)
-		end
+	-- Physically scale the procedural 3D model by StageHatchScale * LevelScaleBoost!
+	if levelScaleBoost > 1.01 then
+		pcall(function()
+			model:ScaleTo(levelScaleBoost)
+		end)
 	end
 
 	model:SetAttribute("SlimeId", slimeDef.Id)
@@ -3523,24 +3405,10 @@ function SquishyBuilder.ApplyCharacterMorph(character: Model, slimeDef: SlimeDat
 	})
 	weldTo(hrp, body)
 
-	local prebuiltBrainrot: Model? = nil
-	if isBrainrot then
-		prebuiltBrainrot = PrebuiltLoader.CloneNormalizedTemplate("Brainrots", slimeDef.Name or numId, 3.6 * morphScale, false)
-			or PrebuiltLoader.CloneNormalizedTemplate("Brainrots", numId, 3.6 * morphScale, false)
+	if not isBrainrot then
+		addFaceToBody(body, costume, radius * 0.96, morphScale, false)
 	end
-
-	if prebuiltBrainrot then
-		prebuiltBrainrot:PivotTo(hrp.CFrame)
-		for _, child in ipairs(prebuiltBrainrot:GetChildren()) do
-			child.Parent = costume
-		end
-		prebuiltBrainrot:Destroy()
-	else
-		if not isBrainrot then
-			addFaceToBody(body, costume, radius * 0.96, morphScale, false)
-		end
-		addSpeciesFeatures(body, costume, slimeDef, radius, morphScale, false)
-	end
+	addSpeciesFeatures(body, costume, slimeDef, radius, morphScale, false)
 
 	for _, desc in ipairs(costume:GetDescendants()) do
 		if desc:IsA("BasePart") then

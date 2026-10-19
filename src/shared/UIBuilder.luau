@@ -371,12 +371,13 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	topContainer.AnchorPoint = Vector2.new(0.5, 0)
 	topContainer.BackgroundColor3 = Color3.fromRGB(18, 22, 40)
 	topContainer.BackgroundTransparency = 0.08
+	topContainer.Visible = false
 	topContainer.Parent = screenGui
 	addCorner(topContainer, 14)
 	addStroke(topContainer, Color3.fromRGB(255, 215, 70), 2.5)
 	addAspectRatio(topContainer, 6.2)
 
-	-- Small Top-Right Restore Pill (Only visible when the player hides the Top HUD Boxes!)
+	-- Small Top-Right Restore Pill (Permanently hidden per HUD cleanup specification)
 	local restoreTopHudBtnSize = UDim2.fromScale(0.11, 0.038)
 	local restoreTopHudBtn = Instance.new("TextButton")
 	restoreTopHudBtn.Name = "RestoreTopHudBtn"
@@ -547,6 +548,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	objectiveBanner.AnchorPoint = Vector2.new(0.5, 0)
 	objectiveBanner.BackgroundColor3 = Color3.fromRGB(16, 24, 46)
 	objectiveBanner.BackgroundTransparency = 0.08
+	objectiveBanner.Visible = false
 	objectiveBanner.Parent = screenGui
 	addCorner(objectiveBanner, 10)
 	addStroke(objectiveBanner, Color3.fromRGB(85, 235, 255), 2.0)
@@ -598,15 +600,12 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	addTextSizeConstraint(closeBannerBtn, 9, 14)
 	bindHoverAndClickTween(closeBannerBtn, closeBannerBtnSize, Color3.fromRGB(235, 65, 75))
 
-	-- Wire immediate 1-click Close ('✕') & Restore behavior so players can get rid of either or both top boxes anytime!
+	-- Permanently hide top HUD banner & restore button per clean screen directives
 	local function updateRestoreBtnVisibility()
-		restoreTopHudBtn.Visible = (not topContainer.Visible) or (not objectiveBanner.Visible)
+		restoreTopHudBtn.Visible = false
 	end
 	topHudCloseBtn.Activated:Connect(function()
 		topContainer.Visible = false
-		if objectiveBanner.Visible then
-			objectiveBanner.Position = UDim2.fromScale(0.5, 0.012)
-		end
 		updateRestoreBtnVisibility()
 	end)
 	closeBannerBtn.Activated:Connect(function()
@@ -614,10 +613,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 		updateRestoreBtnVisibility()
 	end)
 	restoreTopHudBtn.Activated:Connect(function()
-		topContainer.Visible = true
-		objectiveBanner.Visible = true
-		objectiveBanner.Position = UDim2.fromScale(0.5, 0.112)
-		updateRestoreBtnVisibility()
+		restoreTopHudBtn.Visible = false
 	end)
 
 	-- 1C. SQUISH FEVER COMBO MULTIPLIER BAR (x1.5 -> x5.0 CASH!)
@@ -2254,7 +2250,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	likeFavHudBtn.Name = "LikeFavHudBtn"
 	likeFavHudBtn.Size = likeFavHudSize
 	likeFavHudBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-	likeFavHudBtn.Position = UDim2.fromScale(0.928, 0.145)
+	likeFavHudBtn.Position = UDim2.fromScale(0.895, 0.145)
 	likeFavHudBtn.BackgroundColor3 = Color3.fromRGB(235, 65, 145)
 	likeFavHudBtn.AutoButtonColor = false
 	likeFavHudBtn.Font = Enum.Font.FredokaOne
@@ -2365,7 +2361,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	healthBarFrame.Name = "PremiumHealthBarFrame"
 	healthBarFrame.Size = healthBarSize
 	healthBarFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-	healthBarFrame.Position = UDim2.fromScale(0.928, 0.082)
+	healthBarFrame.Position = UDim2.fromScale(0.895, 0.082)
 	healthBarFrame.BackgroundColor3 = Color3.fromRGB(20, 24, 36)
 	healthBarFrame.BackgroundTransparency = 0.08
 	healthBarFrame.Parent = screenGui
@@ -2420,7 +2416,7 @@ function UIBuilder.CreateHUD(parentGui: Instance)
 	settingsProBtn.Name = "SettingsProBtn"
 	settingsProBtn.Size = settingsProBtnSize
 	settingsProBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-	settingsProBtn.Position = UDim2.fromScale(0.928, 0.208)
+	settingsProBtn.Position = UDim2.fromScale(0.895, 0.208)
 	settingsProBtn.BackgroundColor3 = Color3.fromRGB(48, 58, 82)
 	settingsProBtn.AutoButtonColor = false
 	settingsProBtn.Font = Enum.Font.FredokaOne

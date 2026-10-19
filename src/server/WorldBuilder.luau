@@ -445,53 +445,72 @@ local function buildLandmarkAccessLadderAndDeck(
 )
 	local dColor = deckColor or Color3.fromRGB(138, 142, 155)
 	local dMat = deckMat or Enum.Material.Cobblestone
+	local safeW = math.max(deckW, 24)
+	local safeD = math.max(deckD, 24)
 
 	-- 1. Walkable landing deck at (targetPos.X, targetPos.Y - 1.0, targetPos.Z)
 	makePart({
 		Name = namePrefix .. "_LandingDeck",
-		Size = Vector3.new(deckW + 4, 1.4, deckD + 4),
+		Size = Vector3.new(safeW + 4, 1.4, safeD + 4),
 		Position = Vector3.new(targetPos.X, targetPos.Y - 1.0, targetPos.Z),
 		Color = dColor,
 		Material = dMat,
+		CanCollide = true,
 		Parent = parent,
 	})
 
-	-- 2. Vertical climbable TrussPart ladder from ground up to edge of deck
-	local ladderX = targetPos.X - (deckW * 0.5 + 1.0)
+	-- 2. Vertical climbable TrussPart ladder on inward road-facing side outside roof overhang
+	local dirToRoad = if targetPos.X >= 0 then -1 else 1
 	local ladderH = math.max(6, targetPos.Y)
+	local edgeX = targetPos.X + dirToRoad * (safeW * 0.5 + 1.6)
 	local ladder = Instance.new("TrussPart")
 	ladder.Name = namePrefix .. "_ClimbLadder"
 	ladder.Anchored = true
-	ladder.Size = Vector3.new(3.2, ladderH, 2.4)
-	ladder.Position = Vector3.new(ladderX, ladderH * 0.5, targetPos.Z)
+	ladder.Size = Vector3.new(3.6, ladderH + 2.5, 3.0)
+	ladder.Position = Vector3.new(edgeX, (ladderH + 2.5) * 0.5, targetPos.Z)
 	ladder.Color = Color3.fromRGB(112, 118, 138)
 	ladder.Material = Enum.Material.Metal
 	ladder.Parent = parent
 
-	-- 3. Stepped 6-Step Staircase leading into the base of the ladder!
-	for s = 1, 6 do
+	-- 3. Full-Height, Continuous Walkable Staircase from ground to top deck!
+	local topY = math.max(2.0, targetPos.Y - 0.8)
+	local numSteps = math.clamp(math.ceil(topY / 1.4), 6, 28)
+	local stairX = targetPos.X + dirToRoad * (safeW * 0.5 + 5.5)
+	for s = 1, numSteps do
 		makePart({
 			Name = string.format("%s_StairStep_%d", namePrefix, s),
-			Size = Vector3.new(8.0, 1.1, 2.8),
-			Position = Vector3.new(ladderX - 2.5 - (s * 2.2), s * 0.85, targetPos.Z),
+			Size = Vector3.new(8.5, 1.4, 3.2),
+			Position = Vector3.new(stairX, (s / numSteps) * topY, targetPos.Z + (numSteps - s) * 2.4),
 			Color = Color3.fromRGB(145, 148, 160),
 			Material = Enum.Material.Cobblestone,
+			CanCollide = true,
 			Parent = parent,
 		})
 	end
+
+	-- Wide connecting bridge plank from top of stairs into landing deck
+	makePart({
+		Name = namePrefix .. "_StairTopBridgePlank",
+		Size = Vector3.new(safeW + 12, 1.4, 8.0),
+		Position = Vector3.new((stairX + targetPos.X) * 0.5, topY, targetPos.Z),
+		Color = dColor,
+		Material = dMat,
+		CanCollide = true,
+		Parent = parent,
+	})
 
 	-- 4. Green Super Bounce Pad for instant launch option!
 	local bPad = makePart({
 		Name = namePrefix .. "_BouncePad",
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(1.2, 9.5, 9.5),
-		CFrame = CFrame.new(ladderX - 18.0, 0.5, targetPos.Z) * CFrame.Angles(0, 0, math.rad(90)),
+		CFrame = CFrame.new(stairX + dirToRoad * 10.0, 0.5, targetPos.Z) * CFrame.Angles(0, 0, math.rad(90)),
 		Color = Color3.fromRGB(85, 235, 115),
 		Material = Enum.Material.Neon,
 		Parent = parent,
 	})
 	bPad:SetAttribute("SuperBouncePad", true)
-	bPad:SetAttribute("BounceVelocityY", math.clamp(ladderH * 2.8, 65, 115))
+	bPad:SetAttribute("BounceVelocityY", math.clamp(ladderH * 2.8, 65, 125))
 end
 
 local function buildSkipObbyPaywallPad(
@@ -672,15 +691,6 @@ local function buildBigCartoonHouse(
 			Parent = hModel,
 		})
 	end
-	local keypad = makePart({
-		Name = "DoorKeypad",
-		Size = Vector3.new(1.8, 2.6, 0.4),
-		CFrame = cf * CFrame.new(4.2, 4.8, -d * 0.5 - 0.15),
-		Color = Color3.fromRGB(48, 52, 64),
-		Material = Enum.Material.Plastic,
-		Parent = hModel,
-	})
-	createSurfaceSign(keypad, "1710\n[1][2][3]\n[4][5][6]\n[7][8][9]", Color3.fromRGB(255, 255, 255), Color3.fromRGB(35, 38, 48), { Enum.NormalId.Front, Enum.NormalId.Back }, 45)
 
 	-- 4. Iconic 4 Colored Square Windows on the Front Facade (`fts_frame_01.png`: Red, Blue, Green, Yellow!)
 	local winColors = {
@@ -1176,16 +1186,19 @@ local function buildCastleWallBattlements(parent: Instance, levelInfo: any, half
 			})
 		end
 
-		-- Stone Climbing Stairs from the Biome Floor up to the Castle Wall Rampart (placed at zStart - 120)
-		for step = 1, 9 do
-			makePart({
-				Name = "CastleClimbStep_" .. tostring(step),
-				Size = Vector3.new(8.5, 1.6, 4.2),
-				Position = Vector3.new(wallX - side * 5.2, step * 2.0, (zStart - 116) - step * 3.2),
-				Color = themeColor:Lerp(Color3.fromRGB(240, 240, 245), 0.35),
-				Material = wallMat,
-				Parent = castleFolder,
-			})
+		-- Stone Climbing Stairs from Biome Floor up to Castle Wall Rampart (at both zStart - 28 and zStart - 116!)
+		for _, baseZ in ipairs({ zStart - 28, zStart - 116 }) do
+			for step = 1, 9 do
+				makePart({
+					Name = "CastleClimbStep_" .. tostring(step),
+					Size = Vector3.new(8.5, 1.6, 4.2),
+					Position = Vector3.new(wallX - side * 5.2, step * 2.0, baseZ - step * 3.2),
+					Color = themeColor:Lerp(Color3.fromRGB(240, 240, 245), 0.35),
+					Material = wallMat,
+					CanCollide = true,
+					Parent = castleFolder,
+				})
+			end
 		end
 	end
 
@@ -1422,17 +1435,47 @@ local function buildDinoJawTreadmill(
 	belt:SetAttribute("IsCreatorStoreTreadmill", true)
 	belt:SetAttribute("TreadmillTier", tierId)
 	belt:SetAttribute("SpeedPerSec", tier.SpeedPerSec)
-	belt:SetAttribute("MultiplierText", tier.MultiplierText)
+	belt:SetAttribute("MultiplierText", tier.MultiplierText or tier.MultiplierLabel)
 	belt:SetAttribute("RunAnimSpeed", math.clamp(1.25 + (tierId * 0.12), 1.3, 2.25))
 	belt:SetAttribute("FaceDir", faceDir)
+	belt:SetAttribute("IsStageTreadmill", isStageTreadmill)
+	belt:SetAttribute("ConveyorSpeed", 16)
 	if not isStageTreadmill then
 		belt:SetAttribute("PlotIndex", plotIdx)
 	else
 		belt:SetAttribute("StageId", tierId)
 	end
 
-	-- AFK-Friendly Zero Conveyor Pushback (players stay centered & run in place hands-free OR tap for 2x Turbo!)
-	belt.AssemblyLinearVelocity = Vector3.zero
+	-- Researched open-source Roblox conveyor belt physics: AssemblyLinearVelocity moves backward so running forward stays in place!
+	belt.AssemblyLinearVelocity = Vector3.new(faceDir * 14, 0, 0)
+
+	-- Open-source Treadmill Safety Guard Rails & Backstop: holds player securely on belt while AFK or running
+	makePart({
+		Name = "TreadmillBackStop",
+		Size = Vector3.new(0.8, 4.2, 12.0),
+		Position = treadCenter + Vector3.new(faceDir * 6.0, 2.2, 0),
+		Transparency = 1,
+		CanCollide = true,
+		Parent = tmModel,
+	})
+	makePart({
+		Name = "TreadmillFrontStop",
+		Size = Vector3.new(0.8, 4.2, 12.0),
+		Position = treadCenter + Vector3.new(-faceDir * 6.0, 2.2, 0),
+		Transparency = 1,
+		CanCollide = true,
+		Parent = tmModel,
+	})
+	for _, sideZ in ipairs({ -6.8, 6.8 }) do
+		makePart({
+			Name = "TreadmillSideGuardRail",
+			Size = Vector3.new(12.4, 4.0, 0.8),
+			Position = treadCenter + Vector3.new(0, 2.2, sideZ),
+			Transparency = 1,
+			CanCollide = true,
+			Parent = tmModel,
+		})
+	end
 
 	-- Authentic Creator Store Scrolling `Beam` Belt Texture (`rbxassetid://6798365555`, `123374008022599`, `4887782888`)
 	local att0 = Instance.new("Attachment")
@@ -1919,7 +1962,35 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	)
 	chestBooth.PrimaryPart = chestPad
 
-	placePrebuiltAsset("CashChest", 1, chestBooth, Vector3.new(162, 0.8, 92), -90, 6.2, true)
+	-- Procedural Golden Daily Treasure Chest
+	makePart({
+		Name = "TreasureChestBase",
+		Size = Vector3.new(4.2, 2.6, 6.2),
+		Position = Vector3.new(162, 1.8, 92),
+		Color = Color3.fromRGB(138, 86, 38),
+		Material = Enum.Material.WoodPlanks,
+		CanCollide = true,
+		Parent = chestBooth,
+	})
+	makePart({
+		Name = "TreasureChestLid",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(6.2, 3.8, 3.8),
+		CFrame = CFrame.new(162, 3.1, 92) * CFrame.Angles(0, 0, math.rad(90)),
+		Color = Color3.fromRGB(158, 98, 45),
+		Material = Enum.Material.WoodPlanks,
+		CanCollide = true,
+		Parent = chestBooth,
+	})
+	makePart({
+		Name = "TreasureChestLock",
+		Size = Vector3.new(1.2, 1.2, 0.6),
+		Position = Vector3.new(159.8, 2.4, 92),
+		Color = Color3.fromRGB(255, 215, 55),
+		Material = Enum.Material.Neon,
+		CanCollide = false,
+		Parent = chestBooth,
+	})
 
 	-- Twin Studded Golden Shrine Pillars
 	for _, zSide in ipairs({ -5.2, 5.2 }) do
@@ -2634,67 +2705,71 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 		then string.format("⚡ Next Gate (Stage %d): %s Speed + 100%% Stage %d", id + 1, SlimeData.FormatNumber(nextReqSpeed), id)
 		else "👑 Final Stage: Complete 100% for Cosmic Mastery!"
 
-	local checklistPos = Vector3.new(-48, 0, zStart - 16)
-	buildGlowingNeonCircle(
-		landmarksFolder,
-		"StageChecklistPad_" .. tostring(id),
-		checklistPos + Vector3.new(0, 0.35, 0),
-		12.0,
-		themeColor,
-		secColor
-	)
-	for _, postSide in ipairs({ -1, 1 }) do
-		makePart({
-			Name = "ChecklistPost_" .. tostring(postSide),
-			Size = Vector3.new(1.4, 13.0, 1.4),
-			Position = checklistPos + Vector3.new(postSide * 7.8, 6.5, 0),
-			Color = secColor,
-			Material = Enum.Material.Metal,
-			Parent = landmarksFolder,
-		})
-	end
-	local checklistBoard = makePart({
-		Name = "StageChecklistBoard_" .. tostring(id),
-		Size = Vector3.new(17.5, 9.5, 1.2),
-		Position = checklistPos + Vector3.new(0, 8.2, 0),
-		Color = Color3.fromRGB(22, 26, 44),
-		Material = Enum.Material.SmoothPlastic,
-		Parent = landmarksFolder,
-	})
-	checklistBoard:SetAttribute("StageId", id)
-	checklistBoard:SetAttribute("TotalEggs", totalEggsInStage)
-	checklistBoard:SetAttribute("TotalSquishies", totalSquishiesInStage)
-	checklistBoard:SetAttribute("NextRequiredSpeed", nextReqSpeed)
-
-	createSurfaceSign(
-		checklistBoard,
-		string.format(
-			"📋 STAGE %d: %s\n🥚 Boss Eggs: 0/%d  |  🧸 Squishies: 0/%d\n%s\n🔓 STAGE %d COMPLETION: 0%%",
-			id,
-			string.upper(levelInfo.Name),
-			totalEggsInStage,
-			totalSquishiesInStage,
-			nextReqText,
-			id
-		),
-		Color3.fromRGB(255, 245, 125),
-		Color3.fromRGB(18, 22, 38),
-		{ Enum.NormalId.Back, Enum.NormalId.Front },
-		180
-	)
 
 	-- Dedicated Right-Side Sector 1 Creator Store 3D Treadmill at X = +48, Z = zStart - 16 (Tier 1..8: x1 SPEED -> x50M SPEED!)
 	local tmTier = SlimeData.TreadmillTiers[id] or SlimeData.TreadmillTiers[1]
+	local tmCenter = Vector3.new(48, 0.35, zStart - 16)
 	local tmPlazaPad = buildGlowingNeonCircle(
 		landmarksFolder,
 		"TreadmillPlazaPad_" .. tostring(id),
-		Vector3.new(48, 0.35, zStart - 16),
+		tmCenter,
 		16.5,
 		tmTier.PrimaryColor,
 		tmTier.AccentColor
 	)
 	tmPlazaPad:SetAttribute("TreadmillStageId", id)
-	buildDinoJawTreadmill(landmarksFolder, Vector3.new(48, 0.35, zStart - 16), -1, 0, id)
+	buildDinoJawTreadmill(landmarksFolder, tmCenter, -1, 0, id)
+
+	-- 4-Sided VIP Barrier Wall Enclosure (Only VIP members can walk through!)
+	local vipEnclosure = Instance.new("Model")
+	vipEnclosure.Name = "VIPTreadmillEnclosure_" .. tostring(id)
+	vipEnclosure.Parent = landmarksFolder
+
+	local vipWalls = {
+		{ Name = "VIPTreadmillWall_West", Pos = tmCenter + Vector3.new(-10, 7.0, 0), Size = Vector3.new(1.0, 14.0, 20.0), SignFace = Enum.NormalId.Left },
+		{ Name = "VIPTreadmillWall_East", Pos = tmCenter + Vector3.new(10, 7.0, 0), Size = Vector3.new(1.0, 14.0, 20.0), SignFace = Enum.NormalId.Right },
+		{ Name = "VIPTreadmillWall_North", Pos = tmCenter + Vector3.new(0, 7.0, -10), Size = Vector3.new(20.0, 14.0, 1.0), SignFace = Enum.NormalId.Back },
+		{ Name = "VIPTreadmillWall_South", Pos = tmCenter + Vector3.new(0, 7.0, 10), Size = Vector3.new(20.0, 14.0, 1.0), SignFace = Enum.NormalId.Front },
+	}
+	for _, wDef in ipairs(vipWalls) do
+		local wall = makePart({
+			Name = wDef.Name,
+			Size = wDef.Size,
+			Position = wDef.Pos,
+			Color = Color3.fromRGB(255, 205, 45),
+			Material = Enum.Material.ForceField,
+			Transparency = 0.38,
+			CanCollide = true,
+			Parent = vipEnclosure,
+		})
+		wall:SetAttribute("VIPOnlyBarrier", true)
+		wall:SetAttribute("StageId", id)
+
+		if wDef.SignFace == Enum.NormalId.Left or wDef.SignFace == Enum.NormalId.Front then
+			createSurfaceSign(
+				wall,
+				string.format("👑 VIP ONLY TREADMILL [%s]\n🔒 VIP MEMBERS WALK THROUGH!\n⚡ +%s Speed / Sec!", tmTier.MultiplierLabel, SlimeData.FormatNumber(tmTier.SpeedPerSec)),
+				Color3.fromRGB(255, 235, 75),
+				Color3.fromRGB(36, 26, 12),
+				{ wDef.SignFace },
+				140
+			)
+		end
+	end
+
+	-- Roof cap so non-VIPs cannot jump over the walls
+	local vipRoof = makePart({
+		Name = "VIPTreadmillRoof",
+		Size = Vector3.new(21.0, 0.8, 21.0),
+		Position = tmCenter + Vector3.new(0, 14.2, 0),
+		Color = Color3.fromRGB(255, 205, 45),
+		Material = Enum.Material.ForceField,
+		Transparency = 0.45,
+		CanCollide = true,
+		Parent = vipEnclosure,
+	})
+	vipRoof:SetAttribute("VIPOnlyBarrier", true)
+	vipRoof:SetAttribute("StageId", id)
 
 	if id == 1 then
 		-- =========================================================================================
@@ -2810,24 +2885,6 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 		)
 		trampPad:SetAttribute("BounceImpulse", 92)
 
-		for hop = 1, 4 do
-			local t = hop / 4
-			local logH = 4 + 21 * t
-			makePart({
-				Name = "MeadowLogHop_" .. tostring(hop),
-				Shape = Enum.PartType.Cylinder,
-				Size = Vector3.new(logH, 9.5, 9.5),
-				CFrame = CFrame.new(
-					42 + (78 - 42) * t,
-					logH * 0.5,
-					-45 + (-65 - -45) * t
-				) * CFrame.Angles(0, 0, math.rad(90)),
-				Color = Color3.fromRGB(122, 82, 46),
-				Material = Enum.Material.WoodPlanks,
-				Parent = landmarksFolder,
-			})
-		end
-
 		-- High Aerial Rope Suspension Bridge connecting Treehouse Roof (78, 26, -65) to Windmill Balcony (-78, 28, -55)
 		for seg = 1, 12 do
 			local alpha = (seg - 0.5) / 12
@@ -2844,40 +2901,6 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 				Parent = landmarksFolder,
 			})
 		end
-
-		-- Secret Dark Stone Cave Entrance & `1710` Keypad at (26, 0, -72)
-		makePart({
-			Name = "SecretCaveOuterRock",
-			Size = Vector3.new(18, 14, 13),
-			Position = Vector3.new(26, 7.0, zStart - 72),
-			Color = Color3.fromRGB(108, 110, 118),
-			Material = Enum.Material.Slate,
-			Parent = landmarksFolder,
-		})
-		makePart({
-			Name = "SecretCaveDarkOpening",
-			Size = Vector3.new(7.5, 9.5, 1.2),
-			Position = Vector3.new(26, 4.75, zStart - 65.8),
-			Color = Color3.fromRGB(18, 20, 24),
-			Material = Enum.Material.Slate,
-			Parent = landmarksFolder,
-		})
-		local caveKeypad = makePart({
-			Name = "CaveCodeKeypad",
-			Size = Vector3.new(2.4, 3.6, 0.6),
-			Position = Vector3.new(19.8, 4.8, zStart - 65.5),
-			Color = Color3.fromRGB(52, 56, 64),
-			Material = Enum.Material.Metal,
-			Parent = landmarksFolder,
-		})
-		createSurfaceSign(
-			caveKeypad,
-			"1710\n[1][2][3]\n[4][5][6]\n[7][8][9]",
-			Color3.fromRGB(245, 245, 245),
-			Color3.fromRGB(32, 36, 46),
-			{ Enum.NormalId.Back, Enum.NormalId.Front },
-			55
-		)
 
 	elseif id == 2 then
 
@@ -2972,26 +2995,10 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 		buildLandmarkAccessLadderAndDeck(landmarksFolder, "Stage2_CarouselRide", Vector3.new(80, 14.5, -215), 12, 12, Color3.fromRGB(152, 92, 52), Enum.Material.WoodPlanks)
 		buildLandmarkAccessLadderAndDeck(landmarksFolder, "Stage2_GingerbreadChimney", Vector3.new(-82, 30.8, -210), 12, 12, Color3.fromRGB(152, 92, 52), Enum.Material.Brick)
 		buildLandmarkAccessLadderAndDeck(landmarksFolder, "Stage2_HighCocoaPlatform", Vector3.new(-75, 36.8, -255), 12, 12, Color3.fromRGB(108, 62, 38), Enum.Material.WoodPlanks)
+		buildLandmarkAccessLadderAndDeck(landmarksFolder, "Stage2_CandyArchwayCenter", Vector3.new(0, 23.5, -240), 16, 10, Color3.fromRGB(255, 105, 180), Enum.Material.SmoothPlastic)
 
 		-- Paywall: 💎 Skip Stage 2 Obby Pad
 		buildSkipObbyPaywallPad(landmarksFolder, "SkipObbyPad_2", Vector3.new(-38, 0.5, -192), Vector3.new(-75, 38.5, -255), 2)
-
-		-- Peppermint Knockback Spinner & Wafer Bridge Obby from (-45, 3, -195) -> (-82, 30, -210) -> (-75, 36, -255)
-		for step = 1, 6 do
-			local alpha = step / 6
-			makePart({
-				Name = "PeppermintWaferStep_" .. tostring(step),
-				Size = Vector3.new(10.0, 1.6, 7.5),
-				Position = Vector3.new(
-					-45 + (-82 - -45) * alpha,
-					3 + 26.4 * alpha,
-					-195 + (-210 - -195) * alpha
-				),
-				Color = if step % 2 == 0 then Color3.fromRGB(218, 182, 138) else Color3.fromRGB(208, 72, 98),
-				Material = Enum.Material.WoodPlanks,
-				Parent = landmarksFolder,
-			})
-		end
 		-- High Wafer Bridge from Gingerbread Attic (-82, 30, -210) to High Cocoa Platform (-75, 36, -255)
 		for wStep = 1, 5 do
 			local alpha = wStep / 5
@@ -3102,29 +3109,7 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 		-- Paywall: 💎 Skip Stage 3 Obby Pad
 		buildSkipObbyPaywallPad(landmarksFolder, "SkipObbyPad_3", Vector3.new(-38, 0.5, -352), Vector3.new(-84, 40.5, -390), 3)
 
-		-- Moving Surfboard, Rigging Ladder & Mast Balance Obby from (-44, 3, -355) -> (-84, 38, -390)
-		local surfColors = {
-			Color3.fromRGB(58, 168, 205),
-			Color3.fromRGB(218, 165, 58),
-			Color3.fromRGB(205, 84, 132),
-			Color3.fromRGB(78, 185, 118),
-			Color3.fromRGB(212, 112, 64),
-		}
-		for sIdx = 1, 5 do
-			local alpha = sIdx / 5
-			makePart({
-				Name = "SurfboardObbyStep_" .. tostring(sIdx),
-				Size = Vector3.new(8.0, 1.4, 12.0),
-				Position = Vector3.new(
-					-44 + (-80 - -44) * alpha,
-					3 + 16 * alpha,
-					-355 + (-390 - -355) * alpha
-				),
-				Color = surfColors[sIdx],
-				Material = Enum.Material.SmoothPlastic,
-				Parent = landmarksFolder,
-			})
-		end
+
 
 	elseif id == 4 then
 
@@ -3195,24 +3180,7 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 		-- Paywall: 💎 Skip Stage 4 Obby Pad
 		buildSkipObbyPaywallPad(landmarksFolder, "SkipObbyPad_4", Vector3.new(32, 0.5, -508), Vector3.new(82, 36.5, -575), 4)
 
-		-- Bamboo Pole-Jump, Truss Wall & Swinging Bridge Obby from (38, 4, -510) -> (82, 34, -575) -> (-82, 36, -585)
-		for pole = 1, 6 do
-			local alpha = pole / 6
-			local pHeight = 4 + 29.4 * alpha
-			makePart({
-				Name = "BambooPoleJump_" .. tostring(pole),
-				Shape = Enum.PartType.Cylinder,
-				Size = Vector3.new(pHeight, 8.5, 8.5),
-				CFrame = CFrame.new(
-					38 + (82 - 38) * alpha,
-					pHeight * 0.5,
-					-510 + (-575 - -510) * alpha
-				) * CFrame.Angles(0, 0, math.rad(90)),
-				Color = Color3.fromRGB(88, 164, 78),
-				Material = Enum.Material.WoodPlanks,
-				Parent = landmarksFolder,
-			})
-		end
+
 		-- High Bamboo Balance Beam from Canopy Treehouse (82, 34, -575) to Pagoda Bell Chamber (-82, 36, -585)
 		for seg = 1, 10 do
 			local alpha = (seg - 0.5) / 10
@@ -3298,28 +3266,7 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 		-- Paywall: 💎 Skip Stage 5 Obby Pad
 		buildSkipObbyPaywallPad(landmarksFolder, "SkipObbyPad_5", Vector3.new(38, 0.5, -672), Vector3.new(84, 46.5, -715), 5)
 
-		-- Timed Disappearing-Tile & Sweeper Spinner Tower Obby from (44, 4, -675) -> (84, 44, -715)
-		for step = 1, 8 do
-			local alpha = step / 8
-			local cPlat = makePart({
-				Name = "CyberTowerClimbStep_" .. tostring(step),
-				Size = Vector3.new(9.5, 1.6, 7.5),
-				Position = Vector3.new(
-					44 + (84 - 44) * alpha,
-					4 + 39.3 * alpha,
-					-675 + (-715 - -675) * alpha
-				),
-				Color = if step % 2 == 0 then Color3.fromRGB(68, 148, 195) else Color3.fromRGB(112, 74, 168),
-				Material = Enum.Material.Slate,
-				Parent = landmarksFolder,
-			})
-			if step % 2 == 0 then
-				cPlat:SetAttribute("CrystalPlatform", step)
-				cPlat:SetAttribute("BaseX", cPlat.Position.X)
-				cPlat:SetAttribute("BaseY", cPlat.Position.Y)
-				cPlat:SetAttribute("BaseZ", cPlat.Position.Z)
-			end
-		end
+
 
 	elseif id == 6 then
 
@@ -3401,23 +3348,7 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 		-- Paywall: 💎 Skip Stage 6 Obby Pad
 		buildSkipObbyPaywallPad(landmarksFolder, "SkipObbyPad_6", Vector3.new(-38, 0.5, -832), Vector3.new(-85, 50.5, -865), 6)
 
-		-- Trampoline Bounce-Chain & Moving Cloud Obby from (-45, 2, -835) -> Sky Bridge -> Ferris Wheel Top Cabin (-85, 48, -865)
-		for b = 1, 5 do
-			local alpha = b / 5
-			local cBounce = buildGlowingNeonCircle(
-				landmarksFolder,
-				"BouncePad",
-				Vector3.new(
-					-45 + (-85 - -45) * alpha,
-					2 + 44 * alpha,
-					-835 + (-865 - -835) * alpha
-				),
-				11.5,
-				Color3.fromRGB(165, 198, 228),
-				Color3.fromRGB(225, 198, 98)
-			)
-			cBounce:SetAttribute("BounceImpulse", 98)
-		end
+
 
 	elseif id == 7 then
 
@@ -3496,24 +3427,7 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 		-- Paywall: 💎 Skip Stage 7 Obby Pad
 		buildSkipObbyPaywallPad(landmarksFolder, "SkipObbyPad_7", Vector3.new(-38, 0.5, -988), Vector3.new(-86, 48.5, -1035), 7)
 
-		-- Sinking Basalt Pillars & Double Fire-Spinner Obby from (-44, 3, -990) -> (-86, 46, -1035) -> (86, 42, -1045)
-		for p = 1, 7 do
-			local alpha = p / 7
-			local pH = 3 + 42.3 * alpha
-			makePart({
-				Name = "BasaltObbyPillar_" .. tostring(p),
-				Shape = Enum.PartType.Cylinder,
-				Size = Vector3.new(pH, 10.0, 10.0),
-				CFrame = CFrame.new(
-					-44 + (-86 - -44) * alpha,
-					pH * 0.5,
-					-990 + (-1035 - -990) * alpha
-				) * CFrame.Angles(0, 0, math.rad(90)),
-				Color = Color3.fromRGB(64, 56, 62),
-				Material = Enum.Material.Basalt,
-				Parent = landmarksFolder,
-			})
-		end
+
 		-- High Basalt Chain Bridge from Volcano Crater Rim (-86, 46, -1035) to Obsidian Fortress Roof (86, 42, -1045)
 		for seg = 1, 10 do
 			local alpha = (seg - 0.5) / 10
@@ -3630,28 +3544,7 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 		-- Paywall: 💎 Skip Stage 8 Obby Pad
 		buildSkipObbyPaywallPad(landmarksFolder, "SkipObbyPad_8", Vector3.new(36, 0.5, -1152), Vector3.new(-84, 38.5, -1185), 8)
 
-		-- Moving Asteroid Gauntlet & UFO Climb Obby from (42, 4, -1155) -> (-84, 36, -1185) -> (0, 24, -1262)
-		for ast = 1, 8 do
-			local alpha = ast / 8
-			local astPart = makePart({
-				Name = "CosmicAsteroidStep_" .. tostring(ast),
-				Size = Vector3.new(10.0, 2.2, 9.5),
-				Position = Vector3.new(
-					42 + (-84 - 42) * alpha,
-					4 + 31.0 * alpha,
-					-1155 + (-1185 - -1155) * alpha
-				),
-				Color = Color3.fromRGB(58, 52, 74),
-				Material = Enum.Material.Basalt,
-				Parent = landmarksFolder,
-			})
-			if ast % 2 == 0 then
-				astPart:SetAttribute("CrystalPlatform", ast)
-				astPart:SetAttribute("BaseX", astPart.Position.X)
-				astPart:SetAttribute("BaseY", astPart.Position.Y)
-				astPart:SetAttribute("BaseZ", astPart.Position.Z)
-			end
-		end
+
 		-- High Citadel Walkway from UFO Mothership Deck (-84, 36, -1185) to Champion Throne Summit (0, 24, -1262)
 		for seg = 1, 7 do
 			local alpha = seg / 7
@@ -3698,9 +3591,9 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 		Size = Vector3.new(16, 1.4, 20),
 		Position = Vector3.new(0, 1.25, zStart - 24),
 		Color = Color3.fromRGB(255, 215, 65),
-		Material = Enum.Material.Glass,
-		Transparency = 0.72,
-		CanCollide = false,
+		Material = Enum.Material.SmoothPlastic,
+		Transparency = 0.12,
+		CanCollide = true,
 		Parent = obstaclesFolder,
 	})
 	centerBridge:SetAttribute("ShortcutBridgeLevel", id)
@@ -3848,14 +3741,60 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 		existingSpawn.CanCollide = false
 	end
 
-	local fountainModel = placePrebuiltAsset("HubFountain", 1, hubFolder, Vector3.new(0, 0, 162), 0, 14.0, true)
+	-- Procedural Grand Central Hub Fountain (Tiered Marble & Glowing Crystal Water Basin)
+	local fountainModel = Instance.new("Model")
+	fountainModel.Name = "GrandHubFountain"
+	fountainModel.Parent = hubFolder
+
+	makePart({
+		Name = "FountainLowerBasin",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(2.4, 28, 28),
+		CFrame = CFrame.new(0, 1.2, 162) * CFrame.Angles(0, 0, math.rad(90)),
+		Color = Color3.fromRGB(225, 230, 245),
+		Material = Enum.Material.Marble,
+		CanCollide = true,
+		Parent = fountainModel,
+	})
+	makePart({
+		Name = "FountainWaterLower",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(2.6, 25, 25),
+		CFrame = CFrame.new(0, 1.4, 162) * CFrame.Angles(0, 0, math.rad(90)),
+		Color = Color3.fromRGB(85, 205, 255),
+		Material = Enum.Material.Glass,
+		Transparency = 0.35,
+		CanCollide = true,
+		Parent = fountainModel,
+	})
+	makePart({
+		Name = "FountainMidSpire",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(8.5, 8, 8),
+		CFrame = CFrame.new(0, 5.5, 162) * CFrame.Angles(0, 0, math.rad(90)),
+		Color = Color3.fromRGB(215, 222, 238),
+		Material = Enum.Material.Marble,
+		CanCollide = true,
+		Parent = fountainModel,
+	})
+	makePart({
+		Name = "FountainCrystalSpire",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(6.0, 15, 15),
+		CFrame = CFrame.new(0, 8.5, 162) * CFrame.Angles(0, 0, math.rad(90)),
+		Color = Color3.fromRGB(115, 225, 255),
+		Material = Enum.Material.Neon,
+		CanCollide = true,
+		Parent = fountainModel,
+	})
+
 	local fountainTop = makePart({
 		Name = "FountainSignAnchor",
 		Size = Vector3.new(2, 2, 2),
 		Position = Vector3.new(0, 15, 162),
 		Transparency = 1,
 		CanCollide = false,
-		Parent = fountainModel or hubFolder,
+		Parent = fountainModel,
 	})
 	createBillboardText(
 		fountainTop,
@@ -4441,105 +4380,7 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 	-- Build Sector 1 (Checklist Board + Treadmill Plaza Pad + Shortcut Button) & Sector 2 Unique Landmarks/Obbies!
 	buildBiomeLandmarksAndInteractiveProps(parent, levelInfo, obstaclesFolder)
 
-	-- 2. Dedicated Left-Side Elevated Biome Sky Obby Gauntlet holding the Biome Obby Shining Squishies (#103-#117)!
-	local obbyTruss = Instance.new("TrussPart")
-	obbyTruss.Name = "ObbyStartTruss_" .. tostring(id)
-	obbyTruss.Anchored = true
-	obbyTruss.Size = Vector3.new(4.0, 12, 4.0)
-	obbyTruss.Position = Vector3.new(-83, 6.0, zStart - 35)
-	obbyTruss.Color = Color3.fromRGB(78, 118, 168)
-	obbyTruss.Material = Enum.Material.Metal
-	obbyTruss.Parent = parent
 
-	-- Paywall: 💎 Skip Stage Obby to Summit Pad
-	local summitPos = Vector3.new(-94 + 3 * 11, 9.0 + 3 * 2.8 + 2.5, zStart - 26 - 3 * 22)
-	local obbyPayPad = buildGlowingNeonCircle(
-		parent,
-		"SkipObbyPaywallPad_Stage_" .. tostring(id),
-		Vector3.new(-83, 0.25, zStart - 35),
-		8.0,
-		Color3.fromRGB(255, 215, 65),
-		Color3.fromRGB(185, 75, 255)
-	)
-	local obbyPayPrompt = createAttachmentPrompt(
-		obbyPayPad,
-		"SkipObbyPaywallPrompt",
-		string.format("💎 Skip Obby to Summit (VIP / Robux)"),
-		string.format("⚡ Instant Teleport to Stage %d Obby Summit!", id),
-		Vector3.new(0, 3.2, 0),
-		16
-	)
-	if obbyPayPrompt then
-		obbyPayPrompt:SetAttribute("StageId", id)
-		obbyPayPrompt:SetAttribute("SummitPos", summitPos)
-	end
-
-	-- Guaranteed Reachability: Super Bounce Pad right beside the start truss
-	local startBounce = makePart({
-		Name = "ObbyStartBouncePad",
-		Shape = Enum.PartType.Cylinder,
-		Size = Vector3.new(1.2, 10.0, 10.0),
-		CFrame = CFrame.new(-91, 0.5, zStart - 35) * CFrame.Angles(0, 0, math.rad(90)),
-		Color = Color3.fromRGB(85, 235, 115),
-		Material = Enum.Material.Neon,
-		Parent = parent,
-	})
-	startBounce:SetAttribute("SuperBouncePad", true)
-	startBounce:SetAttribute("BounceVelocityY", 75)
-
-	-- Wide 6-Step Entry Staircase ascending directly onto the Sky Obby!
-	for e = 1, 6 do
-		local alpha = (e - 1) / 5
-		makePart({
-			Name = string.format("ObbyEntryStep_%d", e),
-			Size = Vector3.new(9.5, 1.5, 3.2),
-			Position = Vector3.new(-83, 1.5 + alpha * 8.0, (zStart - 23) - alpha * 15.0),
-			Color = secColor:Lerp(Color3.fromRGB(240, 240, 245), 0.35),
-			Material = Enum.Material.Concrete,
-			Parent = parent,
-		})
-	end
-
-	for subIdx = 1, 3 do
-		local xPos = -94 + subIdx * 11
-		local yPos = 9.0 + subIdx * 2.8
-		local zPos = zStart - 26 - subIdx * 22
-
-		if subIdx > 1 then
-			local prevX = -94 + (subIdx - 1) * 11
-			local prevY = 9.0 + (subIdx - 1) * 2.8
-			local prevZ = zStart - 26 - (subIdx - 1) * 22
-			local midPos = Vector3.new((prevX + xPos) * 0.5, (prevY + yPos) * 0.5 - 0.4, (prevZ + zPos) * 0.5)
-			makePart({
-				Name = string.format("SkyObbyWhiteBeam_%d", subIdx),
-				Size = Vector3.new(6.5, 1.4, 15.0),
-				CFrame = CFrame.lookAt(midPos, Vector3.new(xPos, yPos - 0.3, zPos)),
-				Color = Color3.fromRGB(198, 204, 214),
-				Material = Enum.Material.Concrete,
-				Parent = parent,
-			})
-		end
-
-		for step = 1, 3 do
-			makePart({
-				Name = string.format("ThemedObbyStep_%d_%d", subIdx, step),
-				Size = Vector3.new(10.0, 1.6, 5.2),
-				Position = Vector3.new(xPos + (step - 2) * 3.8, (yPos * step) / 3.4, zPos + (4 - step) * 4.0),
-				Color = if step % 2 == 1 then Color3.fromRGB(72, 118, 185) else Color3.fromRGB(215, 220, 228),
-				Material = Enum.Material.Concrete,
-				Parent = parent,
-			})
-		end
-
-		buildGlowingNeonCircle(
-			parent,
-			"ObbyGoalPlatform_" .. tostring(subIdx),
-			Vector3.new(xPos, yPos - 0.3, zPos),
-			15.0,
-			secColor,
-			Color3.fromRGB(215, 195, 85)
-		)
-	end
 
 	-- 3. 4 Walk-Inside Biome Village Houses per Stage (32 Biome Houses total across Stages 1-8 at X = ±114, Z = zStart - 56 and Z = zStart - 94)!
 	local biomeHouseConfigs: { [number]: { { Side: number, Wall: Color3, Roof: Color3, Z: number } } } = {
@@ -4654,30 +4495,7 @@ local function buildBiomeArenaContent(parent: Instance, levelInfo: any, obstacle
 		secColor:Lerp(Color3.fromRGB(215, 218, 224), 0.35)
 	)
 
-	-- 6. Oversized 22-28 Stud Biome Scenery Framing the Expanded Arena (cleanly separated from Houses & Boss Nest!)
-	local scenerySpots = {
-		Vector3.new(-106, 0, zBoss - 8),
-		Vector3.new(106, 0, zBoss - 8),
-		Vector3.new(-96, 0, zEnd + 18),
-		Vector3.new(96, 0, zEnd + 18),
-		Vector3.new(-48, 0, zEnd + 16),
-		Vector3.new(48, 0, zEnd + 16),
-	}
 
-	for idx, sPos in ipairs(scenerySpots) do
-		local yaw = (idx * 53) % 360
-		if id == 1 or id == 4 then
-			placePrebuiltAsset("MeadowTrees", ((idx - 1) % 3) + 1, parent, sPos, yaw, 25.0, true)
-		elseif id == 2 then
-			placePrebuiltAsset("CandyProps", ((idx - 1) % 5) + 1, parent, sPos, yaw, 25.0, true)
-		elseif id == 3 then
-			placePrebuiltAsset("PalmTrees", ((idx - 1) % 3) + 1, parent, sPos, yaw, 26.0, true)
-		elseif id == 5 or id == 6 or id == 8 then
-			placePrebuiltAsset("Crystals", ((idx - 1) % 3) + 1, parent, sPos, yaw, 24.0, true)
-		else
-			placePrebuiltAsset("VolcanoRocks", ((idx - 1) % 3) + 1, parent, sPos, yaw, 25.0, true)
-		end
-	end
 end
 
 -- Builds an Open Sightline Castle Gate Archway between Biomes
@@ -4749,17 +4567,16 @@ local function buildLevelGate(parent: Instance, levelInfo: any, halfW: number): 
 		260
 	)
 
-	-- Full-width 440-stud x 42-stud ForceField barrier across the central road, Castle Walls, and Outer Side Mazes
-	-- so players cannot walk or jump around into a locked Stage before completing 100% of the previous Stage!
-	local barrierWidth = if id <= 1 then (doorWidth - 2) else 440
-	local barrierHeight = if id <= 1 then 18 else 42
+	-- Black Semi-Transparent Wall with picture cards and "how many left" checklist counters
+	local barrierWidth = 44
+	local barrierHeight = 18.5
 	local barrier = makePart({
 		Name = "GateBarrier_" .. tostring(id),
-		Size = Vector3.new(barrierWidth, barrierHeight, 2.2),
-		Position = Vector3.new(0, barrierHeight * 0.5, zPos),
-		Color = gateColor,
-		Material = Enum.Material.ForceField,
-		Transparency = if id <= 1 then 1.0 else 0.45,
+		Size = Vector3.new(barrierWidth, barrierHeight, 1.8),
+		Position = Vector3.new(0, 9.25, zPos),
+		Color = Color3.fromRGB(10, 12, 18),
+		Material = Enum.Material.SmoothPlastic,
+		Transparency = if id <= 1 then 1.0 else 0.28,
 		CanCollide = id > 1,
 		Parent = gateModel,
 	})
@@ -4769,6 +4586,126 @@ local function buildLevelGate(parent: Instance, levelInfo: any, halfW: number): 
 	barrier:SetAttribute("RequiredFenceLevel", id)
 
 	if id > 1 then
+		local prevStage = id - 1
+		local stageItems = {}
+		local eggsCount = 0
+		local squishiesCount = 0
+		for _, sData in ipairs(SlimeData.Slimes) do
+			if sData.Level == prevStage then
+				table.insert(stageItems, sData)
+				local numId = tonumber((sData :: any).UnlockOrder or (sData :: any).NumericId or sData.Id) or 1
+				if numId <= 35 then
+					eggsCount += 1
+				else
+					squishiesCount += 1
+				end
+			end
+		end
+
+		local prevLvlInfo = SlimeData.Levels[prevStage] or levelInfo
+		local prevStageName = string.upper(prevLvlInfo.Name or ("Stage " .. tostring(prevStage)))
+
+		for _, face in ipairs({ Enum.NormalId.Front, Enum.NormalId.Back }) do
+			local sg = Instance.new("SurfaceGui")
+			sg.Name = "StageGateWallChecklistGui_" .. face.Name
+			sg.Face = face
+			sg.SizingMode = Enum.SurfaceGuiSizingMode.FixedSize
+			sg.CanvasSize = Vector2.new(1280, 540)
+			sg.LightInfluence = 0
+			sg.AlwaysOnTop = false
+			sg.ResetOnSpawn = false
+			sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+			sg.Parent = barrier
+
+			local headerLbl = Instance.new("TextLabel")
+			headerLbl.Name = "WallHeaderLabel"
+			headerLbl.Size = UDim2.new(1, -40, 0, 48)
+			headerLbl.Position = UDim2.new(0, 20, 0, 12)
+			headerLbl.BackgroundTransparency = 1
+			headerLbl.Font = Enum.Font.FredokaOne
+			headerLbl.TextScaled = true
+			headerLbl.TextColor3 = Color3.fromRGB(255, 235, 75)
+			headerLbl.Text = string.format("📍 YOU ARE ON STAGE %d: %s  —  🔒 UNLOCK STAGE %d (0 / %d ITEMS)", prevStage, prevStageName, id, #stageItems)
+			headerLbl.Parent = sg
+
+			local summaryLbl = Instance.new("TextLabel")
+			summaryLbl.Name = "WallReqSummaryLabel"
+			summaryLbl.Size = UDim2.new(1, -40, 0, 32)
+			summaryLbl.Position = UDim2.new(0, 20, 0, 64)
+			summaryLbl.BackgroundTransparency = 1
+			summaryLbl.Font = Enum.Font.GothamBold
+			summaryLbl.TextScaled = true
+			summaryLbl.TextColor3 = Color3.fromRGB(215, 235, 255)
+			summaryLbl.Text = string.format("🥚 Brainrot Eggs: 0/%d   •   🧸 Squishies: 0/%d   •   🧱 Fence Level: Lv.1/Lv.%d   •   ⚡ Speed: 16/%s   •   💰 Gate Cash: $0/$%s", eggsCount, squishiesCount, id, SlimeData.FormatNumber(reqSpeed), SlimeData.FormatNumber(gateCost))
+			summaryLbl.Parent = sg
+
+			local grid = Instance.new("Frame")
+			grid.Name = "ItemsGridFrame"
+			grid.Size = UDim2.new(1, -40, 0, 415)
+			grid.Position = UDim2.new(0, 20, 0, 105)
+			grid.BackgroundTransparency = 1
+			grid.Parent = sg
+
+			local layout = Instance.new("UIGridLayout")
+			layout.CellSize = UDim2.new(0, 108, 0, 128)
+			layout.CellPadding = UDim2.new(0, 8, 0, 8)
+			layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+			layout.VerticalAlignment = Enum.VerticalAlignment.Top
+			layout.Parent = grid
+
+			for _, s in ipairs(stageItems) do
+				local numId = tonumber((s :: any).UnlockOrder or (s :: any).NumericId or s.Id) or 1
+				local card = Instance.new("Frame")
+				card.Name = "ItemCard_" .. tostring(s.Id)
+				card:SetAttribute("SlimeId", s.Id)
+				card.BackgroundColor3 = Color3.fromRGB(24, 28, 38)
+				card.BackgroundTransparency = 0.1
+				card.BorderSizePixel = 0
+				card.Parent = grid
+
+				local corner = Instance.new("UICorner")
+				corner.CornerRadius = UDim.new(0, 8)
+				corner.Parent = card
+
+				local stroke = Instance.new("UIStroke")
+				stroke.Name = "CardStroke"
+				stroke.Color = Color3.fromRGB(60, 68, 85)
+				stroke.Thickness = 2
+				stroke.Parent = card
+
+				local icon = Instance.new("ImageLabel")
+				icon.Name = "ItemIcon"
+				icon.Size = UDim2.fromScale(0.72, 0.52)
+				icon.Position = UDim2.fromScale(0.14, 0.05)
+				icon.BackgroundTransparency = 1
+				icon.Image = PrebuiltLoader.GetCuteSlimeIconId(numId)
+				icon.ImageColor3 = Color3.fromRGB(110, 110, 110)
+				icon.Parent = card
+
+				local nameLbl = Instance.new("TextLabel")
+				nameLbl.Name = "ItemNameLabel"
+				nameLbl.Size = UDim2.fromScale(0.95, 0.18)
+				nameLbl.Position = UDim2.fromScale(0.025, 0.58)
+				nameLbl.BackgroundTransparency = 1
+				nameLbl.Font = Enum.Font.GothamBold
+				nameLbl.TextScaled = true
+				nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+				nameLbl.Text = s.Name
+				nameLbl.Parent = card
+
+				local countBadge = Instance.new("TextLabel")
+				countBadge.Name = "ItemCountBadge"
+				countBadge.Size = UDim2.fromScale(0.95, 0.18)
+				countBadge.Position = UDim2.fromScale(0.025, 0.78)
+				countBadge.BackgroundTransparency = 1
+				countBadge.Font = Enum.Font.FredokaOne
+				countBadge.TextScaled = true
+				countBadge.TextColor3 = Color3.fromRGB(255, 85, 85)
+				countBadge.Text = "0 / 1 ❌ MISSING"
+				countBadge.Parent = card
+			end
+		end
+
 		createAttachmentPrompt(
 			barrier,
 			"UnlockStageGatePrompt",
@@ -4909,6 +4846,23 @@ function WorldBuilder.BuildWorld(): {
 		end
 	end
 
+	-- Add GateBarrier_9 for Stage 8 at Z = -1278 (Id = 9, prevStage = 8, RequiredSpeed = 12000, GateUnlockCost = 10_000_000) so Stage 8 players have their checklist wall!
+	local gate9Info = {
+		Id = 9,
+		Level = 9,
+		Name = "The Final Victory Vault",
+		ZStart = -1278,
+		ZEnd = -1280,
+		GateUnlockCost = 10_000_000,
+		RequiredCoins = 10_000_000,
+		RequiredSpeed = 12000,
+		FloorColor = Color3.fromRGB(38, 34, 52),
+		ThemeColor = Color3.fromRGB(255, 215, 0),
+		SecondaryColor = Color3.fromRGB(180, 140, 20),
+	}
+	local lastLvlFolder = levelsFolder:FindFirstChild("Level_8_", true) or (if #levelsFolder:GetChildren() > 0 then levelsFolder:GetChildren()[#levelsFolder:GetChildren()] else levelsFolder)
+	gateBarriers[9] = buildLevelGate(lastLvlFolder, gate9Info, halfW)
+
 	local lastLevel = SlimeData.Levels[#SlimeData.Levels]
 	makePart({
 		Name = "EndOfWorldWall",
@@ -4923,6 +4877,41 @@ function WorldBuilder.BuildWorld(): {
 	for _, desc in ipairs(worldFolder:GetDescendants()) do
 		if desc:IsA("BasePart") and desc.Material == Enum.Material.Neon then
 			desc.Material = Enum.Material.SmoothPlastic
+		end
+	end
+
+	-- Final safety loop across structural folders to enforce CanCollide = true and Anchored = true on all visible structural parts
+	local safetyFolders: { Instance? } = {
+		levelsFolder,
+		worldFolder:FindFirstChild("SafeZoneHub"),
+		worldFolder:FindFirstChild("PlayerPlots"),
+	}
+	for _, folder in ipairs(safetyFolders) do
+		if folder then
+			for _, desc in ipairs(folder:GetDescendants()) do
+				if desc:IsA("BasePart") then
+					desc.Anchored = true
+					local pName = desc.Name
+					local isGateBarrier = string.find(pName, "GateBarrier") ~= nil
+					local isSpawn = desc:IsA("SpawnLocation") or string.find(pName, "Spawn") ~= nil
+					local isHazardOrDrop = string.find(pName, "Hazard") ~= nil
+						or string.find(pName, "DropZone") ~= nil
+						or string.find(pName, "Laser") ~= nil
+						or string.find(pName, "MoatKill") ~= nil
+						or string.find(pName, "DamageZone") ~= nil
+						or string.find(pName, "Coin") ~= nil
+						or string.find(pName, "EggShell") ~= nil
+						or string.find(pName, "Pickup") ~= nil
+					local isVIPBarrier = desc:GetAttribute("VIPOnlyBarrier") == true
+					local isBelt = string.find(pName, "TreadmillBelt") ~= nil
+
+					if not isGateBarrier and not isSpawn and not isHazardOrDrop and not isVIPBarrier and not isBelt then
+						if desc.Transparency < 0.85 then
+							desc.CanCollide = true
+						end
+					end
+				end
+			end
 		end
 	end
 

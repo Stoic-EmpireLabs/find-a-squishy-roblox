@@ -1,5 +1,5 @@
 {
-  "name": "Find my Squishy and steal my egg (brainrot)",
+  "name": "Find my squishy and steal my egg (brainrot)",
   "servePort": 34872,
   "tree": {
     "$className": "DataModel",

@@ -21,6 +21,7 @@ Write-Output "Started local bundle server on http://127.0.0.1:18765/ ($($bundleB
 
 Stop-Process -Name "RobloxStudioBeta" -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 1
+$launchTime = (Get-Date).AddSeconds(-5)
 Remove-Item -Path "$root\Find My Squishy.rbxl.lock" -Force -ErrorAction SilentlyContinue
 
 $studioExe = Get-ChildItem "$env:LOCALAPPDATA\Roblox\Versions\*\RobloxStudioBeta.exe" | Sort-Object LastWriteTime -Descending | Select-Object -First 1 -ExpandProperty FullName
@@ -28,7 +29,7 @@ $studioProc = Start-Process -FilePath $studioExe -ArgumentList "-task EditPlace 
 Write-Output "Launched interactive Cloud EditPlace Studio PID: $($studioProc.Id)"
 
 $asyncTask = $listener.GetContextAsync()
-$deadline = (Get-Date).AddSeconds(45)
+$deadline = (Get-Date).AddSeconds(120)
 while ((Get-Date) -lt $deadline) {
     if ($asyncTask.IsCompleted) {
         $ctx = $asyncTask.Result
@@ -88,19 +89,20 @@ public class StudioWinHelper2 {
 
 $targetHwnd = [IntPtr]::Zero
 $targetTitle = ""
-$winDeadline = (Get-Date).AddSeconds(20)
+$winDeadline = (Get-Date).AddSeconds(40)
 while ((Get-Date) -lt $winDeadline) {
+    $studioPids = (Get-Process -Name "RobloxStudioBeta" -ErrorAction SilentlyContinue).Id
     $script:foundHwnd = [IntPtr]::Zero
     $script:foundTitle = ""
     [StudioWinHelper2]::EnumWindows({
         param($hWnd, $lParam)
         $pidOut = [uint32]0
         [StudioWinHelper2]::GetWindowThreadProcessId($hWnd, [ref]$pidOut) | Out-Null
-        if ($pidOut -eq $studioProc.Id -and [StudioWinHelper2]::IsWindowVisible($hWnd)) {
+        if ($studioPids -contains $pidOut -and [StudioWinHelper2]::IsWindowVisible($hWnd)) {
             $sb = New-Object System.Text.StringBuilder 256
             [StudioWinHelper2]::GetWindowText($hWnd, $sb, 256) | Out-Null
             $t = $sb.ToString()
-            if ($t.Length -gt 0 -and $t -notmatch "Splash") {
+            if ($t.Length -gt 0 -and $t -notmatch "Splash" -and $t -match "Roblox Studio") {
                 $script:foundHwnd = $hWnd
                 $script:foundTitle = $t
                 return $false
@@ -118,9 +120,9 @@ while ((Get-Date) -lt $winDeadline) {
 }
 
 # Wait until EditModeBuilder finishes SetWaypoint in the Studio log
-$logDeadline = (Get-Date).AddSeconds(60)
+$logDeadline = (Get-Date).AddSeconds(180)
 while ((Get-Date) -lt $logDeadline) {
-    $l = Get-ChildItem "$env:LOCALAPPDATA\Roblox\logs\*.log" | Where-Object { $_.Name -like "*Studio*" } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    $l = Get-ChildItem "$env:LOCALAPPDATA\Roblox\logs\*.log" | Where-Object { $_.Name -like "*Studio*" -and $_.LastWriteTime -ge $launchTime } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
     if ($l) {
         $txt = Get-Content $l.FullName -Raw -ErrorAction SilentlyContinue
         if ($txt -match "Marked DataModel dirty via ChangeHistoryService:SetWaypoint") {
@@ -128,18 +130,19 @@ while ((Get-Date) -lt $logDeadline) {
             break
         }
     }
-    Start-Sleep -Milliseconds 400
+    Start-Sleep -Milliseconds 500
 }
 
+$studioPids = (Get-Process -Name "RobloxStudioBeta" -ErrorAction SilentlyContinue).Id
 [StudioWinHelper2]::EnumWindows({
     param($hWnd, $lParam)
     $pidOut = [uint32]0
     [StudioWinHelper2]::GetWindowThreadProcessId($hWnd, [ref]$pidOut) | Out-Null
-    if ($pidOut -eq $studioProc.Id -and [StudioWinHelper2]::IsWindowVisible($hWnd)) {
+    if ($studioPids -contains $pidOut -and [StudioWinHelper2]::IsWindowVisible($hWnd)) {
         $sb = New-Object System.Text.StringBuilder 256
         [StudioWinHelper2]::GetWindowText($hWnd, $sb, 256) | Out-Null
         $t = $sb.ToString()
-        if ($t.Length -gt 0 -and $t -notmatch "Splash") {
+        if ($t.Length -gt 0 -and $t -notmatch "Splash" -and $t -match "Roblox Studio") {
             $script:targetHwnd = $hWnd
             $script:targetTitle = $t
             return $false

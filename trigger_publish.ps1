@@ -28,11 +28,23 @@ Start-Sleep -Milliseconds 350
 # Press Enter to publish
 Write-Output "Pressing Enter on Publish to Roblox..."
 Invoke-RestMethod -Uri "http://127.0.0.1:18766/?cmd=key&vk=13" | Out-Null
-Start-Sleep -Seconds 8
+Write-Output "Waiting for publish completion in log..."
+$pubDone = $false
+for ($p = 0; $p -lt 30; $p++) {
+    Start-Sleep -Seconds 1
+    $latestLog = Get-ChildItem "$env:LOCALAPPDATA\Roblox\logs\*Studio*.log" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if ($latestLog) {
+        $txt = Get-Content $latestLog.FullName -Raw -ErrorAction SilentlyContinue
+        if ($txt -match "Publish succeeded|Published new changes|Place published") {
+            $pubDone = $true
+            break
+        }
+    }
+}
 
 $latestLog = Get-ChildItem "$env:LOCALAPPDATA\Roblox\logs\*Studio*.log" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 Write-Output "Latest Studio Log: $($latestLog.FullName)"
-$matches = Select-String -Path $latestLog.FullName -Pattern "AUDIT|CloudPlaceSynced|Publish succeeded|publish notes"
+$matches = Select-String -Path $latestLog.FullName -Pattern "AUDIT|CloudPlaceSynced|Publish succeeded|publish notes|Published new changes"
 foreach ($m in $matches) {
     Write-Output $m.Line
 }

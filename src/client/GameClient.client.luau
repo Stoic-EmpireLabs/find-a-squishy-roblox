@@ -570,6 +570,7 @@ end)
 local cachedCosmeticRotors: { { Part: BasePart, Speed: number, Mode: string } } = {}
 local cachedCrystalPlatforms: { { Part: BasePart, Index: number, BaseX: number, BaseY: number, BaseZ: number } } = {}
 local cachedGateBarriers: { BasePart } = {}
+local cachedVIPOnlyBarriers: { BasePart } = {}
 local cachedChecklistBoards: { BasePart } = {}
 
 local function refreshWorldCaches()
@@ -580,6 +581,7 @@ local function refreshWorldCaches()
 	table.clear(cachedCosmeticRotors)
 	table.clear(cachedCrystalPlatforms)
 	table.clear(cachedGateBarriers)
+	table.clear(cachedVIPOnlyBarriers)
 	table.clear(cachedChecklistBoards)
 
 	local obsFolder = squishyWorld:FindFirstChild("DynamicObstacles")
@@ -624,17 +626,14 @@ local function refreshWorldCaches()
 		end
 	end
 
-	local levelsFolder = squishyWorld:FindFirstChild("Levels")
-	if levelsFolder then
-		for _, lvlFolder in ipairs(levelsFolder:GetChildren()) do
-			for _, desc in ipairs(lvlFolder:GetDescendants()) do
-				if desc:IsA("BasePart") then
-					if string.find(desc.Name, "^GateBarrier_") then
-						table.insert(cachedGateBarriers, desc)
-					elseif string.find(desc.Name, "^StageChecklistBoard_") then
-						table.insert(cachedChecklistBoards, desc)
-					end
-				end
+	for _, desc in ipairs(squishyWorld:GetDescendants()) do
+		if desc:IsA("BasePart") then
+			if string.find(desc.Name, "^GateBarrier_") then
+				table.insert(cachedGateBarriers, desc)
+			elseif desc:GetAttribute("VIPOnlyBarrier") == true then
+				table.insert(cachedVIPOnlyBarriers, desc)
+			elseif string.find(desc.Name, "^StageChecklistBoard_") then
+				table.insert(cachedChecklistBoards, desc)
 			end
 		end
 	end
@@ -713,6 +712,20 @@ RunService.RenderStepped:Connect(function(dt: number)
 	if onBelt and myHum and myChar then
 		local animSpd = (myChar:GetAttribute("TreadmillAnimSpeed") :: number?) or 1.45
 		startRun(myHum, animSpd)
+
+		-- Integrated Open-Source Roblox Treadmill running mechanics:
+		-- Auto-face treadmill console screen and actively run forward against moving conveyor belt!
+		local faceDir = (myChar:GetAttribute("TreadmillFaceDir") :: number?) or 1
+		local forwardDir = Vector3.new(-faceDir, 0, 0)
+		-- If player is not actively steering away or jumping, move forward into the belt
+		if not myHum.Jump and myHum.MoveDirection.Magnitude < 0.15 then
+			myHum:Move(forwardDir, false)
+			local hrp = myChar:FindFirstChild("HumanoidRootPart") :: BasePart?
+			if hrp then
+				local targetLook = CFrame.lookAt(hrp.Position, hrp.Position + forwardDir)
+				hrp.CFrame = hrp.CFrame:Lerp(targetLook, math.clamp(dt * 6.0, 0, 0.35))
+			end
+		end
 	else
 		stopRun()
 	end
@@ -1031,8 +1044,17 @@ local function applyStateToUI(state: any)
 		end
 	end
 
-	-- Update cached Biome Gate Barriers & Sector 1 Stage Checklist Boards locally based on all 4 Stage Gate Unlock Requirements!
-	if #cachedGateBarriers == 0 or #cachedChecklistBoards == 0 then
+	-- Toggle VIP Treadmill Enclosure Walls (Only VIP members can walk through!)
+	local isVIP = (state.OwnedPasses and state.OwnedPasses["VIP"]) == true
+	for _, vipWall in ipairs(cachedVIPOnlyBarriers) do
+		if vipWall and vipWall.Parent then
+			vipWall.CanCollide = not isVIP
+			vipWall.Transparency = if isVIP then 0.85 else 0.38
+		end
+	end
+
+	-- Update cached Biome Gate Barriers (GateBarrier_2..9) with live counting-up requirements & picture cards!
+	if #cachedGateBarriers == 0 then
 		refreshWorldCaches()
 	end
 	if state.UnlockedLevels then
@@ -1042,53 +1064,97 @@ local function applyStateToUI(state: any)
 				local lvlId = tostring(lvlNum)
 				local unlocked = state.UnlockedLevels[lvlId] == true
 				desc.CanCollide = not unlocked
-				desc.Transparency = if unlocked then 0.88 else 0.32
-				desc.Color = if unlocked then Color3.fromRGB(85, 255, 130) else Color3.fromRGB(255, 65, 85)
+				desc.Transparency = if unlocked then 0.85 else 0.28
+				desc.Color = if unlocked then Color3.fromRGB(15, 45, 25) else Color3.fromRGB(10, 12, 18)
+
 				local gatePrompt = desc:FindFirstChild("UnlockStageGatePrompt", true) :: ProximityPrompt?
 				if gatePrompt then
 					gatePrompt.Enabled = not unlocked
 				end
-				local levelInfo = SlimeData.Levels[lvlNum]
-				if levelInfo and lvlNum > 1 then
-					local status = SlimeData.GetStageGateStatus(
-						state.Found or {},
-						spd,
-						curFenceLvl,
-						state.UnlockedGates,
-						lvlNum
-					)
-					local gateText = if unlocked
-						then string.format(
-							"✅ STAGE %d: %s — UNLOCKED!\n🏆 Stage %d 100%% (%d/%d Brainrots • %d/%d Squishies) • 🧱 Fence Lv.%d • ⚡ %s Spd",
+				local skipPrompt = desc:FindFirstChild("SkipStageGatePaywallPrompt", true) :: ProximityPrompt?
+				if skipPrompt then
+					skipPrompt.Enabled = not unlocked
+				end
+
+				local prevStage = lvlNum - 1
+				if prevStage >= 1 then
+					local prevLvlInfo = SlimeData.Levels[prevStage]
+					local prevStageName = if prevLvlInfo then string.upper(prevLvlInfo.Name) else ("STAGE " .. tostring(prevStage))
+					local reqSpeed = (desc:GetAttribute("RequiredSpeed") :: number?) or (if SlimeData.Levels[lvlNum] then SlimeData.Levels[lvlNum].RequiredSpeed else 0)
+					local gateCost = (desc:GetAttribute("RequiredCoins") :: number?) or 0
+
+					local foundEggs, totalEggs, foundSquishies, totalSquishies = SlimeData.GetStageBreakdown(state.Found or {}, prevStage)
+					local totalStageItems = totalEggs + totalSquishies
+					local foundStageItems = foundEggs + foundSquishies
+
+					local headerText: string
+					if unlocked then
+						headerText = string.format("✅ STAGE %d UNLOCKED: %s  —  WAY TO STAGE %d IS OPEN!", prevStage, prevStageName, lvlNum)
+					else
+						headerText = string.format("📍 YOU ARE ON STAGE %d: %s  —  🔒 UNLOCK STAGE %d (%d / %d ITEMS FOUND)", prevStage, prevStageName, lvlNum, foundStageItems, totalStageItems)
+					end
+
+					local summaryText: string
+					if unlocked then
+						summaryText = string.format("🎉 GATE CLEARED! 🥚 Eggs: %d/%d • 🧸 Squishies: %d/%d • 🧱 Fence: Lv.%d • ⚡ Speed: %s", foundEggs, totalEggs, foundSquishies, totalSquishies, curFenceLvl, SlimeData.FormatNumber(spd))
+					else
+						summaryText = string.format(
+							"🥚 Brainrot Eggs: %d/%d   •   🧸 Squishies: %d/%d   •   🧱 Fence Level: Lv.%d/Lv.%d   •   ⚡ Speed: %s/%s   •   💰 Gate Cash: $%s/$%s",
+							foundEggs,
+							totalEggs,
+							foundSquishies,
+							totalSquishies,
+							curFenceLvl,
 							lvlNum,
-							string.upper(levelInfo.Name),
-							lvlNum - 1,
-							status.FoundBrainrots,
-							status.TotalBrainrots,
-							status.FoundSquishies,
-							status.TotalSquishies,
-							status.CurrentFenceLevel,
-							SlimeData.FormatNumber(status.RequiredSpeed)
-						)
-						else string.format(
-							"🔒 STAGE %d: %s\n🥚 Stage %d Brainrots: %d/%d  •  🧸 Squishies: %d/%d  •  🧱 Fence: Lv.%d/%d  •  ⚡ Spd: %s/%s  •  💰 $%s",
-							lvlNum,
-							string.upper(levelInfo.Name),
-							lvlNum - 1,
-							status.FoundBrainrots,
-							status.TotalBrainrots,
-							status.FoundSquishies,
-							status.TotalSquishies,
-							status.CurrentFenceLevel,
-							status.RequiredFenceLevel,
 							SlimeData.FormatNumber(spd),
-							SlimeData.FormatNumber(status.RequiredSpeed),
-							SlimeData.FormatNumber(status.GateCost)
+							SlimeData.FormatNumber(reqSpeed),
+							SlimeData.FormatNumber(cash),
+							SlimeData.FormatNumber(gateCost)
 						)
-					for _, gDesc in ipairs((desc.Parent or desc):GetDescendants()) do
-						if gDesc:IsA("TextLabel") then
-							gDesc.Text = gateText
-							gDesc.TextColor3 = if unlocked then Color3.fromRGB(115, 255, 150) else Color3.fromRGB(255, 240, 120)
+					end
+
+					-- Update SurfaceGuis on Front and Back faces of the Black Semi-Transparent Gate Wall
+					for _, faceName in ipairs({ "Front", "Back" }) do
+						local sg = desc:FindFirstChild("StageGateWallChecklistGui_" .. faceName) :: SurfaceGui?
+						if sg then
+							local hLbl = sg:FindFirstChild("WallHeaderLabel") :: TextLabel?
+							if hLbl then
+								hLbl.Text = headerText
+								hLbl.TextColor3 = if unlocked then Color3.fromRGB(115, 255, 140) else Color3.fromRGB(255, 235, 75)
+							end
+							local sLbl = sg:FindFirstChild("WallReqSummaryLabel") :: TextLabel?
+							if sLbl then
+								sLbl.Text = summaryText
+								sLbl.TextColor3 = if unlocked then Color3.fromRGB(180, 255, 200) else Color3.fromRGB(215, 235, 255)
+							end
+							local grid = sg:FindFirstChild("ItemsGridFrame")
+							if grid then
+								for _, card in ipairs(grid:GetChildren()) do
+									if card:IsA("Frame") and card:GetAttribute("SlimeId") ~= nil then
+										local sId = tostring(card:GetAttribute("SlimeId"))
+										local isFound = (state.Found and state.Found[sId] == true)
+										local countBadge = card:FindFirstChild("ItemCountBadge") :: TextLabel?
+										if countBadge then
+											if isFound then
+												countBadge.Text = "1 / 1 ✅ FOUND!"
+												countBadge.TextColor3 = Color3.fromRGB(85, 255, 125)
+											else
+												countBadge.Text = "0 / 1 ❌ MISSING"
+												countBadge.TextColor3 = Color3.fromRGB(255, 85, 85)
+											end
+										end
+										local stroke = card:FindFirstChild("CardStroke") :: UIStroke?
+										if stroke then
+											stroke.Color = if isFound then Color3.fromRGB(85, 255, 125) else Color3.fromRGB(60, 68, 85)
+										end
+										local icon = card:FindFirstChild("ItemIcon") :: ImageLabel?
+										if icon then
+											icon.ImageColor3 = if isFound then Color3.fromRGB(255, 255, 255) else Color3.fromRGB(120, 120, 120)
+										end
+										card.BackgroundColor3 = if isFound then Color3.fromRGB(18, 42, 28) else Color3.fromRGB(24, 28, 38)
+									end
+								end
+							end
 						end
 					end
 				end
@@ -2145,6 +2211,10 @@ local function getPlotStationPos(plotIdx: number, stationName: string): Vector3
 end
 
 local function getStageTreadmillPos(stageId: number, plotIdx: number): Vector3
+	local isVIP = (latestState and latestState.OwnedPasses and latestState.OwnedPasses["VIP"]) == true
+	if not isVIP then
+		return getPlotStationPos(plotIdx, "Treadmill")
+	end
 	local sw = Workspace:FindFirstChild("SquishyWorld")
 	local levelsFolder = sw and sw:FindFirstChild("Levels")
 	if levelsFolder then
@@ -2212,30 +2282,13 @@ local function computeCurrent6StepTarget(hrpPos: Vector3): (Vector3, string, str
 			Color3.fromRGB(95, 255, 145)
 	end
 
-	-- [STEP 5] Eggs currently hatching in Fenced Pen OR player is near their plot and can Grow/Level Up a Roaming Squishy or Claim Cash!
-	local growPos = getPlotStationPos(plotIdx, "GrowOrCash")
+	-- [STEP 5] Eggs currently hatching in Fenced Pen -> Point directly to Hatchery Pen
 	if hatchingCount > 0 then
-		return growPos,
+		local penPos = getPlotStationPos(plotIdx, "HatcheryPen")
+		return penPos,
 			"⏳ STEP 4/5: HATCHING IN FENCED PEN!",
 			"🧭 <b>FOLLOW 3D ARROW:</b> [Step 4/6] 🐣 Watch your Egg wobble & hatch into a Roaming Squishy inside the Fence!",
 			Color3.fromRGB(255, 225, 75)
-	end
-	if ranchCount > 0 and minUpgradeCost > 0 and coins >= minUpgradeCost and (hrpPos - growPos).Magnitude <= 95 then
-		return growPos,
-			string.format("⬆️ STEP 5: GROW SQUISHY ($%s)!", SlimeData.FormatNumber(minUpgradeCost)),
-			string.format("🧭 <b>FOLLOW 3D ARROW:</b> [Step 5/6] 🌱 Grow & Level Up your Roaming Squishy in the Fenced Pen ($%s)!", SlimeData.FormatNumber(minUpgradeCost)),
-			Color3.fromRGB(115, 255, 140)
-	end
-	if uncollectedCash >= math.max(250, (tonumber(latestState.PassiveIncomeRate) or 10) * 8) and (hrpPos - growPos).Magnitude <= 95 then
-		local sw = Workspace:FindFirstChild("SquishyWorld")
-		local plots = sw and sw:FindFirstChild("PlayerPlots")
-		local pModel = plots and plots:FindFirstChild("Plot_" .. tostring(plotIdx))
-		local cashPad = pModel and pModel:FindFirstChild("CollectCashPad") :: BasePart?
-		local padPos = if cashPad then (cashPad.Position + Vector3.new(0, 2.5, 0)) else growPos
-		return padPos,
-			string.format("💰 STEP 5: CLAIM $%s CASH!", SlimeData.FormatNumber(uncollectedCash)),
-			string.format("🧭 <b>FOLLOW 3D ARROW:</b> [Step 5/6] 💰 Step on your Plot's Green Cash Pad to claim $%s!", SlimeData.FormatNumber(uncollectedCash)),
-			Color3.fromRGB(85, 255, 125)
 	end
 
 	-- Determine current active Stage (1..8): first stage that is not 100% completed OR whose next Stage Gate is still locked!

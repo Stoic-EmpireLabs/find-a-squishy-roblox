@@ -19,6 +19,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local Debris = game:GetService("Debris")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local SlimeData = require(Shared:WaitForChild("SlimeData"))
@@ -227,12 +228,15 @@ local function serializeSession(player: Player)
 	for _, pedState in pairs(session.Pedestals) do
 		ranchSquishyCount += 1
 		local sData = SlimeData.ById[pedState.SquishyId]
-		if sData then
+		if sData and (pedState.Level or 1) < 15 then
 			local c = SlimeData.GetSquishyUpgradeCost(sData, pedState.Level)
 			if c < minSquishyUpgradeCost then
 				minSquishyUpgradeCost = c
 			end
 		end
+	end
+	if minSquishyUpgradeCost == math.huge then
+		minSquishyUpgradeCost = 0
 	end
 
 	return {
@@ -313,10 +317,11 @@ local function syncPlayer(player: Player)
 end
 
 -- AUTOMATIC CALIBRATED WALKSPEED SYSTEM:
--- 1. Starts every player at a natural 16 WalkSpeed (never "too fast to start off with"!).
--- 2. Scales smoothly along a gentle logarithmic curve up to 42 Max WalkSpeed on open roads.
--- 3. Automatically calibrates/damps WalkSpeed to 16-20 whenever on a Treadmill, inside a Base Plot,
---    climbing an Obby / Rainbow Staircase / Rooftop (Y > 4.5), or approaching an Egg/Squishy!
+-- REALISTIC 1-TO-1 WALKSPEED SYSTEM:
+-- 1. Exact 1-to-1 WalkSpeed for session.SpeedStat from 16 to 120 (e.g. 25 speed = 25 WalkSpeed, 60 speed = 60 WalkSpeed).
+-- 2. Above 120 Speed: smooth power curve up to 240 Max WalkSpeed without wall-clipping.
+-- 3. On Treadmill Belt: WalkSpeed = 18 so player runs forward against the moving conveyor belt!
+-- 4. Immediately restores full gameplay WalkSpeed the instant player steps off belt.
 local function applyPlayerSpeed(player: Player, inPrecisionZone: boolean?)
 	local session = sessions[player]
 	if not session then
@@ -331,9 +336,14 @@ local function applyPlayerSpeed(player: Player, inPrecisionZone: boolean?)
 		return
 	end
 
-	local rawStat = math.max(16, session.SpeedStat)
-	local physicalSpeed = 16 + math.log10(1 + math.max(0, rawStat - 16) / 60) * 6.5
-	physicalSpeed = math.clamp(physicalSpeed, 16, 42)
+	local rawStat = math.max(16, session.SpeedStat or 16)
+	local physicalSpeed: number
+	if rawStat <= 120 then
+		physicalSpeed = rawStat
+	else
+		physicalSpeed = 120 + math.pow(rawStat - 120, 0.55) * 2.5
+	end
+	physicalSpeed = math.clamp(physicalSpeed, 16, 240)
 
 	if session.CarriedEggId then
 		local eggData = SlimeData.ById[session.CarriedEggId]
@@ -348,11 +358,9 @@ local function applyPlayerSpeed(player: Player, inPrecisionZone: boolean?)
 		throttle = 0.50
 	end
 
-	local calibratedSpeed = math.clamp(physicalSpeed * throttle, 12, 42)
-	if char:GetAttribute("OnTreadmillBelt") then
-		calibratedSpeed = 16
-	elseif inPrecisionZone then
-		calibratedSpeed = math.min(calibratedSpeed, 20)
+	local calibratedSpeed = math.clamp(physicalSpeed * throttle, 12, 240)
+	if char:GetAttribute("OnTreadmillBelt") == true then
+		calibratedSpeed = 18
 	end
 	hum.WalkSpeed = calibratedSpeed
 end
@@ -1033,11 +1041,12 @@ local function updateGrowStandPrompt(player: Player)
 		if totalCount == 0 then
 			prompt.ActionText = "🌱 Grow & Level Up Brainrot (Lv.1 -> Lv.15)"
 			prompt.ObjectText = "Hatch a Brainrot Egg inside your Fence first!"
+			prompt.Enabled = false
 		else
-			prompt.ActionText = "🌱 All Active Brainrots at MAX Lv.15!"
+			prompt.ActionText = "🌟 All Active Brainrots at MAX Lv.15!"
 			prompt.ObjectText = "Hatch more Brainrots to level them up!"
+			prompt.Enabled = false
 		end
-		prompt.Enabled = true
 	end
 	if bbLbl then
 		if totalCount == 0 then
@@ -1788,7 +1797,15 @@ for plotIdx = 1, 4 do
 					end
 				end
 				if not chosenSlot then
-					GuardianAlertEvent:FireClient(player, "Hatch a Brainrot Egg in your Fenced Pen first so you have roaming Brainrots to level up!")
+					local count = 0
+					for _ in pairs(session.Pedestals) do
+						count += 1
+					end
+					if count > 0 then
+						GuardianAlertEvent:FireClient(player, "🌟 All active Brainrots in your pen are at MAX Lv.15!")
+					else
+						GuardianAlertEvent:FireClient(player, "Hatch a Brainrot Egg in your Fenced Pen first so you have roaming Brainrots to level up!")
+					end
 					return
 				end
 				local pedState = session.Pedestals[chosenSlot]
@@ -2134,6 +2151,26 @@ local function bindBiomeObstacles()
 						WorldPos = desc.Position,
 					})
 					syncPlayer(player)
+				end)
+			elseif desc:GetAttribute("VIPOnlyBarrier") == true then
+				desc.CanTouch = true
+				desc.Touched:Connect(function(hit: BasePart)
+					local char = hit.Parent
+					local player = if char then Players:GetPlayerFromCharacter(char) else nil
+					local session = if player then sessions[player] else nil
+					if not player or not session then
+						return
+					end
+					local isVIP = (session.OwnedPasses and session.OwnedPasses["VIP"]) == true
+					if not isVIP then
+						if not stageLockAlertCooldowns[player.UserId] or (os.clock() - stageLockAlertCooldowns[player.UserId]) >= 2.5 then
+							stageLockAlertCooldowns[player.UserId] = os.clock()
+							GuardianAlertEvent:FireClient(
+								player,
+								"👑 VIP ONLY Treadmill! Unlock VIP Gamepass in the Robux Shop or train at your Base Plot Treadmill!"
+							)
+						end
+					end
 				end)
 			elseif desc:GetAttribute("ShortcutButtonLevel") ~= nil then
 				-- Chapter 1 & 4 Timed Co-Op / Solo Bridge & Gate Button (Duration attribute + visual countdown + disables Hazard Moat)!
@@ -2513,17 +2550,19 @@ RunService.Heartbeat:Connect(function(rawDt: number)
 			end
 		end
 
-		-- Automatic Walk-Over Pickup Proximity Sweep (6.5 studs — Zero Button Holding across all 8 Stages!)
+		-- Automatic Walk-Over Pickup Proximity Sweep (<= 7.2 studs — 100% walk-over touch & proximity pickup!)
 		local nearPrecisionPickup = false
 		for eggId, eggModel in pairs(world.WorldEggs) do
-			local shell = (eggModel:FindFirstChild("EggShell") or eggModel.PrimaryPart) :: BasePart?
-			if shell and shell.Transparency < 0.95 then
-				local d = (hrp.Position - shell.Position).Magnitude
-				if d <= 14.0 and not session.FoundEggs[eggId] then
-					nearPrecisionPickup = true
-				end
-				if d <= 6.5 then
-					tryCollectOrStealWorldItem(player, eggId)
+			if not session.FoundEggs[eggId] and eggModel and eggModel.Parent then
+				local shell = (eggModel:FindFirstChild("EggShell") or eggModel.PrimaryPart) :: BasePart?
+				if shell then
+					local d = (hrp.Position - shell.Position).Magnitude
+					if d <= 14.0 then
+						nearPrecisionPickup = true
+					end
+					if d <= 7.2 then
+						tryCollectOrStealWorldItem(player, eggId)
+					end
 				end
 			end
 		end
@@ -2599,76 +2638,90 @@ RunService.Heartbeat:Connect(function(rawDt: number)
 			end
 		end
 
-		-- Auto-Calibrated Precision Zone Check:
-		-- Automatically damp WalkSpeed when on a Treadmill, inside your Plot, on elevated Obbies/Staircases (Y > 4.5), or approaching an uncollected Squishy/Egg!
-		local inPrecisionZone = (activeBelt ~= nil) or inPlotArea or (hrp.Position.Y > 4.5) or nearPrecisionPickup
-		applyPlayerSpeed(player, inPrecisionZone)
+		applyPlayerSpeed(player)
 
 		if activeBelt then
-			char:SetAttribute("OnTreadmillBelt", true)
-			local beltTier = (activeBelt:GetAttribute("TreadmillTier") :: number?) or 1
-			local effectiveTier = math.clamp(math.max(beltTier, session.SpeedLevel or 1), 1, #SlimeData.TreadmillTiers)
-			char:SetAttribute("TreadmillAnimSpeed", 1.3 + (effectiveTier * 0.12))
-
-			-- Hybrid AFK Mode: If player is standing hands-free on the treadmill (not pressing movement keys), gently keep them centered on the belt!
-			local hum = char:FindFirstChildOfClass("Humanoid")
-			if hum and hum.MoveDirection.Magnitude < 0.1 then
-				local targetBeltPos = Vector3.new(activeBelt.Position.X, hrp.Position.Y, activeBelt.Position.Z)
-				if (Vector3.new(hrp.Position.X, 0, hrp.Position.Z) - Vector3.new(targetBeltPos.X, 0, targetBeltPos.Z)).Magnitude > 1.2 then
-					hrp.CFrame = hrp.CFrame:Lerp(CFrame.new(targetBeltPos) * (hrp.CFrame - hrp.Position), math.clamp(dt * 4.0, 0, 0.25))
-				end
+			local isStageBelt = activeBelt:GetAttribute("IsStageTreadmill") == true or string.find(activeBelt.Name, "Stage") ~= nil
+			local isVIP = (session.OwnedPasses and session.OwnedPasses["VIP"]) == true
+			if isStageBelt and not isVIP then
+				local faceDir = (activeBelt:GetAttribute("FaceDir") :: number?) or 1
+				hrp.CFrame = hrp.CFrame + Vector3.new(faceDir * 18, 1, 0)
+				GuardianAlertEvent:FireClient(player, "👑 VIP ONLY Treadmill! Use your Base Plot Treadmill or unlock VIP in the Robux Shop!")
+				char:SetAttribute("OnTreadmillBelt", false)
+				applyPlayerSpeed(player)
+				continue
 			end
 
-			if now - session.LastTreadmillStep >= 0.50 then
+			char:SetAttribute("OnTreadmillBelt", true)
+			local beltFaceDir = (activeBelt:GetAttribute("FaceDir") :: number?) or 1
+			char:SetAttribute("TreadmillFaceDir", beltFaceDir)
+			local beltTier = (activeBelt:GetAttribute("TreadmillTier") :: number?) or (session.SpeedLevel or 1)
+			local effectiveTier = math.clamp(beltTier, 1, #SlimeData.TreadmillTiers)
+			char:SetAttribute("TreadmillAnimSpeed", 1.3 + (effectiveTier * 0.12))
+
+			-- Open-Source Roblox Treadmill Training Loop: 1.0s tick (or 0.5s Turbo)
+			local tickInterval = if session.TurboSpeedActive then 0.50 else 1.0
+			if now - session.LastTreadmillStep >= tickInterval then
 				session.LastTreadmillStep = now
-				if beltTier > (session.SpeedLevel or 1) then
-					if not stageLockAlertCooldowns[player.UserId] or (now - stageLockAlertCooldowns[player.UserId]) >= 5.0 then
-						stageLockAlertCooldowns[player.UserId] = now
-						GuardianAlertEvent:FireClient(
-							player,
-							string.format(
-								"⚡ Training on Stage Treadmill Tier %d [%s]! Upgrade your Base Plot Treadmill to keep this speed permanently!",
-								beltTier,
-								if SlimeData.TreadmillTiers[beltTier] then SlimeData.TreadmillTiers[beltTier].MultiplierLabel else "MAX"
-							)
-						)
-					end
-				end
+
 				local tierData = SlimeData.TreadmillTiers[effectiveTier] or SlimeData.TreadmillTiers[1]
-				local basePerSec = tierData.SpeedPerSec
+				local basePerSec = tierData.SpeedPerSec or 1
 				local passMult = if session.OwnedPasses and session.OwnedPasses["2xSpeed"] then 2 else 1
 				local vipMult = if session.OwnedPasses and session.OwnedPasses["VIP"] then 1.25 else 1
 				local rebirthMult = 1 + (session.Rebirths * 0.5)
-				-- Tick every 0.5s = 50% of per-second Speed gain
-				local gain = math.max(1, math.floor(basePerSec * 0.5 * rebirthMult * passMult * vipMult))
-				session.SpeedStat += gain
+				local turboMult = if session.TurboSpeedActive then 2 else 1
+				local speedGain = math.max(1, math.floor(basePerSec * passMult * vipMult * rebirthMult * turboMult))
 
-				-- Automatic Speed Mastery Upgrade check: if SpeedStat reaches RequiredSpeed of higher tiers
-				while (session.SpeedLevel or 1) < #SlimeData.TreadmillTiers do
-					local nextTier = (session.SpeedLevel or 1) + 1
-					local nextTierDef = SlimeData.TreadmillTiers[nextTier]
-					if nextTierDef and nextTierDef.RequiredSpeed and session.SpeedStat >= nextTierDef.RequiredSpeed then
-						session.SpeedLevel = nextTier
-						GuardianAlertEvent:FireClient(
-							player,
-							string.format("⚡ SPEED MASTERY UNLOCKED! Reached %s Speed -> Upgraded to Treadmill Tier %d [%s]!",
-								SlimeData.FormatNumber(nextTierDef.RequiredSpeed),
-								nextTier,
-								nextTierDef.MultiplierLabel
-							)
-						)
-					else
-						break
-					end
+				session.SpeedStat += speedGain
+				local speedVal = player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Speed") :: NumberValue?
+				if speedVal then
+					speedVal.Value = math.floor(session.SpeedStat)
 				end
 
-				applyPlayerSpeed(player, true)
+				applyPlayerSpeed(player)
 				updateSpeedUpgradePrompt(player)
 				syncPlayer(player)
+
+				-- Spawn 3D Floating +N ⚡ SPEED Billboard popup above player's head
+				local popup = Instance.new("BillboardGui")
+				popup.Name = "SpeedGainPopup"
+				popup.Adornee = char:FindFirstChild("Head") or hrp
+				popup.Size = UDim2.new(5.5, 0, 1.4, 0)
+				popup.StudsOffset = Vector3.new(0, 3.2, 0)
+				popup.AlwaysOnTop = true
+				popup.ResetOnSpawn = false
+				popup.Parent = char
+
+				local lbl = Instance.new("TextLabel")
+				lbl.Size = UDim2.fromScale(1, 1)
+				lbl.BackgroundTransparency = 1
+				lbl.Font = Enum.Font.FredokaOne
+				lbl.Text = string.format("+%s ⚡ SPEED", SlimeData.FormatNumber(speedGain))
+				lbl.TextColor3 = Color3.fromRGB(85, 235, 255)
+				lbl.TextStrokeColor3 = Color3.fromRGB(15, 25, 45)
+				lbl.TextStrokeTransparency = 0
+				lbl.TextScaled = true
+				lbl.Parent = popup
+
+				task.spawn(function()
+					local t0 = os.clock()
+					while os.clock() - t0 < 1.0 and popup.Parent do
+						local alpha = (os.clock() - t0) / 1.0
+						popup.StudsOffset = Vector3.new(0, 3.2 + alpha * 3.5, 0)
+						lbl.TextTransparency = alpha
+						lbl.TextStrokeTransparency = alpha
+						task.wait(0.04)
+					end
+					if popup.Parent then
+						popup:Destroy()
+					end
+				end)
+				Debris:AddItem(popup, 1.1)
 			end
 		else
 			if char:GetAttribute("OnTreadmillBelt") then
 				char:SetAttribute("OnTreadmillBelt", false)
+				applyPlayerSpeed(player)
 			end
 		end
 
