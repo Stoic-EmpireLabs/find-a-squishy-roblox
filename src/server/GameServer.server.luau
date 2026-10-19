@@ -323,9 +323,13 @@ local function syncPlayer(player: Player)
 	end
 end
 
--- CLEAN, CONTROLLABLE PLAYER MOVEMENT SPEED (No Treadmill / Million-Speed Inflation):
--- 22 normal, 15 when carrying a heavy Boss Egg, 10 when SloMo is ON.
-local function applyPlayerSpeed(player: Player, _inPrecisionZone: boolean?)
+-- AUTOMATIC CALIBRATED WALKSPEED SYSTEM:
+-- REALISTIC 1-TO-1 WALKSPEED SYSTEM:
+-- 1. Exact 1-to-1 WalkSpeed for session.SpeedStat from 16 to 120 (e.g. 25 speed = 25 WalkSpeed, 60 speed = 60 WalkSpeed).
+-- 2. Above 120 Speed: smooth power curve up to 240 Max WalkSpeed without wall-clipping.
+-- 3. On Treadmill Belt: WalkSpeed = 18 so player runs forward against the moving conveyor belt!
+-- 4. Immediately restores full gameplay WalkSpeed the instant player steps off belt.
+local function applyPlayerSpeed(player: Player, inPrecisionZone: boolean?)
 	local session = sessions[player]
 	if not session then
 		return
@@ -339,17 +343,34 @@ local function applyPlayerSpeed(player: Player, _inPrecisionZone: boolean?)
 		return
 	end
 
-	local walkSpeed = 22
-	if session.CarriedEggId or (session.CarriedEggIds and #session.CarriedEggIds > 0) then
-		walkSpeed = 15
+	local rawStat = math.max(16, session.SpeedStat or 16)
+	local physicalSpeed: number
+	if rawStat <= 120 then
+		physicalSpeed = rawStat
+	else
+		physicalSpeed = 120 + math.pow(rawStat - 120, 0.55) * 2.5
 	end
-	if session.SloMoActive or (session.SpeedThrottleRatio and session.SpeedThrottleRatio < 0.99) then
-		walkSpeed = 10
+	physicalSpeed = math.clamp(physicalSpeed, 16, 240)
+
+	if session.CarriedEggId then
+		local eggData = SlimeData.ById[session.CarriedEggId]
+		if eggData then
+			local weightPenalty = 1 + (eggData.Level * 0.03)
+			physicalSpeed = math.max(14, physicalSpeed / weightPenalty)
+		end
 	end
-	char:SetAttribute("OnTreadmillBelt", false)
-	hum.WalkSpeed = walkSpeed
+
+	local throttle = math.clamp(session.SpeedThrottleRatio or 1.0, 0.25, 1.0)
+	if session.SloMoActive and throttle >= 0.99 then
+		throttle = 0.50
+	end
+
+	local calibratedSpeed = math.clamp(physicalSpeed * throttle, 12, 240)
+	if char:GetAttribute("OnTreadmillBelt") == true then
+		calibratedSpeed = 18
+	end
+	hum.WalkSpeed = calibratedSpeed
 end
-local applyPlayerMovementSpeed = applyPlayerSpeed
 
 -- Controls visibility & prompt of a World Egg (instant disappearance when picked up!)
 local function setWorldEggTaken(eggId: string, isTaken: boolean, isDroppedInPlace: boolean?)
@@ -842,14 +863,155 @@ local function updatePlotOwnerSign(plotIdx: number, ownerName: string, incomeRat
 	end
 end
 
-local function updateSpeedUpgradePrompt(_player: Player)
-	return
+local function updateSpeedUpgradePrompt(player: Player)
+	local session = sessions[player]
+	if not session then
+		return
+	end
+	local plotModel = getPlotModel(session.PlotIndex)
+	if not plotModel then
+		return
+	end
+	local tierIdx = math.clamp(session.SpeedLevel, 1, #SlimeData.TreadmillTiers)
+	local tierData = SlimeData.TreadmillTiers[tierIdx] or SlimeData.TreadmillTiers[1]
+	local nextTierIdx = math.clamp(session.SpeedLevel + 1, 1, #SlimeData.TreadmillTiers)
+	local nextTierData = SlimeData.TreadmillTiers[nextTierIdx] or tierData
+
+	-- Sync Plot Treadmill belt attributes, overhead [x1 SPEED] -> [x4M SPEED] banner & scrolling Beam color!
+	local belt = plotModel:FindFirstChild("TreadmillBelt_" .. tostring(session.PlotIndex)) :: BasePart?
+	if belt then
+		belt:SetAttribute("TreadmillTier", tierIdx)
+		belt:SetAttribute("SpeedGainPerSec", tierData.SpeedPerSec)
+		belt:SetAttribute("SpeedPerSec", tierData.SpeedPerSec)
+		belt:SetAttribute("MultiplierLabel", tierData.MultiplierLabel)
+		belt:SetAttribute("MultiplierText", tierData.MultiplierText or tierData.MultiplierLabel)
+		local scrollBeam = (belt:FindFirstChild("TreadmillScrollBeam") or belt:FindFirstChild("BeltScrollBeam")) :: Beam?
+		if scrollBeam then
+			scrollBeam.Color = ColorSequence.new(tierData.PrimaryColor or tierData.Color, tierData.AccentColor or tierData.Color)
+			scrollBeam.Texture = tierData.BeamTexture or "rbxassetid://6798365555"
+			scrollBeam.TextureSpeed = tierData.TextureSpeed or (3.2 + (tierIdx * 0.45))
+		end
+		local auraEmitter = belt:FindFirstChild("TreadmillAuraEmitter") :: ParticleEmitter?
+		if auraEmitter then
+			auraEmitter.Color = ColorSequence.new(tierData.PrimaryColor or tierData.Color, tierData.AccentColor or tierData.Color)
+		end
+	end
+	local tmModel = plotModel:FindFirstChild("DinoTreadmill_" .. tostring(session.PlotIndex))
+	if tmModel then
+		local bb = tmModel:FindFirstChild("TreadmillBillboard", true) :: BillboardGui?
+		local bbLbl = bb and bb:FindFirstChildOfClass("TextLabel")
+		if bbLbl then
+			bbLbl.Text = string.format(
+				"⚡ BASE %s [%s]\n🏃 Run Here = +%s Speed / Sec!",
+				string.upper(tierData.Name),
+				tierData.MultiplierLabel,
+				SlimeData.FormatNumber(tierData.SpeedPerSec)
+			)
+			bbLbl.TextColor3 = tierData.AccentColor or tierData.Color
+		end
+		local screen = tmModel:FindFirstChild("TreadmillConsoleScreen", true) :: BasePart?
+		if screen then
+			local speedFormatted = SlimeData.FormatNumber(tierData.SpeedPerSec)
+			local consoleText = string.format("⚡ TIER %d TREADMILL\n[%s]\n+%s SPD / SEC", tierIdx, tierData.MultiplierText or tierData.MultiplierLabel, speedFormatted)
+			for _, sg in ipairs(screen:GetChildren()) do
+				if sg:IsA("SurfaceGui") then
+					local lbl = sg:FindFirstChild("SignLabel", true) :: TextLabel?
+					if lbl then
+						lbl.Text = consoleText
+						lbl.TextColor3 = tierData.AccentColor or tierData.Color
+					end
+				end
+			end
+		end
+
+		-- Dynamically swap the Prebuilt 3D Treadmill Visual Model to the newly unlocked tier!
+		local oldVisual = tmModel:FindFirstChild("PrebuiltTreadmillVisual")
+		if oldVisual then
+			oldVisual:Destroy()
+		end
+		local faceDir = if belt then (belt:GetAttribute("FaceDir") :: number?) or 1 else 1
+		local treadCenter = if belt then belt.Position - Vector3.new(0, 0.84, 0) else plotModel:GetPivot().Position
+		local newVisual = PrebuiltLoader.CloneNormalizedTemplate("Treadmills", tierIdx, 13.5, false)
+		if newVisual then
+			newVisual.Name = "PrebuiltTreadmillVisual"
+			newVisual:PivotTo(CFrame.new(treadCenter + Vector3.new(0, 0.4, 0)) * CFrame.Angles(0, if faceDir > 0 then 0 else math.pi, 0))
+			for _, d in ipairs(newVisual:GetDescendants()) do
+				if d:IsA("BasePart") then
+					d.CanCollide = false
+					d.CanTouch = false
+					d.CanQuery = false
+					d.Massless = true
+					d.Anchored = true
+					local nm = string.lower(d.Name)
+					if string.find(nm, "belt") or string.find(nm, "surface") or string.find(nm, "chassis") or string.find(nm, "floor") or string.find(nm, "plate") then
+						if math.abs(d.Position.Y - treadCenter.Y) < 1.8 then
+							d.Transparency = 1
+						end
+					end
+				end
+			end
+			newVisual.Parent = tmModel
+		end
+	end
+
+	local stand = plotModel:FindFirstChild("SpeedUpgradeStand")
+	local prompt = stand and stand:FindFirstChild("UpgradeSpeedPrompt", true) :: ProximityPrompt?
+	if prompt then
+		local cost = if nextTierData.UpgradeCost and nextTierData.UpgradeCost > 0
+			then nextTierData.UpgradeCost
+			else math.floor(650 * math.pow(3.5, math.max(0, session.SpeedLevel - 1)))
+		prompt.ActionText = string.format("Upgrade Treadmill -> [%s] (Tier %d)", nextTierData.MultiplierLabel, session.SpeedLevel + 1)
+		prompt.ObjectText = string.format(
+			"🏃 Cost: $%s (Now: +%s/s)",
+			SlimeData.FormatNumber(cost),
+			SlimeData.FormatNumber(tierData.SpeedPerSec)
+		)
+	end
 end
 
 local tryUnlockStageGate: (player: Player, targetLevel: number) -> ()
 
-local function upgradePlayerTreadmill(_player: Player)
-	return
+local function upgradePlayerTreadmill(player: Player)
+	local session = sessions[player]
+	if not session then
+		return
+	end
+	if session.SpeedLevel >= #SlimeData.TreadmillTiers then
+		GuardianAlertEvent:FireClient(player, "⚡ Your Treadmill is already at MAX Cosmic Tier 8!")
+		return
+	end
+	local nextTierIdx = session.SpeedLevel + 1
+	local nextTierData = SlimeData.TreadmillTiers[nextTierIdx] or SlimeData.TreadmillTiers[#SlimeData.TreadmillTiers]
+	local cost = if nextTierData and nextTierData.UpgradeCost and nextTierData.UpgradeCost > 0
+		then nextTierData.UpgradeCost
+		else math.floor(650 * math.pow(3.5, math.max(0, session.SpeedLevel - 1)))
+	if session.Coins < cost then
+		GuardianAlertEvent:FireClient(
+			player,
+			string.format("Need $%s Cash to purchase Treadmill Tier %d [%s]!", SlimeData.FormatNumber(cost), nextTierIdx, nextTierData.MultiplierLabel)
+		)
+		return
+	end
+	session.Coins -= cost
+	session.SpeedLevel += 1
+	local tierIdx = math.clamp(session.SpeedLevel, 1, #SlimeData.TreadmillTiers)
+	local tierData = SlimeData.TreadmillTiers[tierIdx] or SlimeData.TreadmillTiers[1]
+	local mult = if session.OwnedPasses and session.OwnedPasses["2xSpeed"] then 2 else 1
+	local instantBoost = tierData.SpeedPerSec * 2 * mult
+	session.SpeedStat += instantBoost
+	applyPlayerSpeed(player)
+	updateSpeedUpgradePrompt(player)
+	GuardianAlertEvent:FireClient(
+		player,
+		string.format(
+			"⚡ PURCHASED TREADMILL TIER %d [%s]! +%s Instant Speed & +%s/sec on Belt!",
+			session.SpeedLevel,
+			tierData.MultiplierLabel,
+			SlimeData.FormatNumber(instantBoost),
+			SlimeData.FormatNumber(tierData.SpeedPerSec * mult)
+		)
+	)
+	syncPlayer(player)
 end
 
 -- 5.1 Updates the 🌱 Grow / Level-Up Brainrot Stand (Lv. 1 -> Lv. 15) on the left of the fence entrance!
@@ -883,20 +1045,8 @@ local function updateGrowStandPrompt(player: Player)
 	end
 
 	local prompt = growStand:FindFirstChild("UpgradeSquishyPenPrompt", true) :: ProximityPrompt?
-	local growBoard = growStand:FindFirstChild("GrowStandBoard")
 	local bb = growStand:FindFirstChildOfClass("BillboardGui")
-	if bb then
-		bb:Destroy()
-	end
-
-	local function setGrowBoardText(txt: string)
-		local target = growBoard or growStand
-		for _, desc in ipairs(target:GetDescendants()) do
-			if desc:IsA("TextLabel") then
-				desc.Text = txt
-			end
-		end
-	end
+	local bbLbl = bb and bb:FindFirstChildOfClass("TextLabel")
 
 	if chosenSlot and session.Pedestals[chosenSlot] then
 		local pedState = session.Pedestals[chosenSlot]
@@ -909,16 +1059,16 @@ local function updateGrowStandPrompt(player: Player)
 				prompt.ObjectText = string.format("Boosts Income to $%s/s (Lv.%d/15)", SlimeData.FormatNumber(nextCps), pedState.Level)
 				prompt.Enabled = true
 			end
-			setGrowBoardText(
-				string.format(
-					"🌱 GROW %s\n[Lv.%d -> Lv.%d]\n💰 Cost: $%s  •  +$%s/s!",
+			if bbLbl then
+				bbLbl.Text = string.format(
+					"🌱 GROW %s (Lv.%d -> Lv.%d)\nCost: $%s -> $%s/s!",
 					string.upper(sData.Name),
 					pedState.Level,
 					nextLvl,
 					SlimeData.FormatNumber(lowestCost),
 					SlimeData.FormatNumber(nextCps)
 				)
-			)
+			end
 			return
 		end
 	end
@@ -934,10 +1084,12 @@ local function updateGrowStandPrompt(player: Player)
 			prompt.Enabled = false
 		end
 	end
-	if totalCount == 0 then
-		setGrowBoardText("🌱 GROW BRAINROT (Lv.1 -> Lv.15)\nHatch Eggs in Fence to Grow!\nBoosts $/sec & Giant Size!")
-	else
-		setGrowBoardText("🌟 ALL BRAINROTS MAX LV.15!\nHatch More Brainrots in Fence!")
+	if bbLbl then
+		if totalCount == 0 then
+			bbLbl.Text = "🌱 GROW / LEVEL UP BRAINROT (Lv.1 -> Lv.15)\nHatch Eggs in Fence to Grow!"
+		else
+			bbLbl.Text = "🌱 ALL ACTIVE BRAINROTS MAX LV.15!\nHatch More Brainrots to Level Up!"
+		end
 	end
 end
 
@@ -988,12 +1140,9 @@ local function updateFenceUpgradePrompt(player: Player)
 	local hatcheryPen = plotModel:FindFirstChild("HatcheryPen")
 	if hatcheryPen and curDef then
 		local fenceStand = hatcheryPen:FindFirstChild("UpgradeFenceStand")
-		local fenceBoard = fenceStand and fenceStand:FindFirstChild("FenceStandBoard")
 		local prompt = fenceStand and (fenceStand:FindFirstChild("UpgradeFencePrompt", true) or fenceStand:FindFirstChild("UpgradeFenceSizePrompt", true)) :: ProximityPrompt?
 		local bb = fenceStand and fenceStand:FindFirstChildOfClass("BillboardGui")
-		if bb then
-			bb:Destroy()
-		end
+		local bbLbl = bb and bb:FindFirstChildOfClass("TextLabel")
 		if prompt then
 			if nextDef and nextCost then
 				prompt.ActionText = string.format("🧱 Upgrade Fence -> Lv.%d (%d Max Brainrots)", fenceLvl + 1, nextDef.MaxBrainrots)
@@ -1005,27 +1154,11 @@ local function updateFenceUpgradePrompt(player: Player)
 				prompt.Enabled = false
 			end
 		end
-		local boardTarget = fenceBoard or fenceStand
-		if boardTarget then
-			local boardText = if nextDef and nextCost
-				then string.format(
-					"🧱 UPGRADE FENCE (Lv.%d -> Lv.%d)\n%s (%dx%d)\nFits %d Brainrots • 💰 $%s",
-					fenceLvl,
-					fenceLvl + 1,
-					nextDef.Label,
-					nextDef.Width,
-					nextDef.Depth,
-					nextDef.MaxBrainrots,
-					SlimeData.FormatNumber(nextCost)
-				)
-				else string.format(
-					"🧱 FENCE LEVEL %d (MAX 56x42)\nColossal Cosmic Enclosure\nFits All 35 Brainrots!",
-					fenceLvl
-				)
-			for _, desc in ipairs(boardTarget:GetDescendants()) do
-				if desc:IsA("TextLabel") then
-					desc.Text = boardText
-				end
+		if bbLbl then
+			if nextDef and nextCost then
+				bbLbl.Text = string.format("🧱 UPGRADE FENCE SIZE (Lv.%d -> Lv.%d)\nFits %d Brainrots (%dx%d) • $%s", fenceLvl, fenceLvl + 1, nextDef.MaxBrainrots, nextDef.Width, nextDef.Depth, SlimeData.FormatNumber(nextCost))
+			else
+				bbLbl.Text = string.format("🧱 FENCE LEVEL %d (MAX 56x42)\nFits All 35 Colossal Brainrots!", fenceLvl)
 			end
 		end
 	end
@@ -1487,10 +1620,11 @@ local function plantCarriedEggIntoHatcheryNest(player: Player, preferredIncIdx: 
 	return true
 end
 
--- Phase 6.1: Enforce All 3 Stage Gate Unlock Requirements:
+-- Phase 6.1: Enforce All 4 Stage Gate Unlock Requirements:
 -- 1. Hatch 100% of Stage (S-1) Brainrots (#1-#35)
 -- 2. Find 100% of Stage (S-1) Hidden Squishies (#36-#117)
--- 3. Upgrade Fence to Level S (Lv. 1 -> Lv. 8) + Pay Stage Gate Cash Cost
+-- 3. Upgrade Fence to Level S (Lv. 1 -> Lv. 8)
+-- 4. Reach Required Speed on the Treadmill + Pay Stage Gate Cash Cost
 tryUnlockStageGate = function(player: Player, targetLevel: number)
 	local session = sessions[player]
 	if not session or targetLevel <= 1 or targetLevel > #SlimeData.Levels then
@@ -1535,7 +1669,7 @@ tryUnlockStageGate = function(player: Player, targetLevel: number)
 		GuardianAlertEvent:FireClient(
 			player,
 			string.format(
-				"💰 All Stage %d Requirements Met! Need $%s Cash to open the %s Gate!",
+				"💰 All 4 Stage %d Requirements Met! Need $%s Cash to open the %s Gate!",
 				prevStage,
 				SlimeData.FormatNumber(status.GateCost),
 				stageName
@@ -1549,7 +1683,7 @@ tryUnlockStageGate = function(player: Player, targetLevel: number)
 	GuardianAlertEvent:FireClient(
 		player,
 		string.format(
-			"🔓 %s GATE UNLOCKED! (-$%s Cash) • All Stage %d Requirements Complete!",
+			"🔓 %s GATE UNLOCKED! (-$%s Cash) • All 4 Stage %d Requirements Complete!",
 			stageName,
 			SlimeData.FormatNumber(status.GateCost),
 			prevStage
@@ -1632,8 +1766,8 @@ for lvlId, gateBarrier in pairs(world.GateBarriers) do
 	end
 end
 
-BuySpeedUpgradeEvent.OnServerEvent:Connect(function(_player: Player)
-	return
+BuySpeedUpgradeEvent.OnServerEvent:Connect(function(player: Player)
+	upgradePlayerTreadmill(player)
 end)
 
 BuyFenceUpgradeEvent.OnServerEvent:Connect(function(player: Player)
@@ -2534,8 +2668,119 @@ RunService.Heartbeat:Connect(function(rawDt: number)
 			end
 		end
 
-		char:SetAttribute("OnTreadmillBelt", false)
+		-- Discover which Treadmill Belt (Plot 1-4 OR Stage 1-8) the player is currently running on:
+		local activeBelt: BasePart? = nil
+		if plotModel then
+			local pBelt = plotModel:FindFirstChild("TreadmillBelt_" .. tostring(session.PlotIndex)) :: BasePart?
+			if pBelt then
+				local rel = pBelt.CFrame:PointToObjectSpace(hrp.Position)
+				if math.abs(rel.X) <= (pBelt.Size.X * 0.5 + 2.4) and math.abs(rel.Z) <= (pBelt.Size.Z * 0.5 + 2.4) and math.abs(hrp.Position.Y - pBelt.Position.Y) <= 7.5 then
+					activeBelt = pBelt
+				end
+			end
+		end
+		if not activeBelt then
+			local levelsFolder = world.WorldFolder:FindFirstChild("Levels")
+			if levelsFolder then
+				for stageIdx = 1, 8 do
+					local sBelt = levelsFolder:FindFirstChild("TreadmillBelt_Stage_" .. tostring(stageIdx), true) :: BasePart?
+					if sBelt then
+						local rel = sBelt.CFrame:PointToObjectSpace(hrp.Position)
+						if math.abs(rel.X) <= (sBelt.Size.X * 0.5 + 2.4) and math.abs(rel.Z) <= (sBelt.Size.Z * 0.5 + 2.4) and math.abs(hrp.Position.Y - sBelt.Position.Y) <= 7.5 then
+							activeBelt = sBelt
+							break
+						end
+					end
+				end
+			end
+		end
+
 		applyPlayerSpeed(player)
+
+		if activeBelt then
+			local isStageBelt = activeBelt:GetAttribute("IsStageTreadmill") == true or string.find(activeBelt.Name, "Stage") ~= nil
+			local isVIP = (session.OwnedPasses and session.OwnedPasses["VIP"]) == true
+			if isStageBelt and not isVIP then
+				local faceDir = (activeBelt:GetAttribute("FaceDir") :: number?) or 1
+				hrp.CFrame = hrp.CFrame + Vector3.new(faceDir * 18, 1, 0)
+				GuardianAlertEvent:FireClient(player, "👑 VIP ONLY Treadmill! Use your Base Plot Treadmill or unlock VIP in the Robux Shop!")
+				char:SetAttribute("OnTreadmillBelt", false)
+				applyPlayerSpeed(player)
+				continue
+			end
+
+			char:SetAttribute("OnTreadmillBelt", true)
+			local beltFaceDir = (activeBelt:GetAttribute("FaceDir") :: number?) or 1
+			char:SetAttribute("TreadmillFaceDir", beltFaceDir)
+			local beltTier = (activeBelt:GetAttribute("TreadmillTier") :: number?) or (session.SpeedLevel or 1)
+			local effectiveTier = math.clamp(beltTier, 1, #SlimeData.TreadmillTiers)
+			char:SetAttribute("TreadmillAnimSpeed", 1.3 + (effectiveTier * 0.12))
+
+			-- Open-Source Roblox Treadmill Training Loop: 1.0s tick (or 0.5s Turbo)
+			local tickInterval = if session.TurboSpeedActive then 0.50 else 1.0
+			if now - session.LastTreadmillStep >= tickInterval then
+				session.LastTreadmillStep = now
+
+				local tierData = SlimeData.TreadmillTiers[effectiveTier] or SlimeData.TreadmillTiers[1]
+				local basePerSec = tierData.SpeedPerSec or 1
+				local passMult = if session.OwnedPasses and session.OwnedPasses["2xSpeed"] then 2 else 1
+				local vipMult = if session.OwnedPasses and session.OwnedPasses["VIP"] then 1.25 else 1
+				local rebirthMult = 1 + (session.Rebirths * 0.5)
+				local turboMult = if session.TurboSpeedActive then 2 else 1
+				local speedGain = math.max(1, math.floor(basePerSec * passMult * vipMult * rebirthMult * turboMult))
+
+				session.SpeedStat += speedGain
+				local speedVal = player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Speed") :: NumberValue?
+				if speedVal then
+					speedVal.Value = math.floor(session.SpeedStat)
+				end
+
+				applyPlayerSpeed(player)
+				updateSpeedUpgradePrompt(player)
+				syncPlayer(player)
+
+				-- Spawn 3D Floating +N ⚡ SPEED Billboard popup above player's head
+				local popup = Instance.new("BillboardGui")
+				popup.Name = "SpeedGainPopup"
+				popup.Adornee = char:FindFirstChild("Head") or hrp
+				popup.Size = UDim2.new(5.5, 0, 1.4, 0)
+				popup.StudsOffset = Vector3.new(0, 3.2, 0)
+				popup.AlwaysOnTop = true
+				popup.ResetOnSpawn = false
+				popup.Parent = char
+
+				local lbl = Instance.new("TextLabel")
+				lbl.Size = UDim2.fromScale(1, 1)
+				lbl.BackgroundTransparency = 1
+				lbl.Font = Enum.Font.FredokaOne
+				lbl.Text = string.format("+%s ⚡ SPEED", SlimeData.FormatNumber(speedGain))
+				lbl.TextColor3 = Color3.fromRGB(85, 235, 255)
+				lbl.TextStrokeColor3 = Color3.fromRGB(15, 25, 45)
+				lbl.TextStrokeTransparency = 0
+				lbl.TextScaled = true
+				lbl.Parent = popup
+
+				task.spawn(function()
+					local t0 = os.clock()
+					while os.clock() - t0 < 1.0 and popup.Parent do
+						local alpha = (os.clock() - t0) / 1.0
+						popup.StudsOffset = Vector3.new(0, 3.2 + alpha * 3.5, 0)
+						lbl.TextTransparency = alpha
+						lbl.TextStrokeTransparency = alpha
+						task.wait(0.04)
+					end
+					if popup.Parent then
+						popup:Destroy()
+					end
+				end)
+				Debris:AddItem(popup, 1.1)
+			end
+		else
+			if char:GetAttribute("OnTreadmillBelt") then
+				char:SetAttribute("OnTreadmillBelt", false)
+				applyPlayerSpeed(player)
+			end
+		end
 
 		-- Check if stepping on Green Cash Collector Pad, Walking into Fenced Hatchery Pen, and Roaming Squishies AI!
 		if plotModel then
@@ -2630,8 +2875,32 @@ task.spawn(function()
 end)
 
 -- Remote Events from HUD
-TreadmillTapBoostEvent.OnServerEvent:Connect(function(_player: Player)
-	return
+local lastTreadmillTapByPlayer: { [Player]: number } = {}
+TreadmillTapBoostEvent.OnServerEvent:Connect(function(player: Player)
+	local session = sessions[player]
+	if not session then
+		return
+	end
+	local char = player.Character
+	if not char or char:GetAttribute("OnTreadmillBelt") ~= true then
+		return
+	end
+	local now = os.clock()
+	if now - (lastTreadmillTapByPlayer[player] or 0) < 0.22 then
+		return
+	end
+	lastTreadmillTapByPlayer[player] = now
+
+	local tierIdx = math.clamp(session.SpeedLevel or 1, 1, #SlimeData.TreadmillTiers)
+	local tierData = SlimeData.TreadmillTiers[tierIdx] or SlimeData.TreadmillTiers[1]
+	local passMult = if session.OwnedPasses and session.OwnedPasses["2xSpeed"] then 2 else 1
+	local rebirthMult = 1 + (session.Rebirths * 0.5)
+	local tapGain = math.max(1, math.floor((tierData.SpeedPerSec or 1) * 0.45 * rebirthMult * passMult))
+	session.SpeedStat += tapGain
+	char:SetAttribute("TreadmillAnimSpeed", 2.35)
+	applyPlayerSpeed(player, true)
+	updateSpeedUpgradePrompt(player)
+	syncPlayer(player)
 end)
 
 RebirthRequestEvent.OnServerEvent:Connect(function(player: Player)
