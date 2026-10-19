@@ -295,48 +295,66 @@ CreatorStoreGameplayKits.KITS = {
 		Category = "UI",
 	},
 
-	-- 2. Creator Store Treadmill & Speed Simulator Kits
+	-- 2. Creator Store Treadmill & Speed Simulator Kits (Open-Source Upgrade System)
+	FullTreadmillSystem = {
+		AssetId = 138368737963225,
+		Name = "FullTreadmillSystem",
+		Description = "Full Treadmill System Template",
+		Category = "TreadmillUpgradeSystem",
+	},
+	TreadmillSystemModels = {
+		AssetId = 122236941702272,
+		Name = "TreadmillSystemModels",
+		Description = "Treadmill System Models",
+		Category = "TreadmillUpgradeSystem",
+	},
+	WorkingTreadmills = {
+		AssetId = 91681842696683,
+		Name = "WorkingTreadmills",
+		Description = "Working Treadmills Open-Source Model & Scripts",
+		Category = "TreadmillUpgradeSystem",
+	},
 	TreadmillsBySystem = {
 		AssetId = 135041830463035,
 		Name = "TreadmillsBySystem",
 		Description = "Treadmills by System",
-		Category = "Treadmills",
+		Category = "TreadmillUpgradeSystem",
 	},
 	TreadmillEppobot = {
 		AssetId = 916218035,
 		Name = "TreadmillEppobot",
 		Description = "Treadmill",
-		Category = "Treadmills",
+		Category = "TreadmillUpgradeSystem",
 	},
 	TreadmillGibran = {
 		AssetId = 85105314510723,
 		Name = "TreadmillGibran",
 		Description = "Treadmill by fasszk Xgibean",
-		Category = "Treadmills",
+		Category = "TreadmillUpgradeSystem",
 	},
 	SpeedSimulatorKit = {
 		AssetId = 2892634734,
 		Name = "SpeedSimulatorKit",
 		Description = "Speed Simulator Kit",
-		Category = "Speed",
+		Category = "TreadmillUpgradeSystem",
 	},
 	Plus1SpeedKit = {
 		AssetId = 90082960989487,
 		Name = "Plus1SpeedKit",
 		Description = "+1 Speed V1 Kit",
-		Category = "Speed",
+		Category = "TreadmillUpgradeSystem",
 	},
 	SpeedPads = {
 		AssetId = 3069966915,
 		Name = "SpeedPads",
 		Description = "speed pads",
-		Category = "Speed",
+		Category = "TreadmillUpgradeSystem",
 	},
 	SpeedSimulatorStats = {
 		AssetId = 6513517021,
 		Name = "SpeedSimulatorStats",
 		Description = "Speed Simulator leaderstats + Speed Script",
-		Category = "Speed",
+		Category = "TreadmillUpgradeSystem",
 	},
 
 	-- 3. Creator Store Obby Kits
@@ -460,6 +478,14 @@ function CreatorStoreGameplayKits.EnsureGameplayKits(customObjectFetcher: ((numb
 		kitsFolder = f
 	end
 
+	local treadmillSystemFolder = modelsFolder:FindFirstChild("TreadmillUpgradeSystem")
+	if not treadmillSystemFolder then
+		local f = Instance.new("Folder")
+		f.Name = "TreadmillUpgradeSystem"
+		f.Parent = modelsFolder
+		treadmillSystemFolder = f
+	end
+
 	local totalIngested = 0
 
 	for kitKey, kitInfo in pairs(CreatorStoreGameplayKits.KITS) do
@@ -487,6 +513,34 @@ function CreatorStoreGameplayKits.EnsureGameplayKits(customObjectFetcher: ((numb
 						desc.CanCollide = false
 						desc.CanTouch = false
 						desc.CanQuery = false
+					end
+				end
+
+				local isTreadmillKit = (kitInfo.Category == "TreadmillUpgradeSystem" or kitInfo.Category == "Treadmills" or kitInfo.Category == "Speed")
+				if isTreadmillKit then
+					local scriptCount = 0
+					local partCount = 0
+					for _, desc in ipairs(container:GetDescendants()) do
+						if desc:IsA("BaseScript") then
+							scriptCount += 1
+							local okSrc, src = pcall(function() return (desc :: any).Source end)
+							local lineCount = if okSrc and type(src) == "string" then #string.split(src, "\n") else 0
+							local byteCount = if okSrc and type(src) == "string" then #src else 0
+							desc.Disabled = true
+							print(string.format("[TREADMILL OPEN-SOURCE SCRIPT] Preserved %s '%s' (Lines=%d, Bytes=%d, Disabled=true) in kit %s", desc.ClassName, desc.Name, lineCount, byteCount, kitInfo.Name))
+						elseif desc:IsA("ModuleScript") then
+							scriptCount += 1
+							local okSrc, src = pcall(function() return (desc :: any).Source end)
+							local lineCount = if okSrc and type(src) == "string" then #string.split(src, "\n") else 0
+							print(string.format("[TREADMILL OPEN-SOURCE MODULE] Preserved ModuleScript '%s' (Lines=%d) in kit %s", desc.Name, lineCount, kitInfo.Name))
+						elseif desc:IsA("BasePart") then
+							partCount += 1
+						end
+					end
+					if treadmillSystemFolder and not treadmillSystemFolder:FindFirstChild(kitInfo.Name) then
+						local archiveCopy = container:Clone()
+						archiveCopy.Parent = treadmillSystemFolder
+						print(string.format("[TreadmillUpgradeSystem Archive] Ingested open-source treadmill kit '%s' (Parts=%d, Scripts=%d)", kitInfo.Name, partCount, scriptCount))
 					end
 				end
 
@@ -779,6 +833,93 @@ function CreatorStoreGameplayKits.MountPremiumHealthBar(playerGui: PlayerGui): I
 
 	return nil
 end
+
+-- ============================================================================
+-- OPEN-SOURCE TREADMILL UPGRADE SYSTEM ASSET REFERENCE
+-- Maps all 10 verified Creator Store open-source kits to their gameplay roles:
+--   * 8 Multi-Tier 3D Treadmill Models (Tiers 1 to 8)
+--   * Dedicated Speed Simulators, Speed Pads & Leaderstats scripts
+-- ============================================================================
+CreatorStoreGameplayKits.OPEN_SOURCE_TREADMILL_UPGRADE_SYSTEM = {
+	Tiers = {
+		[1] = {
+			Tier = 1,
+			AssetId = 135041830463035,
+			Name = "Starter Treadmill",
+			KitKey = "TreadmillsBySystem",
+			Multiplier = "x1 SPEED",
+			SpeedPerSec = 1,
+			Description = "Creator Store Gym Treadmill Base System",
+		},
+		[2] = {
+			Tier = 2,
+			AssetId = 85105314510723,
+			Name = "Candy Treadmill",
+			KitKey = "TreadmillGibran",
+			Multiplier = "x3 SPEED",
+			SpeedPerSec = 3,
+			Description = "Treadmill by fasszk Xgibean",
+		},
+		[3] = {
+			Tier = 3,
+			AssetId = 916218035,
+			Name = "Gold Treadmill",
+			KitKey = "TreadmillEppobot",
+			Multiplier = "x7 SPEED",
+			SpeedPerSec = 7,
+			Description = "Treadmill by Eppobot",
+		},
+		[4] = {
+			Tier = 4,
+			AssetId = 90082960989487,
+			Name = "Jade Bamboo Treadmill",
+			KitKey = "Plus1SpeedKit",
+			Multiplier = "x15 SPEED",
+			SpeedPerSec = 15,
+			Description = "+1 Speed V1 Kit",
+		},
+		[5] = {
+			Tier = 5,
+			AssetId = 2892634734,
+			Name = "Diamond Treadmill",
+			KitKey = "SpeedSimulatorKit",
+			Multiplier = "x35 SPEED",
+			SpeedPerSec = 35,
+			Description = "Speed Simulator Kit",
+		},
+		[6] = {
+			Tier = 6,
+			AssetId = 138368737963225,
+			Name = "Cloud Sky Treadmill",
+			KitKey = "FullTreadmillSystem",
+			Multiplier = "x80 SPEED",
+			SpeedPerSec = 80,
+			Description = "Full Treadmill System Template",
+		},
+		[7] = {
+			Tier = 7,
+			AssetId = 122236941702272,
+			Name = "Magma Inferno Treadmill",
+			KitKey = "TreadmillSystemModels",
+			Multiplier = "x200 SPEED",
+			SpeedPerSec = 200,
+			Description = "Treadmill System Models Pack",
+		},
+		[8] = {
+			Tier = 8,
+			AssetId = 91681842696683,
+			Name = "Cosmic Admin Treadmill",
+			KitKey = "WorkingTreadmills",
+			Multiplier = "x500 SPEED",
+			SpeedPerSec = 500,
+			Description = "Working Treadmills Open-Source Model & Scripts",
+		},
+	},
+	Auxiliary = {
+		SpeedPads = { AssetId = 3069966915, Name = "SpeedPads", Description = "speed pads" },
+		SpeedSimulatorStats = { AssetId = 6513517021, Name = "SpeedSimulatorStats", Description = "Speed Simulator leaderstats + Speed Script" },
+	},
+}
 
 return CreatorStoreGameplayKits
 

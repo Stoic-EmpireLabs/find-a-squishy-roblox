@@ -916,6 +916,35 @@ local function updateSpeedUpgradePrompt(player: Player)
 				end
 			end
 		end
+
+		-- Dynamically swap the Prebuilt 3D Treadmill Visual Model to the newly unlocked tier!
+		local oldVisual = tmModel:FindFirstChild("PrebuiltTreadmillVisual")
+		if oldVisual then
+			oldVisual:Destroy()
+		end
+		local faceDir = if belt then (belt:GetAttribute("FaceDir") :: number?) or 1 else 1
+		local treadCenter = if belt then belt.Position - Vector3.new(0, 0.84, 0) else plotModel:GetPivot().Position
+		local newVisual = PrebuiltLoader.CloneNormalizedTemplate("Treadmills", tierIdx, 13.5, false)
+		if newVisual then
+			newVisual.Name = "PrebuiltTreadmillVisual"
+			newVisual:PivotTo(CFrame.new(treadCenter + Vector3.new(0, 0.4, 0)) * CFrame.Angles(0, if faceDir > 0 then 0 else math.pi, 0))
+			for _, d in ipairs(newVisual:GetDescendants()) do
+				if d:IsA("BasePart") then
+					d.CanCollide = false
+					d.CanTouch = false
+					d.CanQuery = false
+					d.Massless = true
+					d.Anchored = true
+					local nm = string.lower(d.Name)
+					if string.find(nm, "belt") or string.find(nm, "surface") or string.find(nm, "chassis") or string.find(nm, "floor") or string.find(nm, "plate") then
+						if math.abs(d.Position.Y - treadCenter.Y) < 1.8 then
+							d.Transparency = 1
+						end
+					end
+				end
+			end
+			newVisual.Parent = tmModel
+		end
 	end
 
 	local stand = plotModel:FindFirstChild("SpeedUpgradeStand")
@@ -1755,6 +1784,29 @@ for plotIdx = 1, 4 do
 				end
 				upgradePlayerTreadmill(player)
 			end)
+		end
+
+		-- Touch-to-Upgrade on SpeedUpgradeStand Pad (1.5s debounce)
+		if stand then
+			local upgPad = stand:FindFirstChild("Pad") or stand:FindFirstChild("SpeedUpgradePad") or (if stand:IsA("BasePart") then stand else stand:FindFirstChildWhichIsA("BasePart"))
+			if upgPad and upgPad:IsA("BasePart") then
+				upgPad.CanTouch = true
+				local standTouchCooldowns: { [number]: number } = {}
+				upgPad.Touched:Connect(function(hit: BasePart)
+					local char = hit.Parent
+					local player = if char then Players:GetPlayerFromCharacter(char) else nil
+					local session = if player then sessions[player] else nil
+					if not player or not session or session.PlotIndex ~= plotIdx then
+						return
+					end
+					local now = os.clock()
+					if standTouchCooldowns[player.UserId] and (now - standTouchCooldowns[player.UserId]) < 1.5 then
+						return
+					end
+					standTouchCooldowns[player.UserId] = now
+					upgradePlayerTreadmill(player)
+				end)
+			end
 		end
 
 		local hatcheryPen = plotModel:FindFirstChild("HatcheryPen")

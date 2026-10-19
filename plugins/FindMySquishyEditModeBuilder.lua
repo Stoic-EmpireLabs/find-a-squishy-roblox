@@ -93,6 +93,16 @@ task.spawn(function()
 		return
 	end
 
+	-- Move cleanup of old Models and old SquishyWorld to BEFORE downloading new kits/assets
+	local oldModels = ReplicatedStorage:FindFirstChild("Models")
+	if oldModels then
+		oldModels:Destroy()
+	end
+	local oldWorld = Workspace:FindFirstChild("SquishyWorld")
+	if oldWorld then
+		oldWorld:Destroy()
+	end
+
 	local slimeData = require(sharedFolder:WaitForChild("SlimeData"))
 	local creatorStoreKitsMod = sharedFolder:FindFirstChild("CreatorStoreGameplayKits")
 	if creatorStoreKitsMod and creatorStoreKitsMod:IsA("ModuleScript") then
@@ -124,14 +134,6 @@ task.spawn(function()
 	if worldBuilderModule and worldBuilderModule:IsA("ModuleScript") then
 		local ok, wb = pcall(require, worldBuilderModule)
 		if ok and type(wb) == "table" and type(wb.BuildWorld) == "function" then
-			local oldModels = ReplicatedStorage:FindFirstChild("Models")
-			if oldModels then
-				oldModels:Destroy()
-			end
-			local oldWorld = Workspace:FindFirstChild("SquishyWorld")
-			if oldWorld then
-				oldWorld:Destroy()
-			end
 			local bOk, bRes = pcall(function()
 				return wb.BuildWorld()
 			end)
@@ -621,6 +623,38 @@ task.spawn(function()
 						tostring(hasKits),
 						tostring(hasSettingsPro),
 						tostring(hasHealthBar)
+					)
+				)
+
+				-- ============================================================================
+				-- AUDIT OPEN-SOURCE TREADMILL UPGRADE SYSTEM & 3D MODELS (v35)
+				-- ============================================================================
+				local modelsFolder = ReplicatedStorage:FindFirstChild("Models")
+				local tmSysFolder = modelsFolder and modelsFolder:FindFirstChild("TreadmillUpgradeSystem")
+				local tmSysCount = if tmSysFolder then #tmSysFolder:GetChildren() else 0
+				local prebuiltTreads = modelsFolder and modelsFolder:FindFirstChild("PrebuiltAssets") and modelsFolder.PrebuiltAssets:FindFirstChild("Treadmills")
+				local prebuiltTreadCount = if prebuiltTreads then #prebuiltTreads:GetChildren() else 0
+				local showcaseFolder = hubFolder and hubFolder:FindFirstChild("TreadmillUpgradeSystemShowcase")
+				local showcaseCount = if showcaseFolder then #showcaseFolder:GetChildren() else 0
+				local plotTreadVisuals = 0
+				if plotsFolder then
+					for _, pm in ipairs(plotsFolder:GetChildren()) do
+						for _, d in ipairs(pm:GetDescendants()) do
+							if d.Name == "PrebuiltTreadmillVisual" then
+								plotTreadVisuals += 1
+							end
+						end
+					end
+				end
+				local v35Ok = (tmSysCount > 0 or prebuiltTreadCount >= 8) and (showcaseFolder ~= nil)
+				print(
+					string.format(
+						"[AUDIT TREADMILL UPGRADE SYSTEM v35] PASS=%s | IngestedSystemKits=%d | PrebuiltTreadmills=%d/8 | ShowcaseStalls=%d/8 | PlotTreadmillVisuals=%d/4",
+						tostring(v35Ok),
+						tmSysCount,
+						prebuiltTreadCount,
+						showcaseCount,
+						plotTreadVisuals
 					)
 				)
 

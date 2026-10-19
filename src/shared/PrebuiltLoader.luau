@@ -89,6 +89,9 @@ PrebuiltLoader.CREATOR_STORE_ASSETS = {
 		[3] = 916218035, -- Treadmill (Eppobot)
 		[4] = 90082960989487, -- +1 Speed V1 Kit
 		[5] = 2892634734, -- Speed Simulator Kit
+		[6] = 138368737963225, -- Full Treadmill System Template
+		[7] = 122236941702272, -- Treadmill System Models
+		[8] = 91681842696683, -- Working Treadmills Open-Source Model & Scripts
 	},
 	Gamepasses = {
 		FusionCoil = 12124152417,
@@ -246,6 +249,9 @@ local function sanitizeCreatorStoreModel(rawInst: Instance, category: string, in
 			-- KEEP treadmill gameplay elements intact!
 			if desc:IsA("LuaSourceContainer") then
 				print(string.format("[TREADMILL SCRIPT INSPECTION] Preserved %s '%s' in Treadmill", desc.ClassName, desc.Name))
+				if desc:IsA("BaseScript") then
+					desc.Disabled = true
+				end
 			end
 		elseif
 			desc:IsA("LuaSourceContainer")
@@ -269,6 +275,9 @@ local function sanitizeCreatorStoreModel(rawInst: Instance, category: string, in
 		then
 			desc:Destroy()
 		elseif desc:IsA("MeshPart") then
+			if string.find(desc.MeshId, "9507455017") or string.find(desc.TextureID, "9507455017") then
+				desc.TextureID = ""
+			end
 			if string.find(desc.TextureID, "203785492") then
 				desc.TextureID = ""
 			end
@@ -278,21 +287,25 @@ local function sanitizeCreatorStoreModel(rawInst: Instance, category: string, in
 				desc.TextureID = ""
 			end
 		elseif desc:IsA("SpecialMesh") then
-			if string.find(desc.TextureId, "203785492") then
-				desc.TextureId = ""
-			end
-			if preserveDecals then
-				desc:SetAttribute("PreserveCreatorStoreMesh", true)
-				if desc.Parent and desc.Parent:IsA("BasePart") then
-					desc.Parent:SetAttribute("PreserveCreatorStoreMesh", true)
-				end
+			if string.find(desc.MeshId, "9507455017") or string.find(desc.TextureId, "9507455017") then
+				desc:Destroy()
 			else
-				desc.TextureId = ""
-				if desc.MeshType == Enum.MeshType.FileMesh then
-					local parentPart = desc.Parent
-					desc:Destroy()
-					if parentPart and parentPart:IsA("BasePart") and parentPart.Size.Magnitude < 2.2 then
-						parentPart:Destroy()
+				if string.find(desc.TextureId, "203785492") then
+					desc.TextureId = ""
+				end
+				if preserveDecals then
+					desc:SetAttribute("PreserveCreatorStoreMesh", true)
+					if desc.Parent and desc.Parent:IsA("BasePart") then
+						desc.Parent:SetAttribute("PreserveCreatorStoreMesh", true)
+					end
+				else
+					desc.TextureId = ""
+					if desc.MeshType == Enum.MeshType.FileMesh then
+						local parentPart = desc.Parent
+						desc:Destroy()
+						if parentPart and parentPart:IsA("BasePart") and parentPart.Size.Magnitude < 2.2 then
+							parentPart:Destroy()
+						end
 					end
 				end
 			end
@@ -1020,6 +1033,129 @@ local function buildBirdNestTemplate(): Model
 	return finalizeTemplate(m)
 end
 
+local function buildTreadmillTemplate(tier: number): Model
+	local m = Instance.new("Model")
+	m.Name = "Treadmills_Store_" .. tostring(tier)
+
+	local tierColors = {
+		Color3.fromRGB(85, 225, 115), -- 1: Starter Green
+		Color3.fromRGB(255, 105, 195), -- 2: Candy Pink
+		Color3.fromRGB(255, 205, 55), -- 3: Gold Yellow
+		Color3.fromRGB(65, 235, 145), -- 4: Jade Bamboo Emerald
+		Color3.fromRGB(65, 225, 255), -- 5: Diamond Cyan
+		Color3.fromRGB(145, 215, 255), -- 6: Cloud Sky Light Blue
+		Color3.fromRGB(255, 85, 35), -- 7: Magma Inferno Orange-Red
+		Color3.fromRGB(195, 75, 255), -- 8: Cosmic Admin Purple
+	}
+	local accentColors = {
+		Color3.fromRGB(255, 235, 75),
+		Color3.fromRGB(115, 245, 255),
+		Color3.fromRGB(255, 245, 135),
+		Color3.fromRGB(185, 255, 115),
+		Color3.fromRGB(195, 115, 255),
+		Color3.fromRGB(255, 235, 95),
+		Color3.fromRGB(255, 225, 65),
+		Color3.fromRGB(85, 245, 255),
+	}
+	local pCol = tierColors[math.clamp(tier, 1, 8)]
+	local aCol = accentColors[math.clamp(tier, 1, 8)]
+
+	-- Main chassis
+	makePart({
+		Name = "Chassis",
+		Size = Vector3.new(12.0, 0.8, 16.0),
+		Position = Vector3.new(0, 0.4, 0),
+		Color = Color3.fromRGB(30, 32, 44),
+		Material = Enum.Material.Metal,
+		Parent = m,
+	})
+	-- Side rails with tier accent
+	for _, zOff in ipairs({ -7.2, 7.2 }) do
+		makePart({
+			Name = "SideRail",
+			Size = Vector3.new(12.2, 1.2, 1.2),
+			Position = Vector3.new(0, 0.6, zOff),
+			Color = Color3.fromRGB(45, 48, 62),
+			Material = Enum.Material.Metal,
+			Parent = m,
+		})
+		makePart({
+			Name = "RailTrim",
+			Size = Vector3.new(12.0, 0.3, 1.25),
+			Position = Vector3.new(0, 1.25, zOff),
+			Color = pCol,
+			Material = Enum.Material.Neon,
+			Parent = m,
+		})
+	end
+	-- Belt
+	makePart({
+		Name = "BeltSurface",
+		Size = Vector3.new(11.0, 1.0, 12.8),
+		Position = Vector3.new(0, 0.55, 0),
+		Color = Color3.fromRGB(22, 24, 34),
+		Material = Enum.Material.SmoothPlastic,
+		Parent = m,
+	})
+	-- Front Rollers
+	makePart({
+		Name = "FrontRoller",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(12.0, 1.1, 1.1),
+		CFrame = CFrame.new(-5.6, 0.6, 0) * CFrame.Angles(0, 0, math.rad(90)),
+		Color = Color3.fromRGB(65, 70, 85),
+		Material = Enum.Material.Metal,
+		Parent = m,
+	})
+	-- Rear Roller
+	makePart({
+		Name = "RearRoller",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(12.0, 1.1, 1.1),
+		CFrame = CFrame.new(5.6, 0.6, 0) * CFrame.Angles(0, 0, math.rad(90)),
+		Color = Color3.fromRGB(65, 70, 85),
+		Material = Enum.Material.Metal,
+		Parent = m,
+	})
+	-- Console Uprights
+	for _, zSide in ipairs({ -5.2, 5.2 }) do
+		makePart({
+			Name = "ConsoleUpright",
+			Size = Vector3.new(0.8, 5.0, 0.8),
+			CFrame = CFrame.new(-5.0, 3.0, zSide) * CFrame.Angles(0, 0, math.rad(14)),
+			Color = Color3.fromRGB(48, 52, 64),
+			Material = Enum.Material.Metal,
+			Parent = m,
+		})
+	end
+	makePart({
+		Name = "Crossbar",
+		Size = Vector3.new(0.8, 0.8, 11.2),
+		Position = Vector3.new(-4.4, 5.2, 0),
+		Color = Color3.fromRGB(36, 40, 52),
+		Material = Enum.Material.Metal,
+		Parent = m,
+	})
+	makePart({
+		Name = "ConsoleScreen",
+		Size = Vector3.new(0.6, 2.2, 7.8),
+		CFrame = CFrame.new(-4.3, 6.2, 0) * CFrame.Angles(0, 0, math.rad(-20)),
+		Color = Color3.fromRGB(18, 22, 34),
+		Material = Enum.Material.SmoothPlastic,
+		Parent = m,
+	})
+	makePart({
+		Name = "ScreenDisplay",
+		Size = Vector3.new(0.65, 1.8, 7.2),
+		CFrame = CFrame.new(-4.28, 6.2, 0) * CFrame.Angles(0, 0, math.rad(-20)),
+		Color = aCol,
+		Material = Enum.Material.Neon,
+		Parent = m,
+	})
+
+	return finalizeTemplate(m)
+end
+
 function PrebuiltLoader.EnsurePrebuiltAssets(customObjectFetcher: ((number) -> { Instance }?)?): Folder
 	local modelsFolder = ReplicatedStorage:FindFirstChild("Models")
 	if not modelsFolder then
@@ -1278,6 +1414,36 @@ function PrebuiltLoader.EnsurePrebuiltAssets(customObjectFetcher: ((number) -> {
 				if not catFolder:FindFirstChild(name) then
 					local ok, objs = pcall(customObjectFetcher, assetId)
 					if ok and objs and #objs > 0 then
+						if category == "Treadmills" then
+							local subModels: { Instance } = {}
+							for _, rObj in ipairs(objs) do
+								if (rObj:IsA("Model") and not rObj.PrimaryPart and #rObj:GetChildren() > 1) or rObj:IsA("Folder") then
+									for _, ch in ipairs(rObj:GetChildren()) do
+										if ch:IsA("Model") then
+											table.insert(subModels, ch)
+										end
+									end
+								end
+							end
+							if #subModels >= 2 then
+								for sIdx, sm in ipairs(subModels) do
+									local subName = "Treadmills_Store_" .. tostring(sIdx)
+									if not catFolder:FindFirstChild(subName) then
+										local sanitized = sanitizeCreatorStoreModel(sm, category, sIdx)
+										if sanitized then
+											sanitized.Name = subName
+											sanitized:SetAttribute("SourceAssetId", assetId)
+											sanitized:SetAttribute("TreadmillTier", sIdx)
+											sanitized.Parent = catFolder
+											totalLoaded += 1
+											storeLoadedCount += 1
+											print(string.format("[PrebuiltLoader] Unpacked multi-treadmill model '%s' -> %s", sm.Name, subName))
+										end
+									end
+								end
+							end
+						end
+
 						local sanitized = sanitizeCreatorStoreModel(objs[1], category, keyOrIdx)
 						if sanitized then
 							sanitized.Name = name
@@ -1398,6 +1564,15 @@ function PrebuiltLoader.EnsurePrebuiltAssets(customObjectFetcher: ((number) -> {
 	if #nestFolder:GetChildren() == 0 then
 		buildBirdNestTemplate().Parent = nestFolder
 		totalLoaded += 1
+	end
+
+	local treadmillsFolder = ensureCategory("Treadmills")
+	for i = 1, 8 do
+		local tName = "Treadmills_Store_" .. tostring(i)
+		if not treadmillsFolder:FindFirstChild(tName) then
+			buildTreadmillTemplate(i).Parent = treadmillsFolder
+			totalLoaded += 1
+		end
 	end
 
 	prebuiltRoot:SetAttribute("LoadedCount", totalLoaded)

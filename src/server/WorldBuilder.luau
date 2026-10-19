@@ -1591,6 +1591,29 @@ local function buildDinoJawTreadmill(
 	)
 	bb.Name = "TreadmillBillboard"
 
+	-- Downloaded Open-Source 3D Treadmill Visual Model
+	local tmVisual = PrebuiltLoader.CloneNormalizedTemplate("Treadmills", tierId, 13.5, false)
+	if tmVisual then
+		tmVisual.Name = "PrebuiltTreadmillVisual"
+		tmVisual:PivotTo(CFrame.new(treadCenter + Vector3.new(0, 0.4, 0)) * CFrame.Angles(0, if faceDir > 0 then 0 else math.pi, 0))
+		for _, d in ipairs(tmVisual:GetDescendants()) do
+			if d:IsA("BasePart") then
+				d.CanCollide = false
+				d.CanTouch = false
+				d.CanQuery = false
+				d.Massless = true
+				d.Anchored = true
+				local nm = string.lower(d.Name)
+				if string.find(nm, "belt") or string.find(nm, "surface") or string.find(nm, "chassis") or string.find(nm, "floor") or string.find(nm, "plate") then
+					if math.abs(d.Position.Y - treadCenter.Y) < 1.8 then
+						d.Transparency = 1
+					end
+				end
+			end
+		end
+		tmVisual.Parent = tmModel
+	end
+
 	return belt
 end
 
@@ -2354,6 +2377,125 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 		)
 	end
 
+	-- ========================================================================
+	-- 7. 🏃 OPEN-SOURCE TREADMILL UPGRADE SYSTEM SHOWCASE (West Safe Zone Boulevard at X = -188, Z = 56..168)
+	-- Displays all 8 downloaded upgrade treadmill tiers side-by-side with full 3D models & upgrade signs!
+	-- Positioned at X = -188 leaving a spacious 45+ stud gap from West Plots 1 & 3 (X = -94..-140)!
+	-- ========================================================================
+	local showcaseFolder = Instance.new("Folder")
+	showcaseFolder.Name = "TreadmillUpgradeSystemShowcase"
+	showcaseFolder.Parent = hubFolder
+
+	-- Grand Archway Header Sign spanning the showcase avenue
+	makePart({
+		Name = "ShowcaseArchPillarLeft",
+		Size = Vector3.new(2.4, 18.0, 2.4),
+		Position = Vector3.new(-188, 9.0, 48),
+		Color = Color3.fromRGB(36, 42, 60),
+		Material = Enum.Material.Metal,
+		Parent = showcaseFolder,
+	})
+	makePart({
+		Name = "ShowcaseArchPillarRight",
+		Size = Vector3.new(2.4, 18.0, 2.4),
+		Position = Vector3.new(-188, 9.0, 176),
+		Color = Color3.fromRGB(36, 42, 60),
+		Material = Enum.Material.Metal,
+		Parent = showcaseFolder,
+	})
+	local archSign = makePart({
+		Name = "ShowcaseMarqueeSign",
+		Size = Vector3.new(2.2, 4.6, 128),
+		Position = Vector3.new(-188, 19.5, 112),
+		Color = Color3.fromRGB(24, 28, 44),
+		Material = Enum.Material.SmoothPlastic,
+		Parent = showcaseFolder,
+	})
+	createSurfaceSign(
+		archSign,
+		"⚡ OPEN-SOURCE TREADMILL UPGRADE SYSTEM • ALL 8 TIERS ⚡\n🏃 Run on your Base Treadmill to Gain Speed • Step on Speed Upgrade Stand to Unlock Next Tier!",
+		Color3.fromRGB(255, 235, 75),
+		Color3.fromRGB(18, 22, 36),
+		{ Enum.NormalId.Left, Enum.NormalId.Right },
+		180
+	)
+
+	-- 8 Individual Treadmill Tier Showcase Stalls (Z = 56, 72, 88, 104, 120, 136, 152, 168)
+	local tierZPositions = { 56, 72, 88, 104, 120, 136, 152, 168 }
+	for tierIdx, zPos in ipairs(tierZPositions) do
+		local tierDef = SlimeData.TreadmillTiers[tierIdx] or SlimeData.TreadmillTiers[1]
+		local stallModel = Instance.new("Model")
+		stallModel.Name = string.format("ShowcaseTier_%d_%s", tierIdx, string.gsub(tierDef.Name, "%s+", ""))
+		stallModel.Parent = showcaseFolder
+
+		-- Stall Platform Base Deck
+		local stallDeck = makePart({
+			Name = "StallDeck",
+			Size = Vector3.new(15.0, 0.8, 14.0),
+			Position = Vector3.new(-188, 0.4, zPos),
+			Color = Color3.fromRGB(28, 32, 48),
+			Material = Enum.Material.SmoothPlastic,
+			Parent = stallModel,
+		})
+		stallModel.PrimaryPart = stallDeck
+
+		-- Neon Accent Ring around Stall
+		buildGlowingNeonCircle(
+			stallModel,
+			"StallNeonPad",
+			Vector3.new(-188, 0.45, zPos),
+			13.5,
+			tierDef.PrimaryColor or tierDef.Color,
+			tierDef.AccentColor or Color3.fromRGB(255, 255, 255)
+		)
+
+		-- Spawn the Downloaded Open-Source 3D Treadmill Visual Model
+		local tmVisual = PrebuiltLoader.CloneNormalizedTemplate("Treadmills", tierIdx, 12.0, false)
+		if tmVisual then
+			tmVisual.Name = "PrebuiltTreadmillVisual"
+			tmVisual:PivotTo(CFrame.new(-188, 0.85, zPos) * CFrame.Angles(0, math.pi * 0.5, 0))
+			for _, d in ipairs(tmVisual:GetDescendants()) do
+				if d:IsA("BasePart") then
+					d.CanCollide = false
+					d.CanTouch = false
+					d.CanQuery = false
+					d.Massless = true
+					d.Anchored = true
+				end
+			end
+			tmVisual.Parent = stallModel
+		end
+
+		-- Information Billboard Stand
+		local infoBoard = makePart({
+			Name = "TierInfoBoard",
+			Size = Vector3.new(0.8, 5.2, 11.5),
+			Position = Vector3.new(-181.5, 6.2, zPos),
+			Color = Color3.fromRGB(22, 26, 38),
+			Material = Enum.Material.SmoothPlastic,
+			Parent = stallModel,
+		})
+		local costStr = if tierDef.UpgradeCost and tierDef.UpgradeCost > 0 then ("$" .. SlimeData.FormatNumber(tierDef.UpgradeCost)) else "FREE"
+		local reqSpdStr = SlimeData.FormatNumber(tierDef.RequiredSpeed or 0)
+		local gainStr = SlimeData.FormatNumber(tierDef.SpeedPerSec)
+		local stallText = string.format(
+			"⚡ TIER %d: %s\n[%s] • +%s Speed/s\nReq Speed: %s • Cost: %s",
+			tierIdx,
+			string.upper(tierDef.Name),
+			tierDef.MultiplierText or tierDef.MultiplierLabel,
+			gainStr,
+			reqSpdStr,
+			costStr
+		)
+		createSurfaceSign(
+			infoBoard,
+			stallText,
+			tierDef.AccentColor or Color3.fromRGB(255, 235, 75),
+			Color3.fromRGB(16, 18, 30),
+			{ Enum.NormalId.Left, Enum.NormalId.Right },
+			120
+		)
+	end
 end
 
 -- Helper: Builds an authentic "Find The Squishies" Multi-Tiered Stepped Dirt-and-Grass Cliff Hill (`full_frame_09.png`, `full_frame_12.png`)

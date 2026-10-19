@@ -94,7 +94,7 @@ SlimeData.TreadmillTiers = {
 		BeamTexture = "rbxassetid://6798365555",
 		TextureSpeed = 2.4,
 		ParticleTexture = "rbxassetid://9129151031",
-		MeshId = "rbxassetid://9507455017",
+		MeshId = "",
 		TextureId = "",
 	},
 	[2] = {
@@ -154,7 +154,7 @@ SlimeData.TreadmillTiers = {
 		BeamTexture = "rbxassetid://123374008022599",
 		TextureSpeed = 3.6,
 		ParticleTexture = "rbxassetid://7451822955",
-		MeshId = "rbxassetid://9507455017",
+		MeshId = "",
 		TextureId = "",
 	},
 	[5] = {
