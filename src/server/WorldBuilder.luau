@@ -304,7 +304,7 @@ local STAGE_THEME_PALETTES: { [number]: { Primary: Color3, Secondary: Color3, Tr
 	[4] = { Primary = Color3.fromRGB(78, 168, 88), Secondary = Color3.fromRGB(178, 56, 52), Trim = Color3.fromRGB(215, 178, 78), Mat = Enum.Material.WoodPlanks }, -- Stage 4: Whispering Bamboo Forest
 	[5] = { Primary = Color3.fromRGB(138, 78, 215), Secondary = Color3.fromRGB(68, 188, 235), Trim = Color3.fromRGB(48, 52, 72), Mat = Enum.Material.Slate }, -- Stage 5: Crystal Cyber Cavern
 	[6] = { Primary = Color3.fromRGB(235, 242, 252), Secondary = Color3.fromRGB(135, 198, 245), Trim = Color3.fromRGB(228, 195, 88), Mat = Enum.Material.Marble }, -- Stage 6: Cloud Sky Sanctuary
-	[7] = { Primary = Color3.fromRGB(54, 48, 56), Secondary = Color3.fromRGB(225, 78, 35), Trim = Color3.fromRGB(185, 115, 42), Mat = Enum.Material.Basalt }, -- Stage 7: Magma Volcano Doom
+	[7] = { Primary = Color3.fromRGB(54, 48, 56), Secondary = Color3.fromRGB(225, 78, 35), Trim = Color3.fromRGB(185, 115, 42), Mat = Enum.Material.Basalt }, -- Stage 7: Magma Volcano Island
 	[8] = { Primary = Color3.fromRGB(58, 42, 98), Secondary = Color3.fromRGB(178, 72, 235), Trim = Color3.fromRGB(235, 198, 78), Mat = Enum.Material.Slate }, -- Stage 8: Cosmic Void Citadel
 }
 
@@ -1721,30 +1721,30 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	-- East-West Cross-Boulevard connecting the Central Path to the East Champions & Rewards Plaza
 	makePart({
 		Name = "EastRewardsPlazaPath",
-		Size = Vector3.new(188, 0.25, 22),
-		Position = Vector3.new(94, 0.12, 92),
+		Size = Vector3.new(188, 0.25, 14),
+		Position = Vector3.new(94, 0.12, 86),
 		Color = Color3.fromRGB(228, 214, 185),
 		Material = Enum.Material.Cobblestone,
 		Parent = hubFolder,
 	})
 	makePart({
 		Name = "EastRewardsPlazaPad",
-		Size = Vector3.new(54, 0.25, 128),
-		Position = Vector3.new(176, 0.12, 92),
+		Size = Vector3.new(48, 0.25, 260),
+		Position = Vector3.new(188, 0.12, 172),
 		Color = Color3.fromRGB(228, 214, 185),
 		Material = Enum.Material.Cobblestone,
 		Parent = hubFolder,
 	})
 
-	-- 1. 3 Physical 3D Global OrderedDataStore Leaderboard Monuments on the Safe Zone Plaza (X = 192, Z = 52, 92, 132)
+	-- 1. 3 Physical 3D Global OrderedDataStore Leaderboard Monuments on the South Boulevard Plaza (Z = 356, X = -52, 0, 52)
 	local lbFolder = Instance.new("Folder")
 	lbFolder.Name = "GlobalLeaderboards"
 	lbFolder.Parent = hubFolder
 
 	local lbConfigs = {
-		{ Name = "CoinsBoard", StatKey = "Coins", Title = "💰 RICHEST PLAYERS (TOP 10)", Color = Color3.fromRGB(255, 205, 55), Z = 52 },
-		{ Name = "SpeedBoard", StatKey = "Speed", Title = "⚡ FASTEST SPEED (TOP 10)", Color = Color3.fromRGB(65, 220, 255), Z = 92 },
-		{ Name = "SquishiesBoard", StatKey = "Squishies", Title = "✨ MOST SQUISHIES (0/117)", Color = Color3.fromRGB(255, 115, 215), Z = 132 },
+		{ Name = "CoinsBoard", StatKey = "Coins", Title = "💰 RICHEST PLAYERS (TOP 10)", Color = Color3.fromRGB(255, 205, 55), X = -52, Z = 356 },
+		{ Name = "SpeedBoard", StatKey = "Speed", Title = "⚡ FASTEST SPEED (TOP 10)", Color = Color3.fromRGB(65, 220, 255), X = 0, Z = 356 },
+		{ Name = "SquishiesBoard", StatKey = "Squishies", Title = "✨ MOST SQUISHIES (0/117)", Color = Color3.fromRGB(255, 115, 215), X = 52, Z = 356 },
 	}
 
 	for _, cfg in ipairs(lbConfigs) do
@@ -1755,8 +1755,8 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 
 		makePart({
 			Name = "MonumentStepBase",
-			Size = Vector3.new(6.8, 1.0, 19.5),
-			Position = Vector3.new(192, 0.5, cfg.Z),
+			Size = Vector3.new(19.5, 1.0, 6.8),
+			Position = Vector3.new(cfg.X, 0.5, cfg.Z),
 			Color = Color3.fromRGB(72, 78, 98),
 			Material = Enum.Material.Plastic,
 			Parent = boardModel,
@@ -1764,19 +1764,19 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 
 		makePart({
 			Name = "BoardPedestal",
-			Size = Vector3.new(4.8, 1.6, 17.2),
-			Position = Vector3.new(192, 1.5, cfg.Z),
+			Size = Vector3.new(17.2, 1.6, 4.8),
+			Position = Vector3.new(cfg.X, 1.5, cfg.Z),
 			Color = Color3.fromRGB(52, 58, 78),
 			Material = Enum.Material.Plastic,
 			Parent = boardModel,
 		})
 
 		-- Twin Flanking Monument Columns
-		for _, sideZ in ipairs({ -7.8, 7.8 }) do
+		for _, sideX in ipairs({ -7.8, 7.8 }) do
 			makePart({
 				Name = "MonumentPillar",
 				Size = Vector3.new(2.2, 16.5, 2.2),
-				Position = Vector3.new(192, 9.6, cfg.Z + sideZ),
+				Position = Vector3.new(cfg.X + sideX, 9.6, cfg.Z),
 				Color = Color3.fromRGB(235, 238, 248),
 				Material = Enum.Material.Plastic,
 				Parent = boardModel,
@@ -1785,7 +1785,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 				Name = "MonumentPillarCap",
 				Shape = Enum.PartType.Ball,
 				Size = Vector3.new(2.8, 2.8, 2.8),
-				Position = Vector3.new(192, 18.8, cfg.Z + sideZ),
+				Position = Vector3.new(cfg.X + sideX, 18.8, cfg.Z),
 				Color = cfg.Color,
 				Material = Enum.Material.Neon,
 				Parent = boardModel,
@@ -1794,8 +1794,8 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 
 		local boardPart = makePart({
 			Name = "BoardSurface",
-			Size = Vector3.new(1.4, 15.5, 14.5),
-			Position = Vector3.new(192, 9.6, cfg.Z),
+			Size = Vector3.new(14.5, 15.5, 1.4),
+			Position = Vector3.new(cfg.X, 9.6, cfg.Z),
 			Color = Color3.fromRGB(22, 26, 44),
 			Material = Enum.Material.SmoothPlastic,
 			Parent = boardModel,
@@ -1804,8 +1804,8 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 
 		makePart({
 			Name = "BoardTopCrest",
-			Size = Vector3.new(2.4, 1.8, 17.6),
-			Position = Vector3.new(192, 18.0, cfg.Z),
+			Size = Vector3.new(17.6, 1.8, 2.4),
+			Position = Vector3.new(cfg.X, 18.0, cfg.Z),
 			Color = cfg.Color,
 			Material = Enum.Material.Neon,
 			Parent = boardModel,
@@ -1815,13 +1815,13 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 			Name = "MonumentCrownOrb",
 			Shape = Enum.PartType.Ball,
 			Size = Vector3.new(3.6, 3.6, 3.6),
-			Position = Vector3.new(192, 20.4, cfg.Z),
+			Position = Vector3.new(cfg.X, 20.4, cfg.Z),
 			Color = Color3.fromRGB(255, 225, 75),
 			Material = Enum.Material.Neon,
 			Parent = boardModel,
 		})
 
-		for _, face in ipairs({ Enum.NormalId.Left, Enum.NormalId.Right }) do
+		for _, face in ipairs({ Enum.NormalId.Back, Enum.NormalId.Front }) do
 			local sg = Instance.new("SurfaceGui")
 			sg.Name = "LeaderboardGui_" .. face.Name
 			sg.Face = face
@@ -1905,7 +1905,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 		end
 	end
 
-	-- 2. 🎡 Lucky Squishy Spin Wheel Booth (Outer East Plaza North at X = 162, Z = 52)
+	-- 2. 🎡 Lucky Squishy Spin Wheel Booth (Outer East Plaza North at X = 188, Z = 52)
 	local spinBooth = Instance.new("Model")
 	spinBooth.Name = "LuckySpinWheelBooth"
 	spinBooth.Parent = hubFolder
@@ -1913,7 +1913,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	local spinPad = buildGlowingNeonCircle(
 		spinBooth,
 		"SpinWheelPad",
-		Vector3.new(162, 0.35, 52),
+		Vector3.new(188, 0.35, 52),
 		13,
 		Color3.fromRGB(255, 95, 205),
 		Color3.fromRGB(255, 235, 75)
@@ -1923,7 +1923,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	makePart({
 		Name = "WheelStandPost",
 		Size = Vector3.new(2.6, 12.0, 2.6),
-		Position = Vector3.new(164.5, 6.0, 52),
+		Position = Vector3.new(190.5, 6.0, 52),
 		Color = Color3.fromRGB(255, 215, 65),
 		Material = Enum.Material.Plastic,
 		Parent = spinBooth,
@@ -1933,7 +1933,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	makePart({
 		Name = "SpinCanopyRoof",
 		Size = Vector3.new(9.5, 1.4, 14.5),
-		Position = Vector3.new(162.5, 15.2, 52),
+		Position = Vector3.new(188.5, 15.2, 52),
 		Color = Color3.fromRGB(255, 85, 195),
 		Material = Enum.Material.Plastic,
 		Parent = spinBooth,
@@ -1944,7 +1944,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 		Name = "SpinWheelDisk",
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(1.4, 11.2, 11.2),
-		CFrame = CFrame.new(163.2, 10.2, 52),
+		CFrame = CFrame.new(189.2, 10.2, 52),
 		Color = Color3.fromRGB(255, 85, 195),
 		Material = Enum.Material.Neon,
 		Parent = obstaclesFolder,
@@ -1955,7 +1955,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	local wheelHeader = makePart({
 		Name = "SpinWheelSign",
 		Size = Vector3.new(1.2, 3.4, 13.5),
-		Position = Vector3.new(162.5, 17.6, 52),
+		Position = Vector3.new(188.5, 17.6, 52),
 		Color = Color3.fromRGB(255, 95, 205),
 		Material = Enum.Material.SmoothPlastic,
 		Parent = spinBooth,
@@ -1970,7 +1970,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	)
 	createAttachmentPrompt(spinPad, "SpinWheelPrompt", "Spin Lucky Wheel! (Free Every 5m)", "🎡 Lucky Squishy Spin Wheel", Vector3.new(0, 3.2, 0), 16)
 
-	-- 3. 🎁 Daily Login Streak & Playtime Rewards Chest Shrine (Outer East Plaza Center at X = 162, Z = 92)
+	-- 3. 🎁 Daily Login Streak & Playtime Rewards Chest Shrine (Outer East Plaza Center at X = 188, Z = 92)
 	local chestBooth = Instance.new("Model")
 	chestBooth.Name = "DailyRewardChestBooth"
 	chestBooth.Parent = hubFolder
@@ -1978,7 +1978,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	local chestPad = buildGlowingNeonCircle(
 		chestBooth,
 		"DailyChestPad",
-		Vector3.new(162, 0.35, 92),
+		Vector3.new(188, 0.35, 92),
 		13,
 		Color3.fromRGB(255, 205, 55),
 		Color3.fromRGB(85, 245, 130)
@@ -1989,7 +1989,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	makePart({
 		Name = "TreasureChestBase",
 		Size = Vector3.new(4.2, 2.6, 6.2),
-		Position = Vector3.new(162, 1.8, 92),
+		Position = Vector3.new(188, 1.8, 92),
 		Color = Color3.fromRGB(138, 86, 38),
 		Material = Enum.Material.WoodPlanks,
 		CanCollide = true,
@@ -1999,7 +1999,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 		Name = "TreasureChestLid",
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(6.2, 3.8, 3.8),
-		CFrame = CFrame.new(162, 3.1, 92) * CFrame.Angles(0, 0, math.rad(90)),
+		CFrame = CFrame.new(188, 3.1, 92) * CFrame.Angles(0, 0, math.rad(90)),
 		Color = Color3.fromRGB(158, 98, 45),
 		Material = Enum.Material.WoodPlanks,
 		CanCollide = true,
@@ -2008,7 +2008,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	makePart({
 		Name = "TreasureChestLock",
 		Size = Vector3.new(1.2, 1.2, 0.6),
-		Position = Vector3.new(159.8, 2.4, 92),
+		Position = Vector3.new(185.8, 2.4, 92),
 		Color = Color3.fromRGB(255, 215, 55),
 		Material = Enum.Material.Neon,
 		CanCollide = false,
@@ -2020,7 +2020,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 		makePart({
 			Name = "ChestShrinePillar",
 			Size = Vector3.new(2.0, 9.2, 2.0),
-			Position = Vector3.new(164.2, 4.6, 92 + zSide),
+			Position = Vector3.new(190.2, 4.6, 92 + zSide),
 			Color = Color3.fromRGB(255, 205, 55),
 			Material = Enum.Material.Plastic,
 			Parent = chestBooth,
@@ -2030,7 +2030,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	local chestHeader = makePart({
 		Name = "DailyChestSign",
 		Size = Vector3.new(1.2, 3.4, 13.5),
-		Position = Vector3.new(164.2, 10.6, 92),
+		Position = Vector3.new(190.2, 10.6, 92),
 		Color = Color3.fromRGB(255, 195, 55),
 		Material = Enum.Material.SmoothPlastic,
 		Parent = chestBooth,
@@ -2045,7 +2045,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	)
 	createAttachmentPrompt(chestPad, "DailyChestPrompt", "Claim Daily & Playtime Chest", "🎁 2m/5m/10m/15m/30m Rewards", Vector3.new(0, 3.2, 0), 16)
 
-	-- 4. 🛒 Premium Robux Shop & 5-Gamepass Kiosk (Outer East Plaza South at X = 162, Z = 132)
+	-- 4. 🛒 Premium Robux Shop & 5-Gamepass Kiosk (Outer East Plaza South at X = 188, Z = 132)
 	local vipBooth = Instance.new("Model")
 	vipBooth.Name = "VIPRobuxShopBooth"
 	vipBooth.Parent = hubFolder
@@ -2053,7 +2053,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	local vipPad = buildGlowingNeonCircle(
 		vipBooth,
 		"VIPShopPad",
-		Vector3.new(162, 0.35, 132),
+		Vector3.new(188, 0.35, 132),
 		18,
 		Color3.fromRGB(85, 215, 255),
 		Color3.fromRGB(255, 215, 65)
@@ -2065,7 +2065,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 		makePart({
 			Name = "VIPShopColumn",
 			Size = Vector3.new(2.2, 10.5, 2.2),
-			Position = Vector3.new(164.8, 5.25, 132 + zSide),
+			Position = Vector3.new(190.8, 5.25, 132 + zSide),
 			Color = Color3.fromRGB(255, 215, 65),
 			Material = Enum.Material.Plastic,
 			Parent = vipBooth,
@@ -2074,7 +2074,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	makePart({
 		Name = "VIPShopCanopy",
 		Size = Vector3.new(10.5, 1.4, 19.2),
-		Position = Vector3.new(162.5, 10.2, 132),
+		Position = Vector3.new(188.5, 10.2, 132),
 		Color = Color3.fromRGB(32, 42, 78),
 		Material = Enum.Material.Plastic,
 		Parent = vipBooth,
@@ -2083,7 +2083,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	local vipHeader = makePart({
 		Name = "VIPShopSign",
 		Size = Vector3.new(1.4, 3.8, 18.5),
-		Position = Vector3.new(164.8, 12.6, 132),
+		Position = Vector3.new(190.8, 12.6, 132),
 		Color = Color3.fromRGB(65, 205, 255),
 		Material = Enum.Material.SmoothPlastic,
 		Parent = vipBooth,
@@ -2111,7 +2111,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 			Name = "VIPDisplayPillar_" .. tostring(i),
 			Shape = Enum.PartType.Cylinder,
 			Size = Vector3.new(3.0, 2.6, 2.6),
-			CFrame = CFrame.new(162, 1.7, zOff) * CFrame.Angles(0, 0, math.rad(90)),
+			CFrame = CFrame.new(188, 1.7, zOff) * CFrame.Angles(0, 0, math.rad(90)),
 			Color = Color3.fromRGB(42, 48, 68),
 			Material = Enum.Material.Plastic,
 			Parent = vipBooth,
@@ -2120,7 +2120,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 			Name = "VIPDisplayOrb_" .. tostring(i),
 			Shape = Enum.PartType.Ball,
 			Size = Vector3.new(2.4, 2.4, 2.4),
-			Position = Vector3.new(162, 4.4, zOff),
+			Position = Vector3.new(188, 4.4, zOff),
 			Color = dColor,
 			Material = Enum.Material.Neon,
 			Parent = vipBooth,
@@ -2129,7 +2129,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 
 	createAttachmentPrompt(vipPad, "RobuxShopPrompt", "Open VIP & Gamepass Shop", "🛒 2x Cash • VIP Crown • +2 Carry Eggs", Vector3.new(0, 3.2, 0), 18)
 
-	-- 5. 💖 Like & ⭐ Favorite + 🔔 Notify VIP Reward Shrine (Outer East Plaza at X = 162, Z = 172 + Spawn Welcome Kiosk at X = 24, Z = 86!)
+	-- 5. 💖 Like & ⭐ Favorite + 🔔 Notify VIP Reward Shrine (Outer East Plaza at X = 188, Z = 172 + Spawn Welcome Kiosk at X = 26, Z = 86!)
 	local likeBooth = Instance.new("Model")
 	likeBooth.Name = "LikeFavoriteRewardBooth"
 	likeBooth.Parent = hubFolder
@@ -2137,7 +2137,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	local likePad = buildGlowingNeonCircle(
 		likeBooth,
 		"LikeFavoritePad",
-		Vector3.new(162, 0.35, 172),
+		Vector3.new(188, 0.35, 172),
 		13,
 		Color3.fromRGB(235, 75, 145),
 		Color3.fromRGB(255, 215, 65)
@@ -2148,7 +2148,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 		makePart({
 			Name = "LikeShrinePillar",
 			Size = Vector3.new(2.0, 9.5, 2.0),
-			Position = Vector3.new(164.2, 4.75, 172 + zSide),
+			Position = Vector3.new(190.2, 4.75, 172 + zSide),
 			Color = Color3.fromRGB(225, 85, 145),
 			Material = Enum.Material.SmoothPlastic,
 			Parent = likeBooth,
@@ -2160,7 +2160,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 		Name = "LikeTrophyPedestal",
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(3.2, 4.2, 4.2),
-		CFrame = CFrame.new(162, 1.8, 172) * CFrame.Angles(0, 0, math.rad(90)),
+		CFrame = CFrame.new(188, 1.8, 172) * CFrame.Angles(0, 0, math.rad(90)),
 		Color = Color3.fromRGB(52, 44, 68),
 		Material = Enum.Material.Cobblestone,
 		Parent = likeBooth,
@@ -2169,7 +2169,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 		Name = "LikeTrophyHeartCore",
 		Shape = Enum.PartType.Ball,
 		Size = Vector3.new(4.2, 4.2, 4.2),
-		Position = Vector3.new(162, 5.5, 172),
+		Position = Vector3.new(188, 5.5, 172),
 		Color = Color3.fromRGB(255, 85, 155),
 		Material = Enum.Material.SmoothPlastic,
 		Parent = likeBooth,
@@ -2178,7 +2178,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	local likeHeader = makePart({
 		Name = "LikeFavoriteSign",
 		Size = Vector3.new(1.2, 3.6, 14.5),
-		Position = Vector3.new(164.2, 10.8, 172),
+		Position = Vector3.new(190.2, 10.8, 172),
 		Color = Color3.fromRGB(225, 65, 135),
 		Material = Enum.Material.SmoothPlastic,
 		Parent = likeBooth,
@@ -2240,11 +2240,11 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	userKitFolder.Name = "UserCreatorStoreKits"
 	userKitFolder.Parent = hubFolder
 
-	-- A) Time Played Leaderboard (East Plaza: X = 146, Z = 68)
+	-- A) Time Played Leaderboard (East Plaza: X = 188, Z = 212)
 	local timePlayedPad = buildGlowingNeonCircle(
 		userKitFolder,
 		"TimePlayedPad",
-		Vector3.new(146, 0.35, 68),
+		Vector3.new(188, 0.35, 212),
 		14,
 		Color3.fromRGB(95, 235, 255),
 		Color3.fromRGB(255, 215, 65)
@@ -2252,7 +2252,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	local timePlayedBoard = makePart({
 		Name = "TimePlayedBoardFrame",
 		Size = Vector3.new(1.4, 15.5, 13.5),
-		Position = Vector3.new(146, 9.6, 68),
+		Position = Vector3.new(188, 9.6, 212),
 		Color = Color3.fromRGB(18, 22, 38),
 		Material = Enum.Material.SmoothPlastic,
 		Parent = userKitFolder,
@@ -2266,11 +2266,11 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 		150
 	)
 
-	-- B) Robux Donation Board (East Plaza: X = 146, Z = 112)
+	-- B) Robux Donation Board (East Plaza: X = 188, Z = 252)
 	local donationPad = buildGlowingNeonCircle(
 		userKitFolder,
 		"DonationBoardPad",
-		Vector3.new(146, 0.35, 112),
+		Vector3.new(188, 0.35, 252),
 		14,
 		Color3.fromRGB(255, 185, 45),
 		Color3.fromRGB(255, 85, 135)
@@ -2278,7 +2278,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	local donationBoard = makePart({
 		Name = "RobuxDonationBoardFrame",
 		Size = Vector3.new(1.4, 15.5, 13.5),
-		Position = Vector3.new(146, 9.6, 112),
+		Position = Vector3.new(188, 9.6, 252),
 		Color = Color3.fromRGB(24, 20, 36),
 		Material = Enum.Material.SmoothPlastic,
 		Parent = userKitFolder,
@@ -2300,11 +2300,11 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 		16
 	)
 
-	-- C) Obby Gamepass Kiosk (East Plaza: X = 146, Z = 152)
+	-- C) Obby Gamepass Kiosk (East Plaza: X = 188, Z = 288)
 	local obbyGPPad = buildGlowingNeonCircle(
 		userKitFolder,
 		"ObbyGamepassPad",
-		Vector3.new(146, 0.35, 152),
+		Vector3.new(188, 0.35, 288),
 		12,
 		Color3.fromRGB(145, 85, 255),
 		Color3.fromRGB(65, 220, 255)
@@ -2312,7 +2312,7 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 	local obbyGPBoard = makePart({
 		Name = "ObbyGamepassBoardFrame",
 		Size = Vector3.new(1.4, 14.5, 11.5),
-		Position = Vector3.new(146, 9.0, 152),
+		Position = Vector3.new(188, 9.0, 288),
 		Color = Color3.fromRGB(28, 18, 48),
 		Material = Enum.Material.SmoothPlastic,
 		Parent = userKitFolder,
@@ -2334,12 +2334,12 @@ local function buildHubRetentionBoothsAndLeaderboards(hubFolder: Folder, obstacl
 		16
 	)
 
-	-- D) 4 Dedicated Safe Zone Paywall Coil & Carpet Booth Pads on the East Rewards Plaza (X = 132)
+	-- D) 4 Dedicated Safe Zone Paywall Coil & Carpet Booth Pads on the East Rewards Promenade (X = 174)
 	local coilCarpetPads = {
-		{ Key = "FusionCoil", Name = "Fusion Coil", AssetId = 12124152417, Pos = Vector3.new(132, 0.35, 64), Color = Color3.fromRGB(135, 65, 255) },
-		{ Key = "SpeedCoil", Name = "Speed Coil", AssetId = 11963709166, Pos = Vector3.new(132, 0.35, 88), Color = Color3.fromRGB(255, 65, 65) },
-		{ Key = "GravityCoil", Name = "Gravity Coil", AssetId = 11987698523, Pos = Vector3.new(132, 0.35, 112), Color = Color3.fromRGB(65, 145, 255) },
-		{ Key = "RainbowCarpet", Name = "Rainbow Carpet", AssetId = 17656533013, Pos = Vector3.new(132, 0.35, 136), Color = Color3.fromRGB(255, 215, 65) },
+		{ Key = "FusionCoil", Name = "Fusion Coil", AssetId = 12124152417, Pos = Vector3.new(174, 0.35, 64), Color = Color3.fromRGB(135, 65, 255) },
+		{ Key = "SpeedCoil", Name = "Speed Coil", AssetId = 11963709166, Pos = Vector3.new(174, 0.35, 104), Color = Color3.fromRGB(255, 65, 65) },
+		{ Key = "GravityCoil", Name = "Gravity Coil", AssetId = 11987698523, Pos = Vector3.new(174, 0.35, 144), Color = Color3.fromRGB(65, 145, 255) },
+		{ Key = "RainbowCarpet", Name = "Rainbow Carpet", AssetId = 17656533013, Pos = Vector3.new(174, 0.35, 184), Color = Color3.fromRGB(255, 215, 65) },
 	}
 	for _, gp in ipairs(coilCarpetPads) do
 		local pad = buildGlowingNeonCircle(
@@ -3495,7 +3495,7 @@ local function buildBiomeLandmarksAndInteractiveProps(parent: Instance, levelInf
 	elseif id == 7 then
 
 		-- =========================================================================================
-		-- STAGE 7 (Z = -960 to -1120 — MAGMA VOLCANO DOOM):
+		-- STAGE 7 (Z = -960 to -1120 — MAGMA VOLCANO ISLAND):
 		-- Landmarks:
 		--   * Giant Basalt Volcano Crater (256969126 / StageLandmarks #20) at (-86, 0, -1035)
 		--   * Obsidian Skull Fortress (16437023855 / StageLandmarks #21) at (86, 0, -1045)
@@ -3755,9 +3755,9 @@ local function buildCentralHighwayRoad(worldFolder: Folder)
 	roadFolder.Parent = worldFolder
 
 	local zNorthEnd = -1280
-	local zSouthEnd = 180
-	local totalRoadLength = zSouthEnd - zNorthEnd -- 1460 studs
-	local zCenter = (zSouthEnd + zNorthEnd) * 0.5 -- -550
+	local zSouthEnd = 320
+	local totalRoadLength = zSouthEnd - zNorthEnd -- 1600 studs
+	local zCenter = (zSouthEnd + zNorthEnd) * 0.5 -- -480
 
 	-- 1. 36-Stud-Wide Dark Charcoal Matte Asphalt Highway Deck
 	makePart({
@@ -3794,8 +3794,8 @@ local function buildCentralHighwayRoad(worldFolder: Folder)
 		})
 	end
 
-	-- 4. White Matte Crosswalks at Every Stage Gate (Z = 0, -160, -320, -480, -640, -800, -960, -1120) & Safe Zone (Z = 172)
-	local crosswalkZs = { 172, 0, -160, -320, -480, -640, -800, -960, -1120 }
+	-- 4. White Matte Crosswalks at Every Stage Gate (Z = 0, -160, -320, -480, -640, -800, -960, -1120) & Safe Zone (Z = 320)
+	local crosswalkZs = { 320, 0, -160, -320, -480, -640, -800, -960, -1120 }
 	for _, cwZ in ipairs(crosswalkZs) do
 		for stripe = -14, 14, 4 do
 			makePart({
@@ -3810,18 +3810,25 @@ local function buildCentralHighwayRoad(worldFolder: Folder)
 		end
 	end
 
-	-- 5. Cobblestone Driveways branching from Central Highway into Safe Zone Player Plots (Z = 54 & 136)
-	for _, plotZ in ipairs({ 54, 136 }) do
-		for _, side in ipairs({ -1, 1 }) do
-			makePart({
-				Name = "PlotCobblestoneDriveway",
-				Size = Vector3.new(46, 0.28, 14),
-				Position = Vector3.new(side * 44, 0.14, plotZ),
-				Color = Color3.fromRGB(148, 144, 136),
-				Material = Enum.Material.Cobblestone,
-				Parent = roadFolder,
-			})
-		end
+	-- 5. Cobblestone Driveways branching from Central Highway into Safe Zone Player Plots (Plots 1–7)
+	local plotDriveways = {
+		{ Side = -1, Z = 50 },
+		{ Side = 1, Z = 50 },
+		{ Side = -1, Z = 122 },
+		{ Side = 1, Z = 122 },
+		{ Side = -1, Z = 194 },
+		{ Side = 1, Z = 194 },
+		{ Side = -1, Z = 266 },
+	}
+	for _, dw in ipairs(plotDriveways) do
+		makePart({
+			Name = "PlotCobblestoneDriveway",
+			Size = Vector3.new(46, 0.28, 14),
+			Position = Vector3.new(dw.Side * 44, 0.14, dw.Z),
+			Color = Color3.fromRGB(148, 144, 136),
+			Material = Enum.Material.Cobblestone,
+			Parent = roadFolder,
+		})
 	end
 
 	-- 6. Cobblestone Branch Spurs into Each Stage's Entry Plaza, Landmarks/Obby & Boss Nest (Stages 1–8)
@@ -3841,7 +3848,7 @@ local function buildCentralHighwayRoad(worldFolder: Folder)
 	end
 end
 
--- Builds 4 Widely Spaced Fenced Player Base Plots + South Village Boulevard in the Expanded Safe Zone (490 x 240, Z = 0..238)
+-- Builds 7 Widely Spaced Fenced Player Base Plots + South Village Boulevard in the Expanded Safe Zone (490 x 390, Z = -2..388)
 local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folder)
 	local hubFolder = Instance.new("Folder")
 	hubFolder.Name = "SafeZoneHub"
@@ -3849,18 +3856,18 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 
 	makePart({
 		Name = "HubGrassMain",
-		Size = Vector3.new(490, 2, 240),
-		Position = Vector3.new(0, -1, 118),
+		Size = Vector3.new(490, 2, 390),
+		Position = Vector3.new(0, -1, 193),
 		Color = Color3.fromRGB(74, 134, 66),
 		Material = Enum.Material.LeafyGrass,
 		Parent = hubFolder,
 	})
 
-	-- Wide South Village Cross-Boulevard (Z = 178, X = -190..+190) in grounded Matte Asphalt + Concrete Curbs
+	-- Wide South Village Cross-Boulevard (Z = 336, X = -190..+190) in grounded Matte Asphalt + Concrete Curbs
 	makePart({
 		Name = "SouthBoulevardPath",
 		Size = Vector3.new(380, 0.25, 24),
-		Position = Vector3.new(0, 0.12, 178),
+		Position = Vector3.new(0, 0.12, 336),
 		Color = Color3.fromRGB(48, 50, 56),
 		Material = Enum.Material.Asphalt,
 		Parent = hubFolder,
@@ -3892,7 +3899,7 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 		Name = "FountainLowerBasin",
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(2.4, 28, 28),
-		CFrame = CFrame.new(0, 1.2, 162) * CFrame.Angles(0, 0, math.rad(90)),
+		CFrame = CFrame.new(0, 1.2, 322) * CFrame.Angles(0, 0, math.rad(90)),
 		Color = Color3.fromRGB(225, 230, 245),
 		Material = Enum.Material.Marble,
 		CanCollide = true,
@@ -3902,7 +3909,7 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 		Name = "FountainWaterLower",
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(2.6, 25, 25),
-		CFrame = CFrame.new(0, 1.4, 162) * CFrame.Angles(0, 0, math.rad(90)),
+		CFrame = CFrame.new(0, 1.4, 322) * CFrame.Angles(0, 0, math.rad(90)),
 		Color = Color3.fromRGB(85, 205, 255),
 		Material = Enum.Material.Glass,
 		Transparency = 0.35,
@@ -3913,7 +3920,7 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 		Name = "FountainMidSpire",
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(8.5, 8, 8),
-		CFrame = CFrame.new(0, 5.5, 162) * CFrame.Angles(0, 0, math.rad(90)),
+		CFrame = CFrame.new(0, 5.5, 322) * CFrame.Angles(0, 0, math.rad(90)),
 		Color = Color3.fromRGB(215, 222, 238),
 		Material = Enum.Material.Marble,
 		CanCollide = true,
@@ -3923,7 +3930,7 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 		Name = "FountainCrystalSpire",
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(6.0, 15, 15),
-		CFrame = CFrame.new(0, 8.5, 162) * CFrame.Angles(0, 0, math.rad(90)),
+		CFrame = CFrame.new(0, 8.5, 322) * CFrame.Angles(0, 0, math.rad(90)),
 		Color = Color3.fromRGB(115, 225, 255),
 		Material = Enum.Material.Neon,
 		CanCollide = true,
@@ -3933,7 +3940,7 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 	local fountainTop = makePart({
 		Name = "FountainSignAnchor",
 		Size = Vector3.new(2, 2, 2),
-		Position = Vector3.new(0, 15, 162),
+		Position = Vector3.new(0, 15, 322),
 		Transparency = 1,
 		CanCollide = false,
 		Parent = fountainModel,
@@ -3953,16 +3960,49 @@ local function buildSafeZoneAndPlots(worldFolder: Folder, obstaclesFolder: Folde
 	-- Build Global Top-10 OrderedDataStore 3D Leaderboards + Spin Wheel, Daily Chest & VIP Robux Shop Booths!
 	buildHubRetentionBoothsAndLeaderboards(hubFolder, obstaclesFolder)
 
-	-- Build the 4 Widely Spaced Fenced Player Base Plots (X = ±94, Z = 54 & 136 — 188 studs across road, 82 studs North-to-South!)
+	-- Safe Zone East Park & Picnic Lawn Plaza at (X = 94, Z = 266) opposite Plot 7
+	local parkFolder = Instance.new("Folder")
+	parkFolder.Name = "SafeZoneCommunityPark"
+	parkFolder.Parent = hubFolder
+
+	makePart({
+		Name = "ParkPicnicPad",
+		Size = Vector3.new(56, 0.4, 48),
+		Position = Vector3.new(94, 0.2, 266),
+		Color = Color3.fromRGB(92, 156, 82),
+		Material = Enum.Material.LeafyGrass,
+		Parent = parkFolder,
+	})
+	local parkSign = makePart({
+		Name = "ParkSignBoard",
+		Size = Vector3.new(1.0, 3.2, 8.5),
+		Position = Vector3.new(72, 4.6, 266),
+		Color = Color3.fromRGB(42, 68, 48),
+		Material = Enum.Material.SmoothPlastic,
+		Parent = parkFolder,
+	})
+	createSurfaceSign(
+		parkSign,
+		"🌳 SQUISHY COMMUNITY PARK\nRelax • Trade • Meet Friends!",
+		Color3.fromRGB(185, 255, 175),
+		Color3.fromRGB(24, 44, 28),
+		{ Enum.NormalId.Left, Enum.NormalId.Right },
+		120
+	)
+
+	-- Build the 7 Widely Spaced Fenced Player Base Plots (X = ±94, Z = 50, 122, 194, 266 — 188 studs across road!)
 	local plotsFolder = Instance.new("Folder")
 	plotsFolder.Name = "PlayerPlots"
 	plotsFolder.Parent = worldFolder
 
 	local plotConfigs = {
-		{ Index = 1, Center = Vector3.new(-94, 0, 54), Color = Color3.fromRGB(80, 165, 215), Roof = Color3.fromRGB(45, 85, 165), FaceDir = 1 },
-		{ Index = 2, Center = Vector3.new(94, 0, 54), Color = Color3.fromRGB(205, 125, 165), Roof = Color3.fromRGB(145, 52, 108), FaceDir = -1 },
-		{ Index = 3, Center = Vector3.new(-94, 0, 136), Color = Color3.fromRGB(105, 185, 115), Roof = Color3.fromRGB(48, 125, 68), FaceDir = 1 },
-		{ Index = 4, Center = Vector3.new(94, 0, 136), Color = Color3.fromRGB(215, 175, 88), Roof = Color3.fromRGB(165, 64, 52), FaceDir = -1 },
+		{ Index = 1, Center = Vector3.new(-94, 0, 50), Color = Color3.fromRGB(80, 165, 215), Roof = Color3.fromRGB(45, 85, 165), FaceDir = 1 },
+		{ Index = 2, Center = Vector3.new(94, 0, 50), Color = Color3.fromRGB(205, 125, 165), Roof = Color3.fromRGB(145, 52, 108), FaceDir = -1 },
+		{ Index = 3, Center = Vector3.new(-94, 0, 122), Color = Color3.fromRGB(105, 185, 115), Roof = Color3.fromRGB(48, 125, 68), FaceDir = 1 },
+		{ Index = 4, Center = Vector3.new(94, 0, 122), Color = Color3.fromRGB(215, 175, 88), Roof = Color3.fromRGB(165, 64, 52), FaceDir = -1 },
+		{ Index = 5, Center = Vector3.new(-94, 0, 194), Color = Color3.fromRGB(168, 115, 225), Roof = Color3.fromRGB(115, 55, 185), FaceDir = 1 },
+		{ Index = 6, Center = Vector3.new(94, 0, 194), Color = Color3.fromRGB(225, 135, 85), Roof = Color3.fromRGB(185, 85, 45), FaceDir = -1 },
+		{ Index = 7, Center = Vector3.new(-94, 0, 266), Color = Color3.fromRGB(75, 215, 195), Roof = Color3.fromRGB(35, 145, 135), FaceDir = 1 },
 	}
 
 	local plotW = 64

@@ -27,6 +27,13 @@ local SquishyBuilder = require(Shared:WaitForChild("SquishyBuilder"))
 local PrebuiltLoader = require(Shared:WaitForChild("PrebuiltLoader"))
 local WorldBuilder = require(script.Parent:WaitForChild("WorldBuilder"))
 
+Workspace:SetAttribute("AgeRatingPolicy", "AllAges_Kids")
+Workspace:SetAttribute("MaxPlayersPerServer", 7)
+pcall(function()
+	(Players :: any).MaxPlayersInternal = 7
+end)
+Players:SetAttribute("MaxPlayers", 7)
+
 -- Ensure Remotes exist
 local remotesFolder = ReplicatedStorage:FindFirstChild("Remotes") :: Folder
 if not remotesFolder then
@@ -1769,8 +1776,8 @@ BuyFenceUpgradeEvent.OnServerEvent:Connect(function(player: Player)
 	upgradePlayerFence(player)
 end)
 
--- Connects all 4 Base Plots (Fenced Hatchery Pen, Walk-In Auto-Drop, Grow & Level Up Kiosk, Upgrade Fence Kiosk, Roaming Slots, Cash Collector, Treadmill Upgrade)
-for plotIdx = 1, 4 do
+-- Connects all 7 Base Plots (Fenced Hatchery Pen, Walk-In Auto-Drop, Grow & Level Up Kiosk, Upgrade Fence Kiosk, Roaming Slots, Cash Collector, Treadmill Upgrade)
+for plotIdx = 1, 7 do
 	local plotModel = getPlotModel(plotIdx)
 	if plotModel then
 		local stand = plotModel:FindFirstChild("SpeedUpgradeStand")
@@ -3823,8 +3830,8 @@ end)
 
 -- Player Lifecycle Setup
 local function setupPlayer(player: Player)
-	local assignedPlot = ((#Players:GetPlayers() - 1) % 4) + 1
-	for idx = 1, 4 do
+	local assignedPlot = ((#Players:GetPlayers() - 1) % 7) + 1
+	for idx = 1, 7 do
 		if plotOwners[idx] == nil then
 			assignedPlot = idx
 			plotOwners[idx] = player

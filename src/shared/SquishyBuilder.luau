@@ -707,7 +707,7 @@ local function addBrainrotFeatures(
 		addBrainrotEyesAndMouth(capyHead, model, scale, anchored, "Derp")
 
 	elseif targetId == 5 then
-		-- #5: Cappuccino Assassino (Porcelain Coffee Cup Ninja with Headband & Dual Katanas)
+		-- #5: Cappuccino Ninja (Porcelain Coffee Cup Ninja with Headband & Dual Katanas)
 		local cup = attach(makePart({
 			Name = "CoffeeCupBody",
 			Shape = Enum.PartType.Cylinder,

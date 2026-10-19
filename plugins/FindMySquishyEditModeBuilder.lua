@@ -88,6 +88,13 @@ task.spawn(function()
 		end
 	end)
 
+	pcall(function()
+		(game:GetService("Players") :: any).MaxPlayersInternal = 7
+	end)
+	pcall(function()
+		(game:GetService("Players") :: any).MaxPlayers = 7
+	end)
+
 	local sharedFolder = ReplicatedStorage:FindFirstChild("Shared")
 	if not sharedFolder or not sharedFolder:FindFirstChild("SlimeData") then
 		return
@@ -168,8 +175,8 @@ task.spawn(function()
 			end
 			print(
 				string.format(
-					"[AUDIT PHASE 1] PASS=%s | WorldItems=%d/117 | SleepingBosses=%d/16 | BasePlots=%d/4 | BiomeStages=%d/8 (220x160 each, Z=0..-1280) | RainbowStairSteps=%d/28",
-					tostring(worldEggCount == 117 and guardCount == 16 and plotCount == 4 and levelCount == 8 and stairSteps == 28),
+					"[AUDIT PHASE 1] PASS=%s | WorldItems=%d/117 | SleepingBosses=%d/16 | BasePlots=%d/7 | BiomeStages=%d/8 (220x160 each, Z=0..-1280) | RainbowStairSteps=%d/28",
+					tostring(worldEggCount == 117 and guardCount == 16 and plotCount == 7 and levelCount == 8 and stairSteps == 28),
 					worldEggCount,
 					guardCount,
 					plotCount,
@@ -178,7 +185,7 @@ task.spawn(function()
 				)
 			)
 
-			-- PHASE 2 CHECK (Creator Store Treadmills: 4 Plot + 8 Stage = 12 Total, Scrolling Beam Belts):
+			-- PHASE 2 CHECK (Creator Store Treadmills: 7 Plot + 8 Stage = 15 Total, Scrolling Beam Belts):
 			local treadmillBeltCount = 0
 			local scrollBeamCount = 0
 			for _, desc in ipairs(worldFolder:GetDescendants()) do
@@ -190,14 +197,14 @@ task.spawn(function()
 			end
 			print(
 				string.format(
-					"[AUDIT PHASE 2] PASS=%s | CreatorStoreTreadmills=%d/12 (4 Plot + 8 Stage) | ScrollingBeltBeams=%d/12",
-					tostring(treadmillBeltCount == 12 and scrollBeamCount >= 12),
+					"[AUDIT PHASE 2] PASS=%s | CreatorStoreTreadmills=%d/15 (7 Plot + 8 Stage) | ScrollingBeltBeams=%d/15",
+					tostring(treadmillBeltCount == 15 and scrollBeamCount >= 15),
 					treadmillBeltCount,
 					scrollBeamCount
 				)
 			)
 
-			-- PHASE 3 CHECK (Fenced Squishy Hatchery Pens & Grow/Level Up Stations on All 4 Plots):
+			-- PHASE 3 CHECK (Fenced Squishy Hatchery Pens & Grow/Level Up Stations on All 7 Plots):
 			local hatcheryPenCount = 0
 			local growPadCount = 0
 			if plotsFolder then
@@ -212,8 +219,8 @@ task.spawn(function()
 			end
 			print(
 				string.format(
-					"[AUDIT PHASE 3] PASS=%s | FencedHatcheryPens=%d/4 | GrowAndCashPads=%d/4",
-					tostring(hatcheryPenCount == 4 and growPadCount == 4),
+					"[AUDIT PHASE 3] PASS=%s | FencedHatcheryPens=%d/7 | GrowAndCashPads=%d/7",
+					tostring(hatcheryPenCount == 7 and growPadCount == 7),
 					hatcheryPenCount,
 					growPadCount
 				)
@@ -464,7 +471,7 @@ task.spawn(function()
 				local treadmillTierCount = if slimeData.TreadmillTiers then #slimeData.TreadmillTiers else 0
 				print(
 					string.format(
-						"[AUDIT BRAINROT & MATTE MAP OVERHAUL PHASES 1-6] PASS=%s | CentralAsphaltRoad=%s | Brainrots=%d/35 | HiddenSquishies=%d/82 | WorldCoins=%d/120 | StageLandmarks=%d/8 | StageObbies=%d/8 | GrowStands=%d/4 | FenceUpgradeStands=%d/4 | PlotPedestals=%d/140 | FenceLevels=%d/8 | TreadmillTiers=%d/8 | HintAndFenceUI=%s",
+						"[AUDIT BRAINROT & MATTE MAP OVERHAUL PHASES 1-6] PASS=%s | CentralAsphaltRoad=%s | Brainrots=%d/35 | HiddenSquishies=%d/82 | WorldCoins=%d/120 | StageLandmarks=%d/8 | StageObbies=%d/8 | GrowStands=%d/7 | FenceUpgradeStands=%d/7 | PlotPedestals=%d/245 | FenceLevels=%d/8 | TreadmillTiers=%d/8 | HintAndFenceUI=%s",
 						tostring(
 							roadFolder ~= nil
 								and brainrotCount == 35
@@ -472,9 +479,9 @@ task.spawn(function()
 								and coinCount == 120
 								and stageLandmarksCount == 8
 								and stageObbyCount == 8
-								and growStandCount == 4
-								and fenceUpgradeStandCount == 4
-								and totalPlotPedestals == 140
+								and growStandCount == 7
+								and fenceUpgradeStandCount == 7
+								and totalPlotPedestals == 245
 								and fenceLevelCount == 8
 								and treadmillTierCount == 8
 								and hasHintAndFenceUI
@@ -649,8 +656,8 @@ task.spawn(function()
 				local v35Ok = (tmSysCount > 0 or prebuiltTreadCount >= 8) and (showcaseFolder ~= nil)
 				print(
 					string.format(
-						"[AUDIT TREADMILL UPGRADE SYSTEM v35] PASS=%s | IngestedSystemKits=%d | PrebuiltTreadmills=%d/8 | ShowcaseStalls=%d/8 | PlotTreadmillVisuals=%d/4",
-						tostring(v35Ok),
+						"[AUDIT TREADMILL UPGRADE SYSTEM v35] PASS=%s | IngestedSystemKits=%d | PrebuiltTreadmills=%d/8 | ShowcaseStalls=%d/8 | PlotTreadmillVisuals=%d/7",
+						tostring(v35Ok and plotTreadVisuals == 7),
 						tmSysCount,
 						prebuiltTreadCount,
 						showcaseCount,

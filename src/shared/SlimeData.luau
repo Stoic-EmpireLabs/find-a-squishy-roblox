@@ -326,7 +326,7 @@ SlimeData.Levels = {
 	},
 	{
 		Level = 7,
-		Name = "Magma Volcano Doom",
+		Name = "Magma Volcano Island",
 		Subtitle = "Complete 100% of Stage 7 Squishies & Eggs + 12k Speed to Unlock Stage 8!",
 		ZStart = -960,
 		ZEnd = -1120,
@@ -418,7 +418,7 @@ SlimeData.Guardians = {
 	},
 	{
 		Id = "L2_Brainrot",
-		Name = "Cappuccino Assassino",
+		Name = "Cappuccino Ninja",
 		Title = "☕ STAGE 2 CHOCO BOSS",
 		Level = 2,
 		Style = "BrainrotBat",
@@ -1223,7 +1223,7 @@ local brainrotDefinitions = {
 	[3] = { Name = "Trippi Troppi", Rarity = "Rare", ModelIdx = 10, CPS = 22, Reward = 110 },
 	[4] = { Name = "Burbaloni Luliloli", Rarity = "Epic", ModelIdx = 13, CPS = 35, Reward = 180 },
 	-- Stage 2 (Scale 1.25x)
-	[5] = { Name = "Cappuccino Assassino", Rarity = "Common", ModelIdx = 6, CPS = 45, Reward = 220 },
+	[5] = { Name = "Cappuccino Ninja", Rarity = "Common", ModelIdx = 6, CPS = 45, Reward = 220 },
 	[6] = { Name = "Ballerina Cappuccina", Rarity = "Rare", ModelIdx = 9, CPS = 65, Reward = 320 },
 	[7] = { Name = "Chimpanzini Bananini", Rarity = "Epic", ModelIdx = 7, CPS = 95, Reward = 480 },
 	[8] = { Name = "Frigo Camelo", Rarity = "Legendary", ModelIdx = 11, CPS = 140, Reward = 700 },

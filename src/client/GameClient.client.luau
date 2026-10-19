@@ -1491,7 +1491,7 @@ local BRAINROT_VOICE_SOUND_IDS: { [string]: string } = {
 	["2"] = "rbxassetid://77891869376009", -- Lirili Larila
 	["3"] = "rbxassetid://73597660759027", -- Trippi Troppi
 	["4"] = "rbxassetid://105548451780438", -- Burbaloni Luliloli
-	["5"] = "rbxassetid://132507332049936", -- Cappuccino Assassino
+	["5"] = "rbxassetid://132507332049936", -- Cappuccino Ninja
 	["6"] = "rbxassetid://136160874492071", -- Ballerina Cappuccina
 	["7"] = "rbxassetid://123254496530998", -- Chimpanzini Bananini
 	["8"] = "rbxassetid://116835658278935", -- Frigo Camelo
@@ -2167,10 +2167,13 @@ for i = 1, NUM_GROUND_ARROWS do
 end
 
 local FALLBACK_PLOT_COORDS = {
-	[1] = Vector3.new(-94, 4, 54),
-	[2] = Vector3.new(94, 4, 54),
-	[3] = Vector3.new(-94, 4, 136),
-	[4] = Vector3.new(94, 4, 136),
+	[1] = Vector3.new(-94, 4, 50),
+	[2] = Vector3.new(94, 4, 50),
+	[3] = Vector3.new(-94, 4, 122),
+	[4] = Vector3.new(94, 4, 122),
+	[5] = Vector3.new(-94, 4, 194),
+	[6] = Vector3.new(94, 4, 194),
+	[7] = Vector3.new(-94, 4, 266),
 }
 
 local function getPlotStationPos(plotIdx: number, stationName: string): Vector3
@@ -2207,7 +2210,7 @@ local function getPlotStationPos(plotIdx: number, stationName: string): Vector3
 			end
 		end
 	end
-	return FALLBACK_PLOT_COORDS[plotIdx] or Vector3.new(-94, 4, 54)
+	return FALLBACK_PLOT_COORDS[plotIdx] or Vector3.new(-94, 4, 50)
 end
 
 local function getStageTreadmillPos(stageId: number, plotIdx: number): Vector3
