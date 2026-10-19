@@ -1170,9 +1170,10 @@ OpenModalEvent.OnClientEvent:Connect(function(modalName: string)
 		end
 	elseif modalName == "RobuxShop" then
 		ui.ShopModal.Visible = true
-		if isConsoleOrGamepad() and ui.BuySpeedBtn then
+		local shopFocusBtn = (ui.PassButtonsByKey and ui.PassButtonsByKey["VIP"]) or ui.BuyFenceBtn or ui.ShopClose
+		if isConsoleOrGamepad() and shopFocusBtn then
 			pcall(function()
-				GuiService.SelectedObject = ui.BuySpeedBtn
+				GuiService.SelectedObject = shopFocusBtn
 			end)
 		end
 	elseif modalName == "LikeFavorite" and ui.LikeFavoriteModal then
